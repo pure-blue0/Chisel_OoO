@@ -1,0 +1,379 @@
+Simulator : {
+  DRAM : {
+    MemoryMap : {Base : 0x80000000 , Length : 0x10000000}
+  },
+  Processors : [
+    {
+      # Processor Architecture Config
+      XLEN          : 64,
+      SupportISA    : [I,M,C,A],
+      SupportMode   : [M,S,U],
+      Speculation   : true,
+      ForwardResult : true,
+      MemoryModel   : SC,
+      #------- Micro-Architecure -------#
+      iCache : {
+        iCacheLatency     : 2,
+        iCacheAlignByte   : 64,
+      },
+      dCache : {
+        dCacheLatency     : 2,
+        dCacheAlignByte   : 8,
+      },
+      Rcu : {
+        RenameRegister : true,
+        AllocWidth     : 8,
+        DeallocWidth   : 8,
+        ReorderBuffer  : {
+          EntryCount   : 128
+        },
+        PhysicalRegisterFile : {
+          Int : {
+            RegCount    : 180
+          },
+        },
+        RecoveryPolicy  : {
+          RollBack      : true,
+          SnapshotCount : 0
+        },
+      },
+      Lsq : {
+        LoadQueue : {
+          EntryCount   : 72,
+        },
+        StoreQueue : {
+          EntryCount   : 64,
+        },
+      },
+      Resources : {
+        RegFileReadPort  : [
+          {
+            Latency         : 0
+          },
+          {
+            Latency         : 0
+          },
+          {
+            Latency         : 0
+          },
+          {
+            Latency         : 0
+          },
+          {
+            Latency         : 0
+          },
+          {
+            Latency         : 0
+          },
+          {
+            Latency         : 0
+          },
+          {
+            Latency         : 0
+          },
+          {
+            Latency         : 0
+          }
+        ],
+        WriteBackPort : [
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+          },
+        ],
+        FunctionUnitPool : [
+            {Name : CSR0 , FuncType : CSR, Latency : 1, Pipelined : false , WriteBackPort : [0] },          #0
+
+            {Name : Bank0_BRU0 , FuncType : BRU, Latency : 1, Pipelined : true    , WriteBackPort : [0] },  #1
+
+            {Name : Bank0_ALU0 , FuncType : ALU, Latency : 1, Pipelined : true    , WriteBackPort : [1] },  #2
+
+            {Name : Bank0_ALU1 , FuncType : ALU, Latency : 1, Pipelined : true    , WriteBackPort : [2] },  #3
+
+            {Name : Bank0_DIV0 , FuncType : DIV, Latency : 18, Pipelined : false  , WriteBackPort : [3] },  #4
+            {Name : Bank0_MUL0 , FuncType : MUL, Latency : 2, Pipelined : true    , WriteBackPort : [3] },  #5
+            {Name : Bank0_ALU2 , FuncType : ALU, Latency : 1, Pipelined : true    , WriteBackPort : [3] },  #6
+
+            {Name : Bank1_BRU0 , FuncType : BRU, Latency : 1, Pipelined : true    , WriteBackPort : [4] },  #7
+
+            {Name : Bank1_ALU0 , FuncType : ALU, Latency : 1, Pipelined : true    , WriteBackPort : [5] },  #8
+
+            {Name : Bank2_ALU1 , FuncType : ALU, Latency : 1, Pipelined : true    , WriteBackPort : [6] },  #9
+
+            {Name : Bank3_DIV0 , FuncType : DIV, Latency : 18, Pipelined : false  , WriteBackPort : [7] },  #10
+            {Name : Bank3_MUL0 , FuncType : MUL, Latency : 2, Pipelined : true    , WriteBackPort : [7] },  #11
+            {Name : Bank3_ALU2 , FuncType : ALU, Latency : 1, Pipelined : true    , WriteBackPort : [7] },  #12
+
+
+            {Name : Bank0_LSU0 , FuncType : LSU, Latency : 2, Pipelined : true  , WriteBackPort : [8] },    #13
+            {Name : Bank0_LDU0 , FuncType : LDU, Latency : 2, Pipelined : true  , WriteBackPort : [9] },    #14
+
+            {Name : Bank1_LSU0 , FuncType : LSU, Latency : 2, Pipelined : true  , WriteBackPort : [10] },   #15
+            {Name : Bank1_LDU0 , FuncType : LDU, Latency : 2, Pipelined : true  , WriteBackPort : [11] },   #16
+        ],
+        Schedulers : [
+            {
+              Name             : UnifiedDispatchQueue0, #0
+              EntryCount       : 16,
+              EnqueWidth       : 8,
+              DequeWidth       : 8,
+              IssuePolicy      : In-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : RfQueue,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [0,1,2,3,4,5,6,7],
+              FunctionUnitPool : [],
+              SubScheduler     : [1,2,3,4,5,6,7,8,9,10,11,12,13]
+            },
+            {
+              Name             : CSR_RS, #1
+              EntryCount       : 4,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Order ,          # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : Commit,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [8],
+              FunctionUnitPool : [0],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank0_BRU0_RS, #2
+              EntryCount       : 4,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [1],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank0_ALU0_RS, #3
+              EntryCount       : 12,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [2],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank0_ALU1_RS, #4
+              EntryCount       : 12,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [3],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank0_Unified_RS, #5
+              EntryCount       : 12,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [4,5,6],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank1_BRU0_RS, #6
+              EntryCount       : 12,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [7],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank1_ALU0_RS, #7
+              EntryCount       : 12,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [8],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank1_ALU1_RS, #8
+              EntryCount       : 12,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [9],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank1_Unified_RS, #9
+              EntryCount       : 12,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [10,11,12],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank0_LSU_RS, #10
+              EntryCount       : 12,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [13],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank0_LDU_RS, #11
+              EntryCount       : 10,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [14],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank0_LSU_RS, #12
+              EntryCount       : 10,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [15],
+              SubScheduler     : []
+            },
+            {
+              Name             : Bank0_LDU_RS, #13
+              EntryCount       : 10,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
+              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [],
+              FunctionUnitPool : [16],
+              SubScheduler     : []
+            },
+        ],
+      },
+      Stages : {
+        Fetch1 : {
+          Latency   : 1,
+          NextStage : Fetch2,
+          MaxProcessInsnCount : 32,
+          MustTakenAllInsn    : true,
+          RedirectLatency     : 1,
+          StageInfo : {
+            iCacheAlignByte   : 64,
+            FetchByteWidth    : 64,
+            InflightQueueSize : 8,
+          }
+        },
+        Fetch2 : {
+          Latency   : 1,
+          NextStage : Decode,
+          MaxProcessInsnCount : 32,
+          MustTakenAllInsn    : true,
+          RedirectLatency     : 1,
+          StageInfo : {
+            InstrBufferSize : 64
+          }
+        },
+        Decode : {
+          Latency   : 1,
+          NextStage : Dispatch,
+          MaxProcessInsnCount : 8,
+          MustTakenAllInsn    : true,
+          RedirectLatency     : -1,
+          StageInfo : {
+            DecodeQueueSize : 8
+          }
+        },
+        Dispatch : {
+          Latency   : 1,
+          NextStage : IEW,
+          MaxProcessInsnCount : 8,
+          MustTakenAllInsn    : false,
+          RedirectLatency     : -1,
+          StageInfo : {
+            Schedulers : [0]
+          }
+        },
+        IEW : {
+          Latency   : 1,
+          NextStage : None,
+          MaxProcessInsnCount : -1,
+          MustTakenAllInsn    : false,
+          RedirectLatency     : 1,
+          StageInfo : {
+          }
+        },
+        Commit : {
+          Latency   : 1,
+          NextStage : Commit,
+          MaxProcessInsnCount : 8,
+          MustTakenAllInsn    : true,
+          RedirectLatency     : 1,
+          StageInfo : {
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+[submodule "thirdParty/ELFIO"]
+	path = thirdParty/ELFIO
+	url = https://github.com/serge1/ELFIO.git
+[submodule "thirdParty/yaml-cpp"]
+	path = thirdParty/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "thirdParty/cmdline"]
+	path = thirdParty/cmdline
+	url = https://github.com/tanakh/cmdline.git
+[submodule "thirdParty/spdlog"]
+	path = thirdParty/spdlog
+	url = https://github.com/gabime/spdlog.git
