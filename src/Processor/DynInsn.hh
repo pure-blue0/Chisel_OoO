@@ -117,7 +117,7 @@ struct DynInsn
     funcType_t   Fu;
     uint8_t      SubOp;
 
-    bool         IsRvcInsn;
+    //bool         IsRvcInsn;
     Insn_t       CompressedInsn;
     Insn_t       UncompressedInsn;
 

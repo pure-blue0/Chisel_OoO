@@ -54,11 +54,6 @@ Decode::ReceiveReq(){
                 insn->State = InsnState_t::State_Decode;
                 if(!insn->Excp.valid){
                     this->DecodeInsn(insn);
-                    if(this->m_Processor->m_doSpeculation && insn->Fu == funcType_t::BRU){
-                        //如果采用了分支推测，且当前指令是BR,那么将控制流指令的标志由true（在译码时被设置了）改为false
-                        //从而告诉处理器这并不是控制流处理器，不用等待分支预测的结果
-                        insn->ControlFlowInsn = false;
-                    }
                 }
                 this->m_DecodeQueue.Push(insn);
                 
@@ -79,7 +74,7 @@ Decode::ReceiveReq(){
             Redirect_t replayReq;
             replayReq.target = this->m_StageInPort->data.front()->Pc;
             replayReq.StageId = InsnState_t::State_Decode;
-            this->m_Processor->FlushBackWard(InsnState_t::State_Decode);
+            this->m_Processor->FlushBackWard(InsnState_t::State_Decode);//冲刷flash
             this->m_RedirectPort->set(replayReq);
             DPRINTF(Replay,"InsnBuffer Full, Replay Fetch {:#x}",replayReq.target);
         }

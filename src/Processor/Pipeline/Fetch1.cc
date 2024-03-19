@@ -204,9 +204,8 @@ Fetch1::Predecode(InflighQueueEntry_t& frontEntry ,InsnPkg_t& insnPkg){
             insn->Pc                = Npc;
             insn->Excp              = frontEntry.Excp;
             //判断是否是压缩指令，如果上一次发生截断，这一次的头两个数据只能是剩下的那两byte高位地址数据，那么就把当前数据左移16位，和上一次的拼起来
-            insn->IsRvcInsn         = this->m_MisalignValid ? false : ((*dataPtr & 0b11) != 0b11);
-            insn->CompressedInsn    = this->m_MisalignValid ? ((*(uint16_t*)dataPtr << 16) + this->m_MisalignHalf) : 
-                                      (insn->IsRvcInsn       ? (*(uint16_t*)dataPtr) : (*(uint32_t*)dataPtr));
+           // insn->IsRvcInsn         = false;
+            insn->UncompressedInsn    = this->m_MisalignValid ? ((*(uint16_t*)dataPtr << 16) + this->m_MisalignHalf) :  (*(uint32_t*)dataPtr);
             insnPkg.emplace_back(insn);
             this->BranchRedirect(insn,frontEntry.InsnPred[(offset >> 1)],needRedirect,RedirectReq);
             if(needRedirect){//如果需要重定向，那么后面的数据也就没必要放进来了
@@ -215,10 +214,10 @@ Fetch1::Predecode(InflighQueueEntry_t& frontEntry ,InsnPkg_t& insnPkg){
                 this->m_RedirectPort->set(RedirectReq);
                 break;
             }
-            numByte -= (insn->IsRvcInsn ? 2 : 4);
-            dataPtr += this->m_MisalignValid ? 2 : (insn->IsRvcInsn ? 2 : 4);
-            Npc     += (insn->IsRvcInsn ? 2 : 4);
-            offset  += (insn->IsRvcInsn ? 2 : 4);
+            numByte -= 4;
+            dataPtr += this->m_MisalignValid ? 2 : 4;
+            Npc     += 4;
+            offset  += 4;
             this->m_MisalignValid = false;
         }   
     }     
@@ -229,9 +228,9 @@ Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect,Redirec
     needRedirect = false;
     ; //包含重定向的Stage，以及重定向的target
     RedirectReq.StageId = InsnState_t::State_Fetch1;
-    RISCV::StaticInsn instruction(insn->CompressedInsn);//对指令进行解码
+    RISCV::StaticInsn instruction(insn->UncompressedInsn);//对指令进行解码
     insn->Pred.Taken        = false;
-    insn->Pred.Target       = insn->Pc + (insn->IsRvcInsn ? 2 : 4);//pred.target内保存的是下一条地址，具体的地址取决于是否跳转
+    insn->Pred.Target       = insn->Pc +  4;//pred.target内保存的是下一条地址，具体的地址取决于是否跳转
     if(instruction.opcode() == 0b1101111){ // JAL//默认跳转
         insn->Pred.Taken    = true;
         insn->Pred.Target   = insn->Pc + instruction.ujimm();
@@ -254,25 +253,27 @@ Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect,Redirec
                 RedirectReq.target = insn->Pred.Target;
             }
         }
-    }else if(instruction(1,0) == 0b01){
-        if(instruction(15,13) == 0b101){ // C.J
-            insn->Pred.Taken    = true;
-            insn->Pred.Target   = insn->Pc + instruction.rvc_j_imm();
-            if(!(Pred.taken_valid == true && Pred.taken == true && Pred.target_valid && Pred.target == (insn->Pc + instruction.rvc_j_imm()))){
-            needRedirect = true;
-            RedirectReq.target = insn->Pred.Target;
-        }
-        }else if(instruction(15,13) == 0b110 || instruction(15,13) == 0b111){ // C.BRANCH
-            if(Pred.taken_valid && Pred.taken){
-            insn->Pred.Taken = true;
-            insn->Pred.Target = insn->Pc + instruction.sbimm();
-            if(!(Pred.target_valid && Pred.target == (insn->Pc + instruction.rvc_b_imm()))){
-                needRedirect = true;
-                RedirectReq.target = insn->Pred.Target;
-            }
-        }
-        }
-    }else{
+    }
+    // else if(instruction(1,0) == 0b01){
+    //     if(instruction(15,13) == 0b101){ // C.J
+    //         insn->Pred.Taken    = true;
+    //         insn->Pred.Target   = insn->Pc + instruction.rvc_j_imm();
+    //         if(!(Pred.taken_valid == true && Pred.taken == true && Pred.target_valid && Pred.target == (insn->Pc + instruction.rvc_j_imm()))){
+    //         needRedirect = true;
+    //         RedirectReq.target = insn->Pred.Target;
+    //     }
+    //     }else if(instruction(15,13) == 0b110 || instruction(15,13) == 0b111){ // C.BRANCH
+    //         if(Pred.taken_valid && Pred.taken){
+    //         insn->Pred.Taken = true;
+    //         insn->Pred.Target = insn->Pc + instruction.sbimm();
+    //         if(!(Pred.target_valid && Pred.target == (insn->Pc + instruction.rvc_b_imm()))){
+    //             needRedirect = true;
+    //             RedirectReq.target = insn->Pred.Target;
+    //         }
+    //     }
+    //     }
+    // }
+    else{
         if(Pred.taken_valid && Pred.target_valid){
             needRedirect = true;
             RedirectReq.target = insn->Pred.Target; 

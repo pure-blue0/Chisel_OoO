@@ -25,7 +25,7 @@ Simulator : {
         AllocWidth     : 2,
         DeallocWidth   : 2,
         ReorderBuffer  : {
-          EntryCount   : 48
+          EntryCount   : 36
         },
         PhysicalRegisterFile : {
           Int : {
@@ -57,11 +57,11 @@ Simulator : {
         WriteBackPort : [
           {
             Latency           : 1,
-            WakeUpSchedualers : [3,4]
+            WakeUpSchedualers : [1,2]
           },
           {
             Latency           : 1,
-            WakeUpSchedualers : [3,4]
+            WakeUpSchedualers : [1,2]
           },
         ],
         FunctionUnitPool : [
@@ -92,10 +92,10 @@ Simulator : {
               EnqueWidth       : 1,
               DequeWidth       : 1,
               IssuePolicy      : In-Order ,
-              WakeUpPolicy     : RfQueue,
+              WakeUpPolicy     : OperandReady,
               RFReadPort       : [0],
-              FunctionUnitPool : [],
-              SubScheduler     : [3]
+              FunctionUnitPool : [1],
+              SubScheduler     : []
             },
             {
               Name             : UnifiedDispatchQueue1,
@@ -103,33 +103,12 @@ Simulator : {
               EnqueWidth       : 1,
               DequeWidth       : 1,
               IssuePolicy      : In-Order ,
-              WakeUpPolicy     : RfQueue,
+              WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
               RFReadPort       : [1],
-              FunctionUnitPool : [],
-              SubScheduler     : [4]
-            },
-            {
-              Name             : UnifiedIssueQueue0,
-              EntryCount       : 4,
-              EnqueWidth       : 1,
-              DequeWidth       : 1,
-              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
-              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
-              RFReadPort       : [],
-              FunctionUnitPool : [1],
-              SubScheduler     : []
-            },
-            {
-              Name             : UnifiedIssueQueue1,
-              EntryCount       : 4,
-              EnqueWidth       : 1,
-              DequeWidth       : 1,
-              IssuePolicy      : In-Age-Order ,      # In-Order, Out-of-Order, In-Age-Order
-              WakeUpPolicy     : ResvrStation,       # None,RfQueue,OperandReady,ResvrStation,Commit
-              RFReadPort       : [],
               FunctionUnitPool : [2,3,4,5,6],
               SubScheduler     : []
             },
+            
         ],
       },
       Stages : {

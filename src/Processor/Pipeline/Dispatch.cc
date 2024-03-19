@@ -43,21 +43,7 @@ Dispatch::Evaluate(){
         if(rcu->m_RobState != rob_state_t::Rob_Idle){
             this->m_StageInPort->stall();
         }else{
-            if(m_MustTakenAllInsn){
-                rcu->TryAllocate(insnPkg,TryAllocSuccessCount[0]);//尝试分配rob和并对整数指令分配整数寄存器
-                lsq->TryAllocate(insnPkg,TryAllocSuccessCount[1]);//尝试对load和store指令分配ldq和stq
-                this->TryDispatch(insnPkg,TryAllocSuccessCount[2]);//尝试对指令分配scheduler
-                if(*std::min_element(TryAllocSuccessCount,TryAllocSuccessCount+3) < insnPkg.size()){
-                    this->m_StageInPort->stall();//如果三种情况里有指令没有分配成功，则停顿流水线
-                }else{
-                    lsq->Allocate(insnPkg,insnPkg.size());
-                    rcu->Allocate(insnPkg,insnPkg.size());
-                    this->DispatchInsn(insnPkg,insnPkg.size());
-                    Ack.takenInsnCount = insnPkg.size();
-                    this->m_StageAckOutPort->set(Ack);
-                }
-            }else{//如果m_MustTakenAllInsn为假，允许分派指令时如果出现了控制流指令，则不继续分派后续的控制流指令
-                 //降低了发送停顿的可能性，但是可能会引入更多的bubble
+            
                 rcu->TryAllocate(insnPkg,TryAllocSuccessCount[0]);
                 lsq->TryAllocate(insnPkg,TryAllocSuccessCount[1]);
                 this->TryDispatch(insnPkg,TryAllocSuccessCount[2],true);
@@ -67,13 +53,13 @@ Dispatch::Evaluate(){
                 this->DispatchInsn(insnPkg,Ack.takenInsnCount);
 
                 this->m_StageAckOutPort->set(Ack);
-            }
+            
             #ifdef TRACE_ON
             std::stringstream insnInfo;
             if(Ack.takenInsnCount){
                 for(size_t i = 0; i < Ack.takenInsnCount; i++){
                     auto t = this->m_StageInPort->data[i];
-                    insnInfo << fmt::format("\n\tInsn_{:02} -> Pc({:#x}) , Insn({:#>08x})",i, t->Pc, t->CompressedInsn);
+                    insnInfo << fmt::format("\n\tInsn_{:02} -> Pc({:#x}) , Insn({:#>08x})",i, t->Pc, t->UncompressedInsn);
                 }
                 DPRINTF(SendReq,insnInfo.str());
             }

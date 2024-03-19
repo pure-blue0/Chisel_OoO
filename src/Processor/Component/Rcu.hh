@@ -21,7 +21,7 @@ struct Rob_entry_t
     bool                     isMisPred;
     bool                     isExcp;
     
-    bool                     isRvc;
+    //bool                     isRvc;
     Addr_t                   pc;
 
     funcType_t               Fu;

@@ -11,18 +11,18 @@ namespace RISCV
 
 void Decode_Func(Emulator::DynInsn& insn, Priv_level_t priv_level){
     
-    if(insn.IsRvcInsn){//如果是压缩指令，则通过该函数将压缩指令转换为非压缩指令的格式，后面同一进行解码
-        insn.UncompressedInsn = crv_decompress_real(insn.CompressedInsn);
-        if(insn.UncompressedInsn == 0){
-            insn.Excp.valid = true;
-            insn.Excp.Cause = RISCV::ILLEGAL_INSTR;
-            insn.Excp.Tval  = insn.CompressedInsn;
-            return;
-        } 
-    }else{
-        insn.UncompressedInsn = insn.CompressedInsn;
-    }
-
+    // if(insn.IsRvcInsn){//如果是压缩指令，则通过该函数将压缩指令转换为非压缩指令的格式，后面同一进行解码
+    //     insn.UncompressedInsn = crv_decompress_real(insn.CompressedInsn);
+    //     if(insn.UncompressedInsn == 0){
+    //         insn.Excp.valid = true;
+    //         insn.Excp.Cause = RISCV::ILLEGAL_INSTR;
+    //         insn.Excp.Tval  = insn.CompressedInsn;
+    //         return;
+    //     } 
+    // }else{
+    //     insn.UncompressedInsn = insn.CompressedInsn;
+    // }
+    
     StaticInsn instr(insn.UncompressedInsn);
 
     insn.IsaRs1  = instr.rs1();
@@ -250,7 +250,7 @@ void Decode_Func(Emulator::DynInsn& insn, Priv_level_t priv_level){
         insn.Fu = Emulator::funcType_t::ALU;
         insn.SubOp = ALU_ADD;
         insn.Operand1 = insn.Pc;
-        insn.Operand2 = insn.IsRvcInsn ? 2 : 4;
+        insn.Operand2 = 4;
         insn.Operand1Ready = true;
         insn.Operand2Ready = true;//转目标地址的计算不涉及任何寄存器的值，所以在解码阶段就可以直接确定这个值
         insn.RdType   = Emulator::RegType_t::INT;
@@ -573,7 +573,7 @@ void Decode_Func(Emulator::DynInsn& insn, Priv_level_t priv_level){
     if(illegal_instr){
         insn.Excp.valid = true;
         insn.Excp.Cause = RISCV::ILLEGAL_INSTR;
-        insn.Excp.Tval  = insn.CompressedInsn;
+        insn.Excp.Tval  = insn.UncompressedInsn;
     }
 }
 

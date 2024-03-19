@@ -25,7 +25,7 @@ public:
 
     void Compute(InsnPtr_t& insn){
         bool taken;
-        insn->RdResult = (uint64_t)insn->Pc + (insn->IsRvcInsn ? 2 : 4);
+        insn->RdResult = (uint64_t)insn->Pc +  4;
         switch (insn->SubOp)
         {
         case BRU_JAR  :
@@ -58,7 +58,7 @@ public:
         if(insn->SubOp == BRU_JALR){
             insn->BruTarget = (int64_t)insn->Operand1 + (int64_t)insn->imm;
         }else{
-            insn->BruTarget = (uint64_t)insn->Pc + (taken ? (int64_t)insn->imm : insn->IsRvcInsn ? 2 : 4);
+            insn->BruTarget = (uint64_t)insn->Pc + (taken ? (int64_t)insn->imm :  4);
         }
 
         insn->BruMisPred = (taken != insn->Pred.Taken) || (insn->BruTarget != insn->Pred.Target);

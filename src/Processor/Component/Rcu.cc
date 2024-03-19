@@ -73,7 +73,7 @@ Rcu::CreateRobEntry(InsnPtr_t& insn){
         newEntry.isMisPred          = false;
         newEntry.isExcp             = insn->Excp.valid;
         
-        newEntry.isRvc              = insn->IsRvcInsn;
+        //newEntry.isRvc              = insn->IsRvcInsn;
         newEntry.pc                 = insn->Pc;
 
         newEntry.Fu                 = insn->Fu;

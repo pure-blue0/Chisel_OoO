@@ -58,7 +58,7 @@ Fetch2::ReceiveReq(){
             std::stringstream insnInfo;
             for(size_t i = 0; i < insnPkg.size(); i++){
                 if(auto t = insnPkg[i]){
-                    insnInfo << fmt::format("\n\tInsn_{:02} -> Pc({:#x}) , Insn({:#>08x})",i, t->Pc, t->CompressedInsn);
+                    insnInfo << fmt::format("\n\tInsn_{:02} -> Pc({:#x}) , Insn({:#>08x})",i, t->Pc, t->UncompressedInsn);
                 }else{
                     break;
                 }
