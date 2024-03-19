@@ -9,7 +9,6 @@ namespace Emulator
 {
 
 struct TransId_t{
-    ThreadId HartId;
     uint16_t TransId;    
 };
 

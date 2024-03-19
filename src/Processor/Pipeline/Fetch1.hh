@@ -101,7 +101,7 @@ public:
 
     void Predecode(InflighQueueEntry_t& frontEntry ,InsnPkg_t& insnPkg);
 
-    void BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect);
+    void BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect, Redirect_t& RedirectReq);
 
     void Predict(Addr_t& Pc, std::vector<Pred_t>& insnPred);
 

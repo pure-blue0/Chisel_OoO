@@ -134,10 +134,9 @@ Lsq::TryIssueLoad(MemReq_t& memReq,bool& Success){
                     Success = true;
                     ldqEntry.state = loadState_t::load_Inflight;
                     memReq.Opcode  = MemOp_t::Load;
-                    memReq.Id.HartId = this->m_Processor->getThreadId();
                     memReq.Id.TransId = ldqPtr;
                     memReq.Address = ldqEntry.address & ~(this->m_dCacheAlignByte - 1);
-                    memReq.Length  = this->m_Processor->m_XLEN / 8;
+                    memReq.Length  = this->m_Processor->m_XLEN / 2;
                     DPRINTF(LoadReq,"RobPtr[{}],Pc[{:#x}] -> Send Load Request : Address[{:#x}]",
                         ldqEntry.insnPtr->RobTag,
                         ldqEntry.insnPtr->Pc,
@@ -164,13 +163,12 @@ Lsq::TryIssueStore(MemReq_t& memReq,bool& Success){
                     Success             = true;
                     stqEntry.state      = storeState_t::store_Inflight;
                     memReq.Opcode       = MemOp_t::Store;
-                    memReq.Id.HartId    = this->m_Processor->getThreadId();
                     memReq.Id.TransId   = stqPtr;
                     for(size_t it = offset ; it < 8; it++){
                         memReq.Data[it] = (stqEntry.data >> ((it-offset)<<3)) & 0xff;
                     }
                     memReq.Address      = stqEntry.address & ~(this->m_dCacheAlignByte - 1);
-                    memReq.Length       = this->m_Processor->m_XLEN / 8;
+                    memReq.Length       = this->m_Processor->m_XLEN / 2;
                     switch (stqEntry.op)
                     {
                     case STU_SB:

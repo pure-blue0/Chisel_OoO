@@ -28,7 +28,7 @@ Fetch1::Evaluate(){
     
     bool SendSuccess;
     if(this->m_PcRegister.OutPort->valid){
-        this->SendFetchReq(SendSuccess);//处理pcregister的输出端口数据，并将其放入m_InflightQueue
+        this->SendFetchReq(SendSuccess);//处理pcregister的输出端口数据，并将其放入m_InflightQueue《后续直接放到Fetch1中实现》
         this->Predict(this->m_PcRegister.InPort->data,this->m_PredSync);//处理pcregister的输入端口数据，默认不跳转
     }
     this->GenNextFetchAddress(SendSuccess);
@@ -102,8 +102,7 @@ Fetch1::SendFetchReq(bool& SendSuccess){
     {
         NewEntry.Address    = this->m_PcRegister.OutPort->data;
         NewEntry.Killed     = false;
-        NewEntry.InsnPred   = this->m_PredSync;
-        fetchReq.Id.HartId  = this->m_Processor->getThreadId();
+        //NewEntry.InsnPred   = this->m_PredSync;
         fetchReq.Id.TransId = this->m_InflightQueue.Allocate();// 获取尾指针
         if((this->m_PcRegister.OutPort->data & 0b1) == 0 ){//0b1:二进制的1，只是看最低位是否为0，如果不是则触发异常
             NewEntry.Busy       = true;//表示当前数据未经过receivereq处理
@@ -175,17 +174,18 @@ Fetch1::ReceiveReq(MemResp_t mem_resp){
 void 
 Fetch1::Predecode(InflighQueueEntry_t& frontEntry ,InsnPkg_t& insnPkg){
     bool needRedirect;
+    Redirect_t RedirectReq;
     //最旧的那条异常指令也会进入预解码，不会被kill
     DASSERT(!frontEntry.Killed,"Killed But send to Next Stage!");
-    if(frontEntry.Excp.valid){
+    if(frontEntry.Excp.valid){//在这里只有前面出现INSTR_ADDR_MISALIGNED才会导致这种可能
         auto insn = this->m_Processor->CreateInsn();
-        insn->Pc   = frontEntry.Address;
+        insn->Pc   = frontEntry.Address;//就只发送一条异常的地址
         insn->Excp = frontEntry.Excp;
         this->m_State = State_t::WaitForResume;
         insnPkg.emplace_back(insn);
     }else{
         uint64_t offset  = frontEntry.Address & (this->m_iCacheAlignByte-1); //看当前的地址是否对齐，也就是低五位是否为0
-        DASSERT(!(offset && this->m_MisalignValid),"Shift Cacheline when MisAlign valid!");//避免出现上一次的地址发生截断，还不连续的情况
+       // DASSERT(!(offset && this->m_MisalignValid),"Shift Cacheline when MisAlign valid!");//避免出现上一次的地址发生截断，还不连续的情况
         //如果当前数据的地址并不是对其的，比如0x80000010，偏移了16位，那么头指针也需要偏移16位，然后再开始取指令
         char* dataPtr = frontEntry.InsnByte.data() + offset;
         uint64_t numByte = m_FetchByteWidth - 
@@ -208,8 +208,11 @@ Fetch1::Predecode(InflighQueueEntry_t& frontEntry ,InsnPkg_t& insnPkg){
             insn->CompressedInsn    = this->m_MisalignValid ? ((*(uint16_t*)dataPtr << 16) + this->m_MisalignHalf) : 
                                       (insn->IsRvcInsn       ? (*(uint16_t*)dataPtr) : (*(uint32_t*)dataPtr));
             insnPkg.emplace_back(insn);
-            this->BranchRedirect(insn,frontEntry.InsnPred[(offset >> 1)],needRedirect);
+            this->BranchRedirect(insn,frontEntry.InsnPred[(offset >> 1)],needRedirect,RedirectReq);
             if(needRedirect){//如果需要重定向，那么后面的数据也就没必要放进来了
+                DPRINTF(Redirect,"Pc[{:#x}] -> Predict Mismatch, Redirect to {:#x}",insn->Pc,RedirectReq.target);
+                this->m_FlushSyncLatch.InPort->set(true);
+                this->m_RedirectPort->set(RedirectReq);
                 break;
             }
             numByte -= (insn->IsRvcInsn ? 2 : 4);
@@ -222,14 +225,14 @@ Fetch1::Predecode(InflighQueueEntry_t& frontEntry ,InsnPkg_t& insnPkg){
 }
 
 void
-Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect){
+Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect,Redirect_t& RedirectReq){
     needRedirect = false;
-    Redirect_t RedirectReq; //包含重定向的Stage，以及重定向的target
+    ; //包含重定向的Stage，以及重定向的target
     RedirectReq.StageId = InsnState_t::State_Fetch1;
     RISCV::StaticInsn instruction(insn->CompressedInsn);//对指令进行解码
     insn->Pred.Taken        = false;
     insn->Pred.Target       = insn->Pc + (insn->IsRvcInsn ? 2 : 4);//pred.target内保存的是下一条地址，具体的地址取决于是否跳转
-    if(instruction.opcode() == 0b1101111){ // JAL
+    if(instruction.opcode() == 0b1101111){ // JAL//默认跳转
         insn->Pred.Taken    = true;
         insn->Pred.Target   = insn->Pc + instruction.ujimm();
         if(!(Pred.taken_valid == true && Pred.taken == true && Pred.target_valid && Pred.target == (insn->Pc + instruction.ujimm()))){
@@ -237,12 +240,12 @@ Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect){
             needRedirect = true;
             RedirectReq.target = insn->Pred.Target;
         }
-    }else if(instruction.opcode() == 0b1100111 && instruction.func3() == 0b000){ // JALR
+    }else if(instruction.opcode() == 0b1100111 && instruction.func3() == 0b000){ // JALR//默认不跳转
         if(Pred.taken_valid && Pred.target_valid){
             insn->Pred.Taken  = Pred.taken;
             insn->Pred.Target = Pred.target;
         }
-    }else if(instruction.opcode() == 0b1100011){ // BRANCH
+    }else if(instruction.opcode() == 0b1100011){ // BRANCH//默认不跳转
         if(Pred.taken_valid && Pred.taken){
             insn->Pred.Taken = true;
             insn->Pred.Target = insn->Pc + instruction.sbimm();
@@ -275,11 +278,7 @@ Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect){
             RedirectReq.target = insn->Pred.Target; 
         }
     }
-    if(needRedirect){
-        DPRINTF(Redirect,"Pc[{:#x}] -> Predict Mismatch, Redirect to {:#x}",insn->Pc,RedirectReq.target);
-        this->m_FlushSyncLatch.InPort->set(true);
-        this->m_RedirectPort->set(RedirectReq);
-    }
+
 }
 
 void
