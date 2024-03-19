@@ -49,40 +49,39 @@ void
 Decode::ReceiveReq(){
     if(this->m_StageInPort->valid){
         DASSERT((this->m_DecodeQueue.getSize() >= this->m_FromLastStageInsnCount), "Can Never Taken All Insn");
-        if(!this->m_MustTakenAllInsn || (this->m_DecodeQueue.getAvailEntryCount() >= this->m_FromLastStageInsnCount)){
-            StageAck_t ack;
-            ack.takenInsnCount = 0;
+        if(this->m_DecodeQueue.getAvailEntryCount() >= this->m_FromLastStageInsnCount){
             for(auto insn : this->m_StageInPort->data){
-                if(!this->m_DecodeQueue.full()){
-                    insn->State = InsnState_t::State_Decode;
-                    if(!insn->Excp.valid){
-                        this->DecodeInsn(insn);
-                        if(this->m_Processor->m_doSpeculation && insn->Fu == funcType_t::BRU){
-                            //如果采用了分支推测，且当前指令是BR,那么将控制流指令的标志由true（在译码时被设置了）改为false
-                            //从而告诉处理器这并不是控制流处理器，不用等待分支预测的结果
-                            insn->ControlFlowInsn = false;
-                        }
+                insn->State = InsnState_t::State_Decode;
+                if(!insn->Excp.valid){
+                    this->DecodeInsn(insn);
+                    if(this->m_Processor->m_doSpeculation && insn->Fu == funcType_t::BRU){
+                        //如果采用了分支推测，且当前指令是BR,那么将控制流指令的标志由true（在译码时被设置了）改为false
+                        //从而告诉处理器这并不是控制流处理器，不用等待分支预测的结果
+                        insn->ControlFlowInsn = false;
                     }
-                    this->m_DecodeQueue.Push(insn);
-                    ack.takenInsnCount++;
-                }else{
-                    break;//译码队列满时触发，这里不需要进行重定向，因为相当于没取出数据，等下个周期再从fetch2的缓存队列里发就行了。
                 }
+                this->m_DecodeQueue.Push(insn);
+                
             }
-            this->m_StageAckOutPort->set(ack);//告诉fetch2 decode了多少指令
 
             #ifdef TRACE_ON
             std::stringstream insnInfo;
-            if(ack.takenInsnCount){
-                for(size_t i = 0; i < ack.takenInsnCount; i++){
-                    auto t = this->m_StageInPort->data[i];
-                    insnInfo << fmt::format("\n\tInsn_{:02} -> Pc({:#x}) , Insn({:#>08x})",i, t->Pc, t->CompressedInsn);
-                }
-                DPRINTF(ReceiveReq,insnInfo.str());
-            }
+            // if(ack.takenInsnCount){
+            //     for(size_t i = 0; i < ack.takenInsnCount; i++){
+            //         auto t = this->m_StageInPort->data[i];
+            //         insnInfo << fmt::format("\n\tInsn_{:02} -> Pc({:#x}) , Insn({:#>08x})",i, t->Pc, t->CompressedInsn);
+            //     }
+            //     DPRINTF(ReceiveReq,insnInfo.str());
+            // }
             #endif
         }else{
-            this->m_StageInPort->stall();
+            
+            Redirect_t replayReq;
+            replayReq.target = this->m_StageInPort->data.front()->Pc;
+            replayReq.StageId = InsnState_t::State_Decode;
+            this->m_Processor->FlushBackWard(InsnState_t::State_Decode);
+            this->m_RedirectPort->set(replayReq);
+            DPRINTF(Replay,"InsnBuffer Full, Replay Fetch {:#x}",replayReq.target);
         }
     }
 }

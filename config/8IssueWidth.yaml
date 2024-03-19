@@ -135,8 +135,8 @@ Simulator : {
       Stages : {
         Fetch1 : {
           Latency   : 1,
-          NextStage : Fetch2,
-          MaxProcessInsnCount : 4,
+          NextStage : Decode,
+          MaxProcessInsnCount : 2,
           MustTakenAllInsn    : true,
           RedirectLatency     : 1,
           StageInfo : {
@@ -147,24 +147,14 @@ Simulator : {
             BPU               : []
           }
         },
-        Fetch2 : {
-          Latency   : 1,
-          NextStage : Decode,
-          MaxProcessInsnCount : 4,
-          MustTakenAllInsn    : true,
-          RedirectLatency     : 1,
-          StageInfo : {
-            InstrBufferSize : 16
-          }
-        },
         Decode : {
           Latency   : 1,
           NextStage : Dispatch,
-          MaxProcessInsnCount : 2,
+          MaxProcessInsnCount : 4,
           MustTakenAllInsn    : true,
           RedirectLatency     : -1,
           StageInfo : {
-            DecodeQueueSize : 16
+            DecodeQueueSize : 120
           }
         },
         Dispatch : {
