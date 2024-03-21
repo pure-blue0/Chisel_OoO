@@ -70,13 +70,7 @@ Decode::ReceiveReq(){
             // }
             #endif
         }else{
-            
-            Redirect_t replayReq;
-            replayReq.target = this->m_StageInPort->data.front()->Pc;
-            replayReq.StageId = InsnState_t::State_Decode;
             this->m_Processor->FlushBackWard(InsnState_t::State_Decode);//冲刷flash
-            this->m_RedirectPort->set(replayReq);
-            DPRINTF(Replay,"InsnBuffer Full, Replay Fetch {:#x}",replayReq.target);
         }
     }
 }

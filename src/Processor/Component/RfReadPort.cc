@@ -62,8 +62,6 @@ RfReadPort::Evaluate(){
 
         if(t.isToFu){
             this->m_Processor->m_FuncUnitVec[t.desIndex]->Issue(insn);
-        }else{
-            this->m_Processor->m_SchedularVec[t.desIndex]->Schedule(insn,t.entryIndex);
         }
     }
 }

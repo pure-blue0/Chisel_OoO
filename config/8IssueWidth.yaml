@@ -25,11 +25,11 @@ Simulator : {
         AllocWidth     : 2,
         DeallocWidth   : 2,
         ReorderBuffer  : {
-          EntryCount   : 36
+          EntryCount   : 12
         },
         PhysicalRegisterFile : {
           Int : {
-            RegCount    : 48
+            RegCount    : 40
           },
         },
         RecoveryPolicy  : {

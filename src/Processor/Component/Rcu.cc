@@ -49,9 +49,9 @@ Rcu::Reset(){
 void 
 Rcu::Rename(InsnPkg_t& insnPkg){
     for(auto& insn : insnPkg){
-        insn->PhyRs1 = this->m_RenameRegister ? this->m_IntRenameTable[insn->IsaRs1] : insn->IsaRs1;
-        insn->PhyRs2 = this->m_RenameRegister ? this->m_IntRenameTable[insn->IsaRs2] : insn->IsaRs2;
-        insn->LPhyRd = this->m_RenameRegister ? this->m_IntRenameTable[insn->IsaRd]  : insn->IsaRd;
+        insn->PhyRs1 = this->m_IntRenameTable[insn->IsaRs1];
+        insn->PhyRs2 = this->m_IntRenameTable[insn->IsaRs2];
+        insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
     }
 }
 
@@ -121,7 +121,7 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
     for(size_t i = 0; i < allocCount; i++){
         InsnPtr_t insn = insnPkg[i];
         if(insn){
-            if(this->m_RenameRegister && insn->RdType == RegType_t::INT && insn->IsaRd != 0){
+            if(insn->RdType == RegType_t::INT && insn->IsaRd != 0){
                 insn->PhyRd = this->m_IntFreelist.pop();//取出空闲的reg id
                 this->m_IntBusylist[insn->PhyRd].allocated = true;//根据reg id 将busylist中对应的entry进行更新
                 this->m_IntBusylist[insn->PhyRd].done      = false;
@@ -152,7 +152,7 @@ Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
             }else{
                 break;
             }
-            if(this->m_RenameRegister && insn->RdType == RegType_t::INT && insn->IsaRd != 0){
+            if(insn->RdType == RegType_t::INT && insn->IsaRd != 0){
                 if((this->m_IntFreelist.getAvailEntryCount() > allocRegCount)){
                     allocRegCount++;
                 }else{
@@ -326,17 +326,15 @@ Rcu::ReleaseResource(uint16_t robTag){
         this->m_IntFreelist.push(entry.phyRd);
         this->m_IntBusylist[entry.phyRd].forwarding = false;
         this->m_IntBusylist[entry.phyRd].done       = false;
-        if(this->m_RenameRegister){
-            this->m_IntBusylist[entry.phyRd].allocated  = false;
-            this->m_IntRenameTable[entry.isaRd] = entry.LphyRd;//确保在回滚后，逻辑寄存器再次与正确的物理寄存器对应
-            DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}], Free phyRegister : Rd[{}], PRd[{}], LPRd[{}]",
-                robTag,
-                entry.pc,
-                entry.isaRd,
-                entry.phyRd,
-                entry.LphyRd
-            );
-        }
+        this->m_IntBusylist[entry.phyRd].allocated  = false;
+        this->m_IntRenameTable[entry.isaRd] = entry.LphyRd;//确保在回滚后，逻辑寄存器再次与正确的物理寄存器对应
+        DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}], Free phyRegister : Rd[{}], PRd[{}], LPRd[{}]",
+            robTag,
+            entry.pc,
+            entry.isaRd,
+            entry.phyRd,
+            entry.LphyRd
+        );
     }
     if(entry.Fu == funcType_t::LDU){
         this->m_Processor->getLsqPtr()->KillLoadEntry(entry.LSQtag);
@@ -393,12 +391,11 @@ Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect)
             if(!robEntry.isExcp){
                 if(robEntry.RdType == RegType_t::INT && robEntry.LphyRd != 0){
                     this->m_Processor->m_ExecContext->WriteIntReg(robEntry.isaRd,this->m_IntRegfile[robEntry.phyRd]);
-                    if(this->m_RenameRegister){
-                        this->m_IntFreelist.push(robEntry.LphyRd);
-                        this->m_IntBusylist[robEntry.LphyRd].done = false;
-                        this->m_IntBusylist[robEntry.LphyRd].allocated = false;
-                        DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Deallocate Last PRd[{}]",robPtr,robEntry.pc,robEntry.LphyRd);
-                    }
+                    this->m_IntFreelist.push(robEntry.LphyRd);
+                    this->m_IntBusylist[robEntry.LphyRd].done = false;
+                    this->m_IntBusylist[robEntry.LphyRd].allocated = false;
+                    DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Deallocate Last PRd[{}]",robPtr,robEntry.pc,robEntry.LphyRd);
+                    
                 }
                 if(robEntry.Fu == funcType_t::LDU){
                     DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Commit a Load LSQTag[{}]", 
