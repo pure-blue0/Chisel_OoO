@@ -150,16 +150,8 @@ Fetch1::ReceiveReq(MemResp_t mem_resp){
     InflighQueueEntry_t& entry = this->m_InflightQueue[mem_resp.Id.TransId];//储存当前条目的指针，尾指针-1
     entry.Busy = false;
     entry.Excp = mem_resp.Excp;
-    if(!entry.Excp.valid){//无异常，就把读到的数据复制到当前条目的data中
-        memcpy(entry.InsnByte.data(),mem_resp.Data,this->m_FetchByteWidth);
-    }else{
-        if(this->m_State == State_t::Idle || (this->m_State == State_t::HandleExcp && 
-           this->m_InflightQueue.isOlder(mem_resp.Id.TransId,this->m_ExcpTag)))
-        {
-            this->m_ExcpTag = mem_resp.Id.TransId;//更新异常所在的条目指针
-            this->KillNewer(this->m_ExcpTag);//把更新的异常都kill掉
-        }
-    }
+    memcpy(entry.InsnByte.data(),mem_resp.Data,this->m_FetchByteWidth);
+
 #ifdef TRACE_ON
     std::stringstream insnByte;
     for(size_t i = 0; !mem_resp.Excp.valid && i < this->m_FetchByteWidth; i++){
@@ -189,23 +181,17 @@ Fetch1::Predecode(InflighQueueEntry_t& frontEntry ,InsnPkg_t& insnPkg){
         //如果当前数据的地址并不是对其的，比如0x80000010，偏移了16位，那么头指针也需要偏移16位，然后再开始取指令
         char* dataPtr = frontEntry.InsnByte.data() + offset;
         uint64_t numByte = m_FetchByteWidth - 
-                (frontEntry.Address & (this->m_iCacheAlignByte-1)) + 
-                (this->m_MisalignValid ? 2 : 0);//32-偏移的16位，然后如果上一次最后的指令发送了截断，那就多处理两bit
+                (frontEntry.Address & (this->m_iCacheAlignByte-1))  ;//32-偏移的16位，然后如果上一次最后的指令发送了截断，那就多处理两bit
                                                 //因为如果发送misalign，那么一行指令的一半在上一行的末尾，另一半在这一行的开头
-        uint64_t Npc  = frontEntry.Address - (this->m_MisalignValid ? 2 : 0);//偏移到上一行的倒数第二个字节
+        uint64_t Npc  = frontEntry.Address ;//偏移到上一行的倒数第二个字节
 
         while(numByte){
-            if(numByte == 2 && ((*dataPtr & 0b11) == 0b11)){//只剩两个byte，且是不是压缩指令，说明地址发生了截断
-                this->m_MisalignValid = true;
-                this->m_MisalignHalf  = *(uint16_t*)dataPtr;//保存剩下的半截数据
-                break;
-            }
             InsnPtr_t insn          = this->m_Processor->CreateInsn();//调用processor的函数是因为这里只是填加了insn的pc，后面其他stage还要添加信息
             insn->Pc                = Npc;
             insn->Excp              = frontEntry.Excp;
             //判断是否是压缩指令，如果上一次发生截断，这一次的头两个数据只能是剩下的那两byte高位地址数据，那么就把当前数据左移16位，和上一次的拼起来
            // insn->IsRvcInsn         = false;
-            insn->UncompressedInsn    = this->m_MisalignValid ? ((*(uint16_t*)dataPtr << 16) + this->m_MisalignHalf) :  (*(uint32_t*)dataPtr);
+            insn->UncompressedInsn    = *(uint32_t*)dataPtr;
             insnPkg.emplace_back(insn);
             this->BranchRedirect(insn,frontEntry.InsnPred[(offset >> 1)],needRedirect,RedirectReq);
             if(needRedirect){//如果需要重定向，那么后面的数据也就没必要放进来了
@@ -215,10 +201,9 @@ Fetch1::Predecode(InflighQueueEntry_t& frontEntry ,InsnPkg_t& insnPkg){
                 break;
             }
             numByte -= 4;
-            dataPtr += this->m_MisalignValid ? 2 : 4;
+            dataPtr += 4;
             Npc     += 4;
             offset  += 4;
-            this->m_MisalignValid = false;
         }   
     }     
 }
@@ -226,7 +211,6 @@ Fetch1::Predecode(InflighQueueEntry_t& frontEntry ,InsnPkg_t& insnPkg){
 void
 Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect,Redirect_t& RedirectReq){
     needRedirect = false;
-    ; //包含重定向的Stage，以及重定向的target
     RedirectReq.StageId = InsnState_t::State_Fetch1;
     RISCV::StaticInsn instruction(insn->UncompressedInsn);//对指令进行解码
     insn->Pred.Taken        = false;
@@ -254,25 +238,6 @@ Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect,Redirec
             }
         }
     }
-    // else if(instruction(1,0) == 0b01){
-    //     if(instruction(15,13) == 0b101){ // C.J
-    //         insn->Pred.Taken    = true;
-    //         insn->Pred.Target   = insn->Pc + instruction.rvc_j_imm();
-    //         if(!(Pred.taken_valid == true && Pred.taken == true && Pred.target_valid && Pred.target == (insn->Pc + instruction.rvc_j_imm()))){
-    //         needRedirect = true;
-    //         RedirectReq.target = insn->Pred.Target;
-    //     }
-    //     }else if(instruction(15,13) == 0b110 || instruction(15,13) == 0b111){ // C.BRANCH
-    //         if(Pred.taken_valid && Pred.taken){
-    //         insn->Pred.Taken = true;
-    //         insn->Pred.Target = insn->Pc + instruction.sbimm();
-    //         if(!(Pred.target_valid && Pred.target == (insn->Pc + instruction.rvc_b_imm()))){
-    //             needRedirect = true;
-    //             RedirectReq.target = insn->Pred.Target;
-    //         }
-    //     }
-    //     }
-    // }
     else{
         if(Pred.taken_valid && Pred.target_valid){
             needRedirect = true;

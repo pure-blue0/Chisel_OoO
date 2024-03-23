@@ -11,18 +11,6 @@ namespace RISCV
 
 void Decode_Func(Emulator::DynInsn& insn, Priv_level_t priv_level){
     
-    // if(insn.IsRvcInsn){//如果是压缩指令，则通过该函数将压缩指令转换为非压缩指令的格式，后面同一进行解码
-    //     insn.UncompressedInsn = crv_decompress_real(insn.CompressedInsn);
-    //     if(insn.UncompressedInsn == 0){
-    //         insn.Excp.valid = true;
-    //         insn.Excp.Cause = RISCV::ILLEGAL_INSTR;
-    //         insn.Excp.Tval  = insn.CompressedInsn;
-    //         return;
-    //     } 
-    // }else{
-    //     insn.UncompressedInsn = insn.CompressedInsn;
-    // }
-    
     StaticInsn instr(insn.UncompressedInsn);
 
     insn.IsaRs1  = instr.rs1();

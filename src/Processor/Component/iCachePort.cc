@@ -19,16 +19,16 @@ iCachePort::ReceiveFetchReq(MemReq_t mem_req,std::function<void(MemResp_t)> Call
     resp.Opcode     = mem_req.Opcode;
     resp.Length     = mem_req.Length;
     resp.Data       = NULL;
-    if(this->m_baseDRAM->checkRange(mem_req.Address)){
+    // if(this->m_baseDRAM->checkRange(mem_req.Address)){
         resp.Excp.valid = false;
         resp.Excp.Cause = 0;
         resp.Excp.Tval  = 0;
         this->m_baseDRAM->read(mem_req.Address,&resp.Data,mem_req.Length);
-    }else{
-        resp.Excp.valid = true;
-        resp.Excp.Cause = RISCV::INSTR_ACCESS_FAULT;
-        resp.Excp.Tval  = mem_req.Address;
-    }
+    // }else{
+    //     resp.Excp.valid = true;
+    //     resp.Excp.Cause = RISCV::INSTR_ACCESS_FAULT;
+    //     resp.Excp.Tval  = mem_req.Address;
+    // }
     //从内存响应的数据会输入到icache的输入端口（虽然这里并没有具体的icache），等到下一拍开始时会通过outport口处理这些数据
     this->m_iCacheRespLatch.InPort->set({CallBackFunc,resp});
     DPRINTF(ICacheReq,"address {:#x}",mem_req.Address);

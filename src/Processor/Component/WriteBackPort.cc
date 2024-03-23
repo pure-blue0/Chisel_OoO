@@ -85,8 +85,6 @@ CreateWriteBackPort(Processor* processor, const uint16_t WbPortid , const uint64
     return std::make_shared<WriteBackPort>(processor,WbPortid,Latency);
 }
 
-
-    
 } // namespace Emulator
 
 

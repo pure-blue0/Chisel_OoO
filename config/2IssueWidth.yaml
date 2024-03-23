@@ -133,7 +133,7 @@ Simulator : {
           MustTakenAllInsn    : true,
           RedirectLatency     : -1,
           StageInfo : {
-            DecodeQueueSize : 120
+            DecodeQueueSize : 60
           }
         },
         Dispatch : {
