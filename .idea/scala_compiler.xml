@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ScalaCompilerConfiguration">
+    <profile name="sbt 1" modules="Chisel_OoO">
+      <plugins>
+        <plugin path="$USER_HOME$/.cache/coursier/v1/https/repo1.maven.org/maven2/edu/berkeley/cs/chisel3-plugin_2.12.17/3.5.5/chisel3-plugin_2.12.17-3.5.5.jar" />
+      </plugins>
+    </profile>
+  </component>
+</project>
