@@ -26,10 +26,13 @@ Fetch1::Evaluate(){
     this->m_iCachePort.Evaluate();//输出icache中缓存的数据（通过调用fetch1的receivereq函数，参数是上一拍从内存中获取到的mem数据）
     this->SendReq();
     
+    
     bool SendSuccess;
-    if(this->m_PcRegister.OutPort->valid){
+    
+    
+    if(this->m_PcRegister.OutPort->valid ){
         this->SendFetchReq(SendSuccess);//处理pcregister的输出端口数据，并将其放入m_InflightQueue《后续直接放到Fetch1中实现》
-        this->Predict(this->m_PcRegister.InPort->data,this->m_PredSync);//处理pcregister的输入端口数据，默认不跳转
+        //this->Predict(this->m_PcRegister.InPort->data,this->m_PredSync);//处理pcregister的输入端口数据，默认不跳转
     }
     this->GenNextFetchAddress(SendSuccess);
 }
@@ -42,6 +45,7 @@ Fetch1::Advance(){
     if(this->m_FlushSyncLatch.OutPort->valid){
         this->FlushAction();
         DPRINTF(Flush,"Flush Stage");
+        
     }
 }
 
@@ -62,7 +66,8 @@ void
 Fetch1::InitBootPc(Addr_t boot_address){
     this->m_PcRegister.InPort->set(boot_address);
 }
-
+//Function：
+//生成下一个字节的取指地址，优先级为 backend redirect > predicted PC > PC + 4，其中越后端的stage发出的重定向请求，优先级越高。
 void
 Fetch1::GenNextFetchAddress(bool& SendSuccess){
     InsnState_t redirectTag = InsnState_t::State_Fetch1;
@@ -71,6 +76,7 @@ Fetch1::GenNextFetchAddress(bool& SendSuccess){
     }
     if(SendSuccess){
         this->m_PcRegister.InPort->set((this->m_PcRegister.OutPort->data & ~(this->m_iCacheAlignByte - 1)) + this->m_FetchByteWidth);
+        ////保证每次的取指请求都是对齐的。Ps（帮助理解）：这行代码可以理解为一个寄存器，相当于向PcRegister的输入放入了一个数据，下一个周期这个数据会到PcRegister的输出上
     }
     for(auto RedirectPort : this->m_RedirectPortVec){
         //如果某个重定向端口的数据有效且所在阶段大于或等于 Fetch1，则表示有更高优先级的重定向请求,越往后优先级越高
@@ -81,15 +87,7 @@ Fetch1::GenNextFetchAddress(bool& SendSuccess){
     }
 }
 
-void 
-Fetch1::Predict(Addr_t& Pc,std::vector<Pred_t>& insnPred){
-    for(auto& pred : insnPred){
-        pred.taken_valid  = false;//说明预测是否有效
-        pred.taken        = false;//预测结果
-        pred.target       = 0;//预测地址
-        pred.target_valid = false;//预测地址是否有效
-    }
-}
+
 
 void
 Fetch1::SendFetchReq(bool& SendSuccess){
@@ -101,6 +99,7 @@ Fetch1::SendFetchReq(bool& SendSuccess){
         !this->m_StageOutPort->isStalled() )//不满，空闲，不堵塞
     {
         NewEntry.Address    = this->m_PcRegister.OutPort->data;
+        //DPRINTF(Redirect,"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh[{:#x}]",NewEntry.Address );
         NewEntry.Killed     = false;
         //NewEntry.InsnPred   = this->m_PredSync;
         fetchReq.Id.TransId = this->m_InflightQueue.Allocate();// 获取尾指针
@@ -163,53 +162,14 @@ Fetch1::ReceiveReq(MemResp_t mem_resp){
 
 }
 
-void 
-Fetch1::Predecode(InflighQueueEntry_t& frontEntry ,InsnPkg_t& insnPkg){
-    bool needRedirect;
-    Redirect_t RedirectReq;
-    //最旧的那条异常指令也会进入预解码，不会被kill
-    DASSERT(!frontEntry.Killed,"Killed But send to Next Stage!");
-    if(frontEntry.Excp.valid){//在这里只有前面出现INSTR_ADDR_MISALIGNED才会导致这种可能
-        auto insn = this->m_Processor->CreateInsn();
-        insn->Pc   = frontEntry.Address;//就只发送一条异常的地址
-        insn->Excp = frontEntry.Excp;
-        this->m_State = State_t::WaitForResume;
-        insnPkg.emplace_back(insn);
-    }else{
-        uint64_t offset  = frontEntry.Address & (this->m_iCacheAlignByte-1); //看当前的地址是否对齐，也就是低五位是否为0
-       // DASSERT(!(offset && this->m_MisalignValid),"Shift Cacheline when MisAlign valid!");//避免出现上一次的地址发生截断，还不连续的情况
-        //如果当前数据的地址并不是对其的，比如0x80000010，偏移了16位，那么头指针也需要偏移16位，然后再开始取指令
-        char* dataPtr = frontEntry.InsnByte.data() + offset;
-        uint64_t numByte = m_FetchByteWidth - 
-                (frontEntry.Address & (this->m_iCacheAlignByte-1))  ;//32-偏移的16位，然后如果上一次最后的指令发送了截断，那就多处理两bit
-                                                //因为如果发送misalign，那么一行指令的一半在上一行的末尾，另一半在这一行的开头
-        uint64_t Npc  = frontEntry.Address ;//偏移到上一行的倒数第二个字节
-
-        while(numByte){
-            InsnPtr_t insn          = this->m_Processor->CreateInsn();//调用processor的函数是因为这里只是填加了insn的pc，后面其他stage还要添加信息
-            insn->Pc                = Npc;
-            insn->Excp              = frontEntry.Excp;
-            //判断是否是压缩指令，如果上一次发生截断，这一次的头两个数据只能是剩下的那两byte高位地址数据，那么就把当前数据左移16位，和上一次的拼起来
-           // insn->IsRvcInsn         = false;
-            insn->UncompressedInsn    = *(uint32_t*)dataPtr;
-            insnPkg.emplace_back(insn);
-            this->BranchRedirect(insn,frontEntry.InsnPred[(offset >> 1)],needRedirect,RedirectReq);
-            if(needRedirect){//如果需要重定向，那么后面的数据也就没必要放进来了
-                DPRINTF(Redirect,"Pc[{:#x}] -> Predict Mismatch, Redirect to {:#x}",insn->Pc,RedirectReq.target);
-                this->m_FlushSyncLatch.InPort->set(true);
-                this->m_RedirectPort->set(RedirectReq);
-                break;
-            }
-            numByte -= 4;
-            dataPtr += 4;
-            Npc     += 4;
-            offset  += 4;
-        }   
-    }     
-}
-
 void
 Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect,Redirect_t& RedirectReq){
+
+    Pred.taken_valid  = false;//说明预测是否有效
+    Pred.taken        = false;//预测结果
+    Pred.target       = 0;//预测地址
+    Pred.target_valid = false;//预测地址是否有效
+
     needRedirect = false;
     RedirectReq.StageId = InsnState_t::State_Fetch1;
     RISCV::StaticInsn instruction(insn->UncompressedInsn);//对指令进行解码
@@ -253,7 +213,13 @@ Fetch1::SendReq(){
     if(!this->m_InflightQueue.empty() && !frontEntry.Busy){//队列非空，且frontentry已经获取了从cache返回的数据
         if(!frontEntry.Killed){//如果frontentry没有被kill（只有异常处理时，才有可能（是可能，不是一定））
             InsnPkg_t insnPkg;
-            this->Predecode(frontEntry,insnPkg);
+            auto insn = this->m_Processor->CreateInsn();
+            insn->Pc   = frontEntry.Address;//就只发送一条异常的地址
+            insn->Excp = frontEntry.Excp;
+            insn->InsnByte=frontEntry.InsnByte;
+            insnPkg.emplace_back(insn);
+            //  DPRINTF(Redirect,"output Pc is[{:#x}]",frontEntry.Address& ~(this->m_iCacheAlignByte-1));
+            //  this->Predecode(frontEntry,insnPkg);
             if(insnPkg.size()){//如果预解码出数据了，则把数据送到输出端口
                 this->m_StageOutPort->set(insnPkg);
             }

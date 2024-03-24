@@ -29,6 +29,7 @@ const std::map<std::string,std::string> debugFlags = {
 
     /* inter-Stage Latch */
     DEFFLAG(Redirect    , "Redirect Request to Fetch1 Stage"),
+    DEFFLAG(temptest    , "Redirect Request to Fetch1 Stage"),
     DEFFLAG(ReceiveReq  , "Stage Receive Request from Last Stage"),
 
     DEFFLAG(Replay      , "Instruction Buffer Full, Replay Fetch"),

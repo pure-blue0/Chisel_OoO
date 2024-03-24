@@ -131,7 +131,7 @@ Simulator : {
           NextStage : Dispatch,
           MaxProcessInsnCount : 4,
           MustTakenAllInsn    : true,
-          RedirectLatency     : -1,
+          RedirectLatency     : 1,
           StageInfo : {
             DecodeQueueSize : 60
           }

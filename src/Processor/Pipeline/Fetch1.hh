@@ -69,7 +69,6 @@ private:
     std::vector<std::shared_ptr<TimeBuffer<Redirect_t>::Port>> m_RedirectPortVec;
 
 public:
-    Fetch1();
 
     Fetch1( 
         Processor*                       processor              ,

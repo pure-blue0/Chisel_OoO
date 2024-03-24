@@ -156,6 +156,8 @@ struct DynInsn
 
     Exception_t  Excp;
     Prediction_t Pred;//保存了预测的分支地址以及是否采用分支预测
+
+    std::vector<char>           InsnByte;
 };
 
 } // namespace Emulator

@@ -74,6 +74,7 @@ Commit::CommitInsnPkg(){
     }
 }
 
+
 void 
 Commit::Evaluate(){
     this->CommitInsnPkg();
