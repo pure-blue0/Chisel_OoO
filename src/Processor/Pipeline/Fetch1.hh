@@ -94,7 +94,7 @@ public:
 
     void GenNextFetchAddress(bool& SendSuccess);
 
-    void SendFetchReq(bool& SendSuccess);
+    void SendFetchReq(bool& SendSuccess,MemReq_t& fetchReq,InflighQueueEntry_t& NewEntry);
 
     void ReceiveReq(MemResp_t mem_resp);
 
@@ -104,7 +104,7 @@ public:
 
     void Predict(Addr_t& Pc, std::vector<Pred_t>& insnPred);
 
-    void SendReq();
+    void SendFetchData(bool& pop_flag);
 
     void AddRedirectPort(std::shared_ptr<TimeBuffer<Redirect_t>::Port> RedirectPort);
 };

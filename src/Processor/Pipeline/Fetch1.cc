@@ -24,15 +24,25 @@ Fetch1::~Fetch1(){}
 void 
 Fetch1::Evaluate(){
     this->m_iCachePort.Evaluate();//输出icache中缓存的数据（通过调用fetch1的receivereq函数，参数是上一拍从内存中获取到的mem数据）
-    this->SendReq();
-    
+    bool pop_flag=false;
+    this->SendFetchData(pop_flag);
+    if(pop_flag)this->m_InflightQueue.Pop();//从队列中弹出frontentry
     
     bool SendSuccess;
-    
-    
+    MemReq_t fetchReq;
+    InflighQueueEntry_t NewEntry(this->m_FetchByteWidth);
     if(this->m_PcRegister.OutPort->valid ){
-        this->SendFetchReq(SendSuccess);//处理pcregister的输出端口数据，并将其放入m_InflightQueue《后续直接放到Fetch1中实现》
-        //this->Predict(this->m_PcRegister.InPort->data,this->m_PredSync);//处理pcregister的输入端口数据，默认不跳转
+        NewEntry.Address    = this->m_PcRegister.OutPort->data;
+        NewEntry.Killed     = false;
+        fetchReq.Id.TransId = this->m_InflightQueue.Allocate();// 获取尾指针
+        this->SendFetchReq(SendSuccess,fetchReq,NewEntry);//处理pcregister的输出端口数据，并将其放入m_InflightQueue
+        if(SendSuccess)this->m_iCachePort.ReceiveFetchReq(fetchReq,std::bind(&Fetch1::ReceiveReq,this,std::placeholders::_1));
+        if(NewEntry.Excp.valid){
+            this->m_ExcpTag     = fetchReq.Id.TransId;
+            this->m_State       = State_t::HandleExcp;
+        }
+        if(SendSuccess||NewEntry.Excp.valid)this->m_InflightQueue[fetchReq.Id.TransId] = NewEntry;
+        
     }
     this->GenNextFetchAddress(SendSuccess);
 }
@@ -90,35 +100,25 @@ Fetch1::GenNextFetchAddress(bool& SendSuccess){
 
 
 void
-Fetch1::SendFetchReq(bool& SendSuccess){
-    MemReq_t            fetchReq;
-    InflighQueueEntry_t NewEntry(this->m_FetchByteWidth);
+Fetch1::SendFetchReq(bool& SendSuccess,MemReq_t& fetchReq,InflighQueueEntry_t& NewEntry){
+    
     SendSuccess = false;
+    NewEntry.Excp.valid = false;
     /* Check Alignment */
     if(!this->m_InflightQueue.full() && this->m_State == State_t::Idle && 
         !this->m_StageOutPort->isStalled() )//不满，空闲，不堵塞
     {
-        NewEntry.Address    = this->m_PcRegister.OutPort->data;
-        //DPRINTF(Redirect,"hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh[{:#x}]",NewEntry.Address );
-        NewEntry.Killed     = false;
-        //NewEntry.InsnPred   = this->m_PredSync;
-        fetchReq.Id.TransId = this->m_InflightQueue.Allocate();// 获取尾指针
         if((this->m_PcRegister.OutPort->data & 0b1) == 0 ){//0b1:二进制的1，只是看最低位是否为0，如果不是则触发异常
             NewEntry.Busy       = true;//表示当前数据未经过receivereq处理
             fetchReq.Address    = this->m_PcRegister.OutPort->data & ~(m_FetchByteWidth - 1);
             fetchReq.Length     = this->m_FetchByteWidth;
             fetchReq.Opcode     = MemOp_t::Fetch;
-            SendSuccess = true;
-            this->m_InflightQueue[fetchReq.Id.TransId] = NewEntry;
-            this->m_iCachePort.ReceiveFetchReq(fetchReq,std::bind(&Fetch1::ReceiveReq,this,std::placeholders::_1));
+            SendSuccess = true;   
         }else{
             NewEntry.Excp.valid = true;
             NewEntry.Excp.Cause = RISCV::INSTR_ADDR_MISALIGNED;
             NewEntry.Excp.Tval  = this->m_PcRegister.OutPort->data;
             NewEntry.Busy       = false;
-            this->m_InflightQueue[fetchReq.Id.TransId] = NewEntry;
-            this->m_State       = State_t::HandleExcp;
-            this->m_ExcpTag     = fetchReq.Id.TransId;
         }
     }
 }
@@ -208,23 +208,19 @@ Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect,Redirec
 }
 
 void
-Fetch1::SendReq(){
+Fetch1::SendFetchData(bool& pop_flag){
     InflighQueueEntry_t& frontEntry = this->m_InflightQueue.front();
     if(!this->m_InflightQueue.empty() && !frontEntry.Busy){//队列非空，且frontentry已经获取了从cache返回的数据
-        if(!frontEntry.Killed){//如果frontentry没有被kill（只有异常处理时，才有可能（是可能，不是一定））
+        if(!frontEntry.Killed){//如果frontentry没有被kill
             InsnPkg_t insnPkg;
             auto insn = this->m_Processor->CreateInsn();
-            insn->Pc   = frontEntry.Address;//就只发送一条异常的地址
+            insn->Pc   = frontEntry.Address;
             insn->Excp = frontEntry.Excp;
             insn->InsnByte=frontEntry.InsnByte;
             insnPkg.emplace_back(insn);
-            //  DPRINTF(Redirect,"output Pc is[{:#x}]",frontEntry.Address& ~(this->m_iCacheAlignByte-1));
-            //  this->Predecode(frontEntry,insnPkg);
-            if(insnPkg.size()){//如果预解码出数据了，则把数据送到输出端口
-                this->m_StageOutPort->set(insnPkg);
-            }
+            this->m_StageOutPort->set(insnPkg);//把数据送到输出端口
         }
-        this->m_InflightQueue.Pop();//从队列中弹出frontentry
+        pop_flag=true;
     }
 }
 
