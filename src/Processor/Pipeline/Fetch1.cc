@@ -34,9 +34,11 @@ Fetch1::Evaluate(){
     if(this->m_PcRegister.OutPort->valid ){
         NewEntry.Address    = this->m_PcRegister.OutPort->data;
         NewEntry.Killed     = false;
-        fetchReq.Id.TransId = this->m_InflightQueue.Allocate();// 获取尾指针
         this->SendFetchReq(SendSuccess,fetchReq,NewEntry);//处理pcregister的输出端口数据，并将其放入m_InflightQueue
-        if(SendSuccess)this->m_iCachePort.ReceiveFetchReq(fetchReq,std::bind(&Fetch1::ReceiveReq,this,std::placeholders::_1));
+        if(SendSuccess){
+            fetchReq.Id.TransId = this->m_InflightQueue.Allocate();// 获取尾指针
+            this->m_iCachePort.ReceiveFetchReq(fetchReq,std::bind(&Fetch1::ReceiveReq,this,std::placeholders::_1));
+        }
         if(NewEntry.Excp.valid){
             this->m_ExcpTag     = fetchReq.Id.TransId;
             this->m_State       = State_t::HandleExcp;
@@ -108,6 +110,8 @@ Fetch1::SendFetchReq(bool& SendSuccess,MemReq_t& fetchReq,InflighQueueEntry_t& N
     if(!this->m_InflightQueue.full() && this->m_State == State_t::Idle && 
         !this->m_StageOutPort->isStalled() )//不满，空闲，不堵塞
     {
+        
+        
         if((this->m_PcRegister.OutPort->data & 0b1) == 0 ){//0b1:二进制的1，只是看最低位是否为0，如果不是则触发异常
             NewEntry.Busy       = true;//表示当前数据未经过receivereq处理
             fetchReq.Address    = this->m_PcRegister.OutPort->data & ~(m_FetchByteWidth - 1);
@@ -162,6 +166,28 @@ Fetch1::ReceiveReq(MemResp_t mem_resp){
 
 }
 
+
+void
+Fetch1::SendFetchData(bool& pop_flag){
+    InflighQueueEntry_t& frontEntry = this->m_InflightQueue.front();
+    if(!this->m_InflightQueue.empty() && !frontEntry.Busy){//队列非空，且frontentry已经获取了从cache返回的数据
+        if(!frontEntry.Killed){//如果frontentry没有被kill
+            InsnPkg_t insnPkg;
+            auto insn = this->m_Processor->CreateInsn();
+            insn->Address   = frontEntry.Address;
+            insn->Excp = frontEntry.Excp;
+            insn->InsnByte=frontEntry.InsnByte;
+            insnPkg.emplace_back(insn);
+            this->m_StageOutPort->set(insnPkg);//把数据送到输出端口
+        }
+        pop_flag=true;
+    }
+}
+
+void 
+Fetch1::AddRedirectPort(std::shared_ptr<TimeBuffer<Redirect_t>::Port> RedirectPort){
+    this->m_RedirectPortVec.emplace_back(RedirectPort);
+}
 void
 Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect,Redirect_t& RedirectReq){
 
@@ -205,28 +231,6 @@ Fetch1::BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect,Redirec
         }
     }
 
-}
-
-void
-Fetch1::SendFetchData(bool& pop_flag){
-    InflighQueueEntry_t& frontEntry = this->m_InflightQueue.front();
-    if(!this->m_InflightQueue.empty() && !frontEntry.Busy){//队列非空，且frontentry已经获取了从cache返回的数据
-        if(!frontEntry.Killed){//如果frontentry没有被kill
-            InsnPkg_t insnPkg;
-            auto insn = this->m_Processor->CreateInsn();
-            insn->Pc   = frontEntry.Address;
-            insn->Excp = frontEntry.Excp;
-            insn->InsnByte=frontEntry.InsnByte;
-            insnPkg.emplace_back(insn);
-            this->m_StageOutPort->set(insnPkg);//把数据送到输出端口
-        }
-        pop_flag=true;
-    }
-}
-
-void 
-Fetch1::AddRedirectPort(std::shared_ptr<TimeBuffer<Redirect_t>::Port> RedirectPort){
-    this->m_RedirectPortVec.emplace_back(RedirectPort);
 }
 
 std::shared_ptr<BaseStage> Create_Fetch1_Instance(

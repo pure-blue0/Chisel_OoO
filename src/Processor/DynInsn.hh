@@ -155,6 +155,7 @@ struct DynInsn
     Imm_t        imm;
 
     Exception_t  Excp;
+    Addr_t       Address;
     Prediction_t Pred;//保存了预测的分支地址以及是否采用分支预测
 
     std::vector<char>           InsnByte;

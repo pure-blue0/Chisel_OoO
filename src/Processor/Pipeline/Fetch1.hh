@@ -33,12 +33,10 @@ private:
         bool                        Killed;
         Addr_t                      Address;
         std::vector<char>           InsnByte;
-        std::vector<Pred_t>         InsnPred;
         Exception_t                 Excp;
         InflighQueueEntry_t(){};//结构体的构造函数
         InflighQueueEntry_t(uint64_t ByteWidth){//结构体的构造函数（含参）
             this->InsnByte.resize(ByteWidth);
-            this->InsnPred.resize(ByteWidth/2);
         };
     };
 private:
