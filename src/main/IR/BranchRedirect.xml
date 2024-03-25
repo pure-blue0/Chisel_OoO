@@ -1,0 +1,32 @@
+<Module type="BranchRedirect">
+	<Parameters>
+		<!-- No parameters specified -->
+	</Parameters>
+	<Interface>
+	    <!-- Interfaces for each Functional Unit -->
+	    <Input name="Insn" type="[31:0]" description="Input instructions to predict"/>
+	    <!-- Outputs from each Functional Unit  -->
+	    <Output name="Perd_Taken" type="" description="Whether to predict jump flags"/>
+	    <Output name="Pred_Target" type="[31:0]" description="Predict the address of the jump"/>
+	    <Output name="Redirect_ID" type="[3:0]" description="Represents a redirect request sent from the decode"/>
+	    <Output name="Redirect_Target" type="[31:0]" description="The destination address for the redirect"/>
+	    <Output name="needRedirect" type="" description="Whether a redirect is required"/>
+	</Interface>
+	<Function description="1. Used for branch prediction. For JAL instruction (insn[6:0]= 0b1101111), default prediction jump, set the prediction target address to the current instruction address plus the offset of JAL instruction (ujimm()), and set Redirect_ID to 2. Redirect_Target is set to the address of the currently predicted jump, and needRedirect is set to false
+2. For other instructions, default branch prediction does not jump"/>
+	<ReferenceModel code="void Decode::BranchRedirect(InsnPtr_t&amp; insn,bool&amp; needRedirect,Redirect_t&amp; RedirectReq){
+    
+    needRedirect = false;
+    RedirectReq.StageId = InsnState_t::State_Decode;
+    RISCV::StaticInsn instruction(insn-&gt;UncompressedInsn);
+    insn-&gt;Pred.Taken        = false;
+    insn-&gt;Pred.Target       = insn-&gt;Pc +  4;//pred.target contains the next address by default
+    if(instruction.opcode() == 0b1101111){ // JAL jumps by default
+        insn-&gt;Pred.Taken    = true;
+        insn-&gt;Pred.Target   = insn-&gt;Pc + instruction.ujimm();//Instruction.ujimm () represents the riscv j-type instruction immediate number
+        needRedirect = true;
+        RedirectReq.target = insn-&gt;Pred.Target;
+    }
+}"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

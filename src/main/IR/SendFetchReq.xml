@@ -1,0 +1,20 @@
+<Module type="SendFetchReq">
+    <Parameters>
+    </Parameters>
+    <Interface>
+        <Input name="Inflightqueue_full" type="signal" description="Fetch queue full signal"/>
+        <Input name="m_state" type="state" description="Fetch module current state, including Idle, HandleExcp two states"/>
+        <Input name="isStalled" type="signal" description="The Fetch module output queue is blocked signal"/>
+        <Input name="PcRegisterOut" type="data" description="Output address data of the pc register"/>
+        <Output name="Sendsuccess" type="signal" description="Indicates whether the fetch request was successfully sent to mem"/>
+        <Output name="FetchReq_address" type="address[63:0]" description="The fetch address sent to mem"/>
+        <Output name="Busy" type="signal" description="Describes whether entry has received data from memory"/>
+        <Output name="fetchReq_Length" type="length[3:0]" description="Fetch width"/>
+        <Output name="fetchReq_Opcode" type="operation[1:0]" description="The specific operations sent to mem are Fetch, Load, and Store"/>
+        <Output name="Excp_vaild" type="signal" description="Did an exception occur?"/>
+        <Output name="Excp_Cause" type="cause[5:0]" description="The cause of the exception"/>
+        <Output name="Excp_Tval" type="address[63:0]" description="Holds the address at which the exception was triggered"/>
+    </Interface>
+    <Function description="When the Inflightqueue is not full, and m_state=idle, and fetch is not blocked, perform the following operations: (1) Determine if PcRegisterOut&amp; 1== 0, if not, trigger the INSTR_ADDR_MISALIGNED exception, set excp_valid=true, excp_cause=INSTR_ADDR_MISALIGNED, excp_tval=PcRegisterOut, busy=false. (2) If pc&amp; 1== 0, then busy=true, fetch_address=pc&amp;~0x7, fetch_length=8, fetch_opcode=Fetch, and sendsuccess=true."/>
+    <ReferenceModel code="void Fetch1::SendFetchReq(bool&amp; SendSuccess,MemReq_t&amp; fetchReq,InflighQueueEntry_t&amp; NewEntry){ SendSuccess = false; NewEntry.Excp.valid = false; /* Check Alignment */ if(!this-&gt;m_InflightQueue.full() &amp;&amp; this-&gt;m_State == State_t::Idle &amp;&amp; !this-&gt;m_StageOutPort-&gt;isStalled() ){ if((this-&gt;m_PcRegister.OutPort-&gt;data &amp; 0b1) == 0 ){ NewEntry.Busy = true; fetchReq.Address = this-&gt;m_PcRegister.OutPort-&gt;data &amp; ~(m_FetchByteWidth - 1); fetchReq.Length = this-&gt;m_FetchByteWidth; fetchReq.Opcode = MemOp_t::Fetch; SendSuccess = true; }else{ NewEntry.Excp.valid = true; NewEntry.Excp.Cause = RISCV::INSTR_ADDR_MISALIGNED; NewEntry.Excp.Tval = this-&gt;m_PcRegister.OutPort-&gt;data; NewEntry.Busy = false; } }}"/>
+</Module>

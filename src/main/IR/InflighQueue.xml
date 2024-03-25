@@ -1,0 +1,21 @@
+<Module type="InflighQueue">
+	<Parameters>
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="clk" type="signal" description="The clock signal to synchronize the FIFO's operations."/>
+	        <Input name="reset" type="signal" description="A signal to reset the FIFO, initializing the head and tail pointers and clearing entries."/>
+	        <Input name="pop" type="signal" description="A signal to indicate that an entry should be popped out from the FIFO."/>
+	        <Input name="push" type="signal" description="A signal to indicate that a new entry is being added to the FIFO."/>
+	        <Input name="write_data" type="vector[94:0]" description="The data to be written into an entry, encapsulating all the entry structure fields as a single vector."/>
+	        <!-- Outputs from each Functional Unit  -->
+	        <Output name="full" type="signal" description="Indicates the FIFO is full and cannot accept new entries."/>
+	        <Output name="empty" type="signal" description="Indicates the FIFO is empty and there's nothing to pop."/>
+	        <Output name="read_data" type="vector[94:0]" description="The data from the entry at the head of the FIFO, following the same structure as write_data."/>
+	        <Output name="head_ptr" type="vector[2:0]" description="The current position of the head pointer. This might be used for debugging or specific control logic outside the FIFO."/>
+	        <Output name="tail_ptr" type="vector[2:0]" description="The current position of the tail pointer, also potentially useful for debugging or control."/>
+	</Interface>
+	<Function description="1. Reset according to the reset signal. 2. Able to read and write all data in the entry. 3. Able to pop the entry according to the pop signal. 4. Able to record the current header and tail pointers and update them. 5. Output whether the current queue is full or empty"/>
+<ReferenceModel code=""/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

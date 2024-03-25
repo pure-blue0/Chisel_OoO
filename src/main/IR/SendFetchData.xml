@@ -1,0 +1,41 @@
+<Module type="SendFetchData">
+	<Parameters>
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="Inflightqueue_empty" type="boolean" description="Signal whether the queue is empty"/>
+	        <Input name="busy" type="boolean" description="Entry whether the data returned by mem was received"/>
+	        <Input name="Killed" type="boolean" description="A signal indicating whether entry is valid"/>
+	        <Input name="Address" type="[31:0]" description="The first address of the extracted data in mem"/>
+	        <Input name="Excp_vaild" type="boolean" description="Did an exception occur?"/>
+	        <Input name="Excp_Cause" type="[5:0]" description="The cause of the exception"/>
+	        <Input name="Excp_Tval" type="[31:0]" description="Holds the address at which the exception was triggered"/>
+	        <Input name="InsnByte" type="[63:0]" description="Fetched instruction"/>
+	        <!-- Outputs from each Functional Unit  -->
+	        <Output name="pop_flag" type="boolean" description="Whether to eject entry from the queue"/>
+	        <Output name="Out_Address" type="[31:0]" description="The first address of the extracted data in mem"/>
+	        <Output name="Out_Excp_vaild" type="boolean" description="Did an exception occur?"/>
+	        <Output name="Out_Excp_Cause" type="[5:0]" description="The cause of the exception"/>
+	        <Output name="Out_Excp_Tval" type="[31:0]" description="Holds the address at which the exception was triggered"/>
+	        <Output name="Out_InsnByte" type="[63:0]" description="Fetched instruction"/>
+	</Interface>
+    <Function description="1.If the Inflightqueue is not empty and frontentry has received data from the cache, set pop_flag to 1, indicating that frontentry will be ejected from the queue.
+2.If killed=0, frontentry is still valid. At this time, output Address, InsnByte, Excp_valid, Excp_Cause, and Excp_Tval to the corresponding port.
+3.If none of the above is true, set all output ports to 0."/>
+<ReferenceModel code="void Fetch1::SendFetchData(bool&amp; pop_flag){
+    InflighQueueEntry_t&amp; frontEntry = this-&gt;m_InflightQueue.front();
+    if(!this-&gt;m_InflightQueue.empty() &amp;&amp; !frontEntry.Busy){//The queue is not empty and the frontentry has already fetched the data returned from the cache
+        if(!frontEntry.Killed){//If frontentry is not killed
+            InsnPkg_t insnPkg;
+            auto insn = this-&gt;m_Processor-&gt;CreateInsn();
+            insn-&gt;Pc   = frontEntry.Address;
+            insn-&gt;Excp = frontEntry.Excp;
+            insn-&gt;InsnByte=frontEntry.InsnByte;
+            insnPkg.emplace_back(insn);
+            this-&gt;m_StageOutPort-&gt;set(insnPkg);//Send data to the output port
+        }
+        pop_flag=true;
+    }
+}"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

@@ -1,0 +1,62 @@
+<Module type="Predecode">
+	<Parameters>
+		<Parameter name="iCacheAlignByte" type="integer" value="8" description="Alignment byte size for instruction cache"/>
+		<Parameter name="FetchByteWidth" type="integer" value="8" description="Width of fetch byte"/>
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="Address" type="[31:0]" description="The first address of the fetched instruction packet in mem"/>
+	        <Input name="data" type="[63:0]" description="The fetched instruction packet"/>
+	        <Input name="excp_vaild" type="boolean" description="Exception condition of the current instruction package"/>
+	        <Input name="excp_cause" type="[5:0]" description="Where the type of exception for the current instruction package is stored"/>
+	        <Input name="excpt_tval" type="[31:0]" description="The address where the exception for the current instruction packet is stored"/>
+
+	        <Output name="pc1" type="[31:0]" description="The address of instruction 1 after predecoding"/>
+	        <Output name="insn1" type="[31:0]" description="Instruction 1 after predecoding"/>
+	        <Output name="Perd_Taken1" type="boolean" description="Whether to predict jump flags of instruction 1"/>
+	        <Output name="Pred_Target1" type="[31:0]" description="Predict the address of the jump of instruction 1"/>
+	        <Output name="excp_vaild1" type="boolean" description="Exception condition for the current instruction 1"/>
+	        <Output name="excp_cause1" type="[5:0]" description="Where the type of exception for the current instruction 1 is stored"/>
+	        <Output name="excpt_tval1" type="[31:0]" description="Store the address where the exception for the current instruction 1 occurred"/>
+	        
+	        <Output name="pc2" type="[31:0]" description="The address of instruction 2 after predecoding"/>
+	        <Output name="insn2" type="[31:0]" description="Instruction 2 after predecoding"/>
+	        <Output name="Perd_Taken2" type="boolean" description="Whether to predict jump flags of instruction 2"/>
+	        <Output name="Pred_Target2" type="[31:0]" description="Predict the address of the jump of instruction 2"/>
+	        <Output name="excp_vaild2" type="boolean" description="Exception condition for the current instruction 2"/>
+	        <Output name="excp_cause2" type="[5:0]" description="Where the type of exception for the current instruction 2 is stored"/>
+	        <Output name="excpt_tval2" type="[31:0]" description="Store the address where the exception for the current instruction 2 occurred"/>
+
+	        <Output name="Redirect_ID" type="[3:0]" description="Represents a redirect request sent from the decode"/>
+	        <Output name="Redirect_Target" type="[31:0]" description="The destination address for the redirect"/>
+	        <Output name="fetch_flush" type="boolean" description="Indicates that fetch1 needs to be flushed"/>
+	</Interface>
+    <Function description="The predecode module is used to pre-decode the instruction packets sent from the fetch stage, without considering the compression instruction. It includes steps for judging address alignment, calculating offset and bytes needed, processing data not completely pre-decoded, and handling branch prediction and redirect operations. BranchRedirect is a sub-module used for branch prediction."/>
+<ReferenceModel code="void Decode::Predecode(Emulator::DynInsn&amp; insnEntry,InsnPkg_t&amp; insnPkg){
+    bool needRedirect;
+    Redirect_t RedirectReq;
+    uint64_t offset  = insnEntry.Address &amp; (this-&gt;m_iCacheAlignByte-1); //See if the current address is aligned
+    char* dataPtr = insnEntry.InsnByte.data() + offset;
+    uint64_t numByte = m_FetchByteWidth - offset  ;
+    uint64_t Npc  = insnEntry.Address ;
+    
+    while(numByte&amp;&amp;!needRedirect){//The loop processes the instruction packet for predecoding
+        InsnPtr_t insn          = this-&gt;m_Processor-&gt;CreateInsn();
+        insn-&gt;Pc                = Npc;
+        insn-&gt;Excp              = insnEntry.Excp;
+        insn-&gt;UncompressedInsn    = *(uint32_t*)dataPtr;
+        insnPkg.emplace_back(insn);//将The predecoded data is put into insnpkg
+        this-&gt;BranchRedirect(insn,needRedirect,RedirectReq);
+        
+        if(needRedirect){//If a redirect is needed, then the rest of the data doesn't need to be included
+            DPRINTF(Redirect,&quot;Pc[{:#x}] -&gt; Predict Mismatch, Redirect to {:#x}&quot;,insn-&gt;Pc,RedirectReq.target);
+            this-&gt;m_RedirectPort-&gt;set(RedirectReq);//Send a redirect request
+            this-&gt;m_Processor-&gt;FlushBackWard(InsnState_t::State_Decode);//Flush fetch1_flush
+        }   
+        numByte -= 4;
+        dataPtr += 4;
+        Npc     += 4;
+    }      
+}"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->
