@@ -1,0 +1,27 @@
+<Module type="GenAddress">
+    <Parameters>
+        <Parameter name="FetchByteWidth" type="integer" value="8" description="Width of fetch in bytes"/>
+        <Parameter name="iCacheAlignByte" type="integer" value="8" description="Alignment bytes for cache block"/>
+    </Parameters>
+    <Interface>
+        <Input name="sendsuccess" type="bool" description="Flag indicating successful memory request"/>
+        <Input name="PcRegisterout_valid" type="bool" description="Flag indicating validity of pc output register"/>
+        <Input name="Decode_redirectTag" type="integer" size="32" description="Redirect address from decode stage"/>
+        <Input name="Decode_redirect_valid" type="bool"
+               description="Flag indicating validity of redirect address from decode stage"/>
+        <Input name="IEW_redirectTag" type="integer" size="32" description="Redirect address from IEW stage"/>
+        <Input name="IEW_redirect_valid" type="bool"
+               description="Flag indicating validity of redirect address from IEW stage"/>
+        <Input name="commit_redirectTag" type="integer" size="32" description="Redirect address from commit stage"/>
+        <Input name="commit_redirect_valid" type="bool"
+               description="Flag indicating validity of redirect address from commit stage"/>
+        <Output name="PcRegister_in" type="integer" size="32" description="Next fetch address"/>
+    </Interface>
+    <Function description="Generate next fetch address. Priority order: backend redirect > predicted PC > PC + 4"/>
+    <ReferenceModel code="void GenNextFetchAddress(bool& SendSuccess){ InsnState_t redirectTag = InsnState_t::State_Fetch1;
+    if(this->m_PcRegister.OutPort->valid){ this->m_PcRegister.InPort->set(this->m_PcRegister.OutPort->data); }
+    if(SendSuccess){ this->m_PcRegister.InPort->set((this->m_PcRegister.OutPort->data & ~(this->m_iCacheAlignByte - 1))
+    + this->m_FetchByteWidth); } for(auto RedirectPort : this->m_RedirectPortVec){ if(RedirectPort->valid &&
+    RedirectPort->data.StageId >= redirectTag){ this->m_PcRegister.InPort->set(RedirectPort->data.target); redirectTag =
+    RedirectPort->data.StageId; } } }"/>
+</Module>

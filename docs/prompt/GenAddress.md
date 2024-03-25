@@ -18,7 +18,7 @@ Function description
 # parameter
 Parameters of module
 # Input
-# output
+# Output
 I/O port of module
 # Instance
 Instances of the module 
@@ -33,8 +33,10 @@ the reference model writen in C++, Contains the functions of the module
 	</Parameters>
 	<Interface>
 	        <!-- Interfaces for each Functional Unit -->
-	        <Input name="" type="" description=""/>
+	        <Input name="" type="" width="" description=""/>
+            <Input name="" type="" description=""/>
 	        <!-- Outputs from each Functional Unit  -->
+            <Output name="" type="" width="" description=""/>
 	        <Output name="" type="" description=""/>
 	</Interface>
 	<!-- Instances of Functional Units -->        
@@ -42,7 +44,7 @@ the reference model writen in C++, Contains the functions of the module
         <!-- Interface for the Instance -->
     </Instance>
     <Function description=""/>
-<ReferenceModel code=""/>    
+    <ReferenceModel code=""/>    
 </Module>
 <!-- Definitions for Request and Result types for each Functional Unit -->
 ```
@@ -59,19 +61,22 @@ FetchByteWidth=8//取指的宽度
 iCacheAlignByte=8//缓存块对齐字节数
 
 # Input:
-sendsuccess //成功向内存发送请求的标志
-PcRegisterout_vaild //pc输出寄存器有效标志
-
-//Redirect message
-[31:0]Decode_redirectTag//decode stage 传来的重定向地址
-Decode_redirect_valid//decode stage 传来的重定向有效标志位
-[31:0]IEW_redirectTag//IEW stage 传来的重定向地址
-IEW_redirect_valid//IEW stage 传来的重定向有效标志位
-[31:0]commit_redirectTag//IEW stage 传来的重定向地址
-commit_redirect_valid//IEW stage 传来的重定向有效标志位
-
+sendsuccess //成功向内存发送请求的标志
+PcRegisterout_vaild //pc输出寄存器有效标志
+[31:0]PcRegisterout//pc寄存器的输出地址
+//Redirect message
+[31:0]Decode_redirectTag//decode stage 传来的重定向地址
+Decode_redirect_vaild//decode stage 传来的重定向有效标志位
+ 
+[31:0]IEW_redirectTag//IEW stage 传来的重定向地址
+IEW_redirect_vaild//IEW stage 传来的重定向有效标志位
+ 
+[31:0]commit_redirectTag//IEW stage 传来的重定向地址
+commit_redirect_vaild//IEW stage 传来的重定向有效标志位
+ 
 # Output:
 [31:0]PcRegister_in//下一个要取指的地址
+
 # reference model
 ```cpp
 void 
@@ -144,29 +149,43 @@ Fetch1::GenNextFetchAddress(bool& SendSuccess){
 xml文件，即上文中GPT output
 
 ## GPT output
-To design a Chisel module based on the given requirements, let’s follow the steps outlined:
+To design a module named `GenAddress` in Chisel, fulfilling the specified requirements and functionality, we'll approach this step by step:
 
-### Step 1: Understand the Requirements
-1. **FetchByteWidth**: This parameter defines the width of a fetch operation in bytes.
-2. **iCacheAlignByte**: This parameter specifies the alignment bytes for a cache block.
-3. Inputs and outputs are specified for handling various stages of instruction processing, including redirect signals from different pipeline stages and a PC (Program Counter) register update.
-4. The module should prioritize redirect addresses over the predicted PC, and then the incremented PC (PC + 4).
+### Understanding the Requirements:
+1. **Inputs:**
+    - `sendsuccess`: Indicates if the memory request was successful.
+    - `PcRegisterout_valid`: Indicates if the PC output register is valid.
+    - `Decode_redirectTag`, `IEW_redirectTag`, `commit_redirectTag`: Redirect addresses from different stages.
+    - `Decode_redirect_valid`, `IEW_redirect_valid`, `commit_redirect_valid`: Validity flags for the respective redirect addresses.
 
-### Step 2: Define the Module in Chisel
-1. Define a Chisel module with the specified parameters and I/O ports.
-2. Implement the logic to generate the next fetch address, respecting the priority of the backend redirect, the predicted PC, and then PC + 4, as per the function description.
+2. **Output:**
+    - `PcRegister_in`: The next fetch address.
 
-### Step 3: Implement the Logic
-1. **Redirect Logic**: Check the valid flags for redirect addresses from the commit, IEW, and decode stages. Use the one with the highest priority that is valid.
-2. **Predicted PC and PC+4 Logic**: If no valid redirect address is found, use the current PC value; if `sendsuccess` is true, increment the PC by `FetchByteWidth` aligned to `iCacheAlignByte`.
+3. **Parameters:**
+    - `FetchByteWidth`: Width of fetch in bytes.
+    - `iCacheAlignByte`: Alignment bytes for cache block.
 
-### Chisel Code Implementation
+4. **Functionality:**
+    - Generate the next fetch address with a priority order: backend redirect > predicted PC > PC + 4.
+
+### Reasoning Steps:
+1. **Default Increment:**
+    - If `PcRegisterout_valid` is true and `sendsuccess` is false, increment the PC by 4.
+
+2. **SendSuccess Handling:**
+    - On `sendsuccess`, align the current PC to cache alignment and add `FetchByteWidth`.
+
+3. **Redirect Handling:**
+    - Check the validity of redirect signals. Priority is given to `commit_redirect` > `IEW_redirect` > `Decode_redirect`.
+
+### Chisel Implementation:
+Here's a Chisel module that implements the described functionality:
 
 ```scala
 import chisel3._
 import chisel3.util._
 
-class GenAddress(val FetchByteWidth: Int, val iCacheAlignByte: Int) extends Module {
+class GenAddress extends Module {
   val io = IO(new Bundle {
     val sendsuccess = Input(Bool())
     val PcRegisterout_valid = Input(Bool())
@@ -179,24 +198,24 @@ class GenAddress(val FetchByteWidth: Int, val iCacheAlignByte: Int) extends Modu
     val PcRegister_in = Output(UInt(32.W))
   })
 
-  // Default next PC is current PC + 4, aligned to iCacheAlignByte
-  val defaultNextPC = (io.PcRegister_in + FetchByteWidth.U) & ~(iCacheAlignByte.U - 1.U)
+  val FetchByteWidth = 8.U
+  val iCacheAlignByte = 8.U
 
-  // Check for redirects and prioritize them
-  val redirectAddress = MuxCase(defaultNextPC, Seq(
-    io.commit_redirect_valid -> io.commit_redirectTag,
-    io.IEW_redirect_valid -> io.IEW_redirectTag,
-    io.Decode_redirect_valid -> io.Decode_redirectTag
-  ))
-
-  // Set next fetch address
-  io.PcRegister_in := Mux(io.sendsuccess, redirectAddress, defaultNextPC)
+  when(io.commit_redirect_valid) {
+    io.PcRegister_in := io.commit_redirectTag
+  } .elsewhen(io.IEW_redirect_valid) {
+    io.PcRegister_in := io.IEW_redirectTag
+  } .elsewhen(io.Decode_redirect_valid) {
+    io.PcRegister_in := io.Decode_redirectTag
+  } .elsewhen(io.PcRegisterout_valid && !io.sendsuccess) {
+    io.PcRegister_in := io.PcRegister_in + 4.U
+  } .elsewhen(io.sendsuccess) {
+    io.PcRegister_in := (io.PcRegister_in & ~(iCacheAlignByte - 1.U)) + FetchByteWidth
+  } .otherwise {
+    io.PcRegister_in := io.PcRegister_in // Hold current value if no conditions are met
+  }
 }
 
 ```
 
-### Explanation
-- The `GenAddress` module is parameterized with `FetchByteWidth` and `iCacheAlignByte`.
-- Input and output ports are defined according to the specification.
-- Logic for prioritizing redirect tags and calculating the next PC address is implemented.
-- The module uses Chisel's `MuxCase` and `Mux` functions to select between redirect addresses and the incremented PC value.
+This module takes the inputs and parameters, checks the conditions specified in the functionality, and sets the `PcRegister_in` output accordingly, adhering to the prioritization of redirect signals and handling the `sendsuccess` condition as specified.
