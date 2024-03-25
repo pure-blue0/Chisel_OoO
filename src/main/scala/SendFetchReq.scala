@@ -1,5 +1,4 @@
 import chisel3._
-import chisel3.util._
 
 // Define our FetchReq module
 class SendFetchReq extends Module {
