@@ -79,7 +79,7 @@ Rcu::CreateRobEntry(InsnPtr_t& insn){
         newEntry.Fu                 = insn->Fu;
         newEntry.LSQtag             = insn->LSQTag;
 
-        newEntry.RdType             = insn->RdType;
+
         newEntry.isaRd              = insn->IsaRd;
         newEntry.phyRd              = insn->PhyRd;
         newEntry.LphyRd             = insn->LPhyRd;
@@ -121,7 +121,7 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
     for(size_t i = 0; i < allocCount; i++){
         InsnPtr_t insn = insnPkg[i];
         if(insn){
-            if(insn->RdType == RegType_t::INT && insn->IsaRd != 0){
+            if(insn->IsaRd != 0){
                 insn->PhyRd = this->m_IntFreelist.pop();//取出空闲的reg id
                 this->m_IntBusylist[insn->PhyRd].allocated = true;//根据reg id 将busylist中对应的entry进行更新
                 this->m_IntBusylist[insn->PhyRd].done      = false;
@@ -137,31 +137,13 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
     }
 }
 
+
 void 
 Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
+     
+    SuccessCount = this->m_Rob.getAvailEntryCount()<this->m_IntFreelist.getAvailEntryCount()?this->m_Rob.getAvailEntryCount():this->m_IntFreelist.getAvailEntryCount();
+    SuccessCount =insnPkg.size()<SuccessCount?insnPkg.size():SuccessCount;
     
-    SuccessCount = 0;
-    uint64_t allocRobCount = 0;
-    uint64_t allocLrqCount = 0;
-    uint64_t allocSrqCount = 0;
-    uint64_t allocRegCount = 0;
-    for(auto insn : insnPkg){
-        if(insn){
-            if(this->m_Rob.getAvailEntryCount() > allocRobCount){
-                allocRobCount++;
-            }else{
-                break;
-            }
-            if(insn->RdType == RegType_t::INT && insn->IsaRd != 0){
-                if((this->m_IntFreelist.getAvailEntryCount() > allocRegCount)){
-                    allocRegCount++;
-                }else{
-                    break;
-                }
-            }
-        }
-        SuccessCount++;
-    }
 };
 
 
@@ -169,17 +151,17 @@ void
 Rcu::ResovleDependancy(InsnPkg_t& insnPkg){//解决依赖的解释见daily learning
     for(size_t i = 0 ; i < insnPkg.size(); i++){
         InsnPtr_t& insn = insnPkg[i];
-        if(insn && insn->RdType == RegType_t::INT && insn->IsaRd != 0){
+        if(insn->IsaRd != 0){
             for(size_t j = i + 1; j < insnPkg.size(); j++){//如果后面的指令的rs1或rs2等于当前指令的rd，且数据类型一致
                 InsnPtr_t& laterInsn = insnPkg[j];         //那么需要将后续指令的rs1或rs2也替换为当前rd映射的物理寄存器
                 if(laterInsn){
-                    if(insn->RdType == laterInsn->Rs1Type && insn->IsaRd == laterInsn->IsaRs1){
+                    if(insn->IsaRd == laterInsn->IsaRs1){
                         laterInsn->PhyRs1 = insn->PhyRd;
                     }
-                    if(insn->RdType == laterInsn->Rs2Type && insn->IsaRd == laterInsn->IsaRs2){
+                    if(insn->IsaRd == laterInsn->IsaRs2){
                         laterInsn->PhyRs2 = insn->PhyRd;
                     } 
-                    if(insn->RdType == laterInsn->RdType  && insn->IsaRd == laterInsn->IsaRd){
+                    if(insn->IsaRd == laterInsn->IsaRd){
                         laterInsn->LPhyRd = insn->PhyRd;
                     } 
                 }
@@ -261,7 +243,7 @@ Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect){
                     }
                 }
             }
-            if(insn->RdType == RegType_t::INT && insn->IsaRd != 0){
+            if(insn->IsaRd != 0){
                 this->m_IntRegfile[insn->PhyRd] = insn->RdResult;
                 this->m_IntBusylist[insn->PhyRd].done = true;
                 this->m_IntBusylist[insn->PhyRd].forwarding = false;
@@ -322,7 +304,7 @@ Rcu::AGUFastDetect(InsnPtr_t& insn){
 void 
 Rcu::ReleaseResource(uint16_t robTag){
     auto& entry = this->m_Rob[robTag];
-    if(entry.RdType == RegType_t::INT && entry.phyRd != 0){
+    if(entry.phyRd != 0){
         this->m_IntFreelist.push(entry.phyRd);
         this->m_IntBusylist[entry.phyRd].forwarding = false;
         this->m_IntBusylist[entry.phyRd].done       = false;
@@ -389,7 +371,7 @@ Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect)
         if(robEntry.valid){
             DASSERT(robEntry.done,"Commit Insn When not Ready!")
             if(!robEntry.isExcp){
-                if(robEntry.RdType == RegType_t::INT && robEntry.LphyRd != 0){
+                if(robEntry.LphyRd != 0){
                     this->m_Processor->m_ExecContext->WriteIntReg(robEntry.isaRd,this->m_IntRegfile[robEntry.phyRd]);
                     this->m_IntFreelist.push(robEntry.LphyRd);
                     this->m_IntBusylist[robEntry.LphyRd].done = false;
@@ -432,7 +414,30 @@ Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect)
     }
 
 }
-
+// void 
+// Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
+    
+//     SuccessCount = 0;
+//     uint64_t allocRobCount = 0;
+//     uint64_t allocRegCount = 0;
+//     for(auto insn : insnPkg){
+//         if(insn){
+//             if(this->m_Rob.getAvailEntryCount() > allocRobCount){
+//                 allocRobCount++;
+//             }else{
+//                 break;
+//             }
+//             if(insn->IsaRd != 0){
+//                 if((this->m_IntFreelist.getAvailEntryCount() > allocRegCount)){
+//                     allocRegCount++;
+//                 }else{
+//                     break;
+//                 }
+//             }
+//         }
+//         SuccessCount++;
+//     }
+// };
 
 
 } // namespace Emulator

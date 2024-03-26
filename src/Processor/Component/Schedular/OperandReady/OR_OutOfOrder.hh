@@ -79,8 +79,8 @@ public:
                 if(entry.valid && entry.insn){
                     insn = entry.insn;
                     info.insn = insn;
-                    if(((insn->Rs1Type == RegType_t::INT && !this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
-                        (insn->Rs2Type == RegType_t::INT && !this->m_Rcu->m_IntBusylist[insn->PhyRs2].done)
+                    if(((!this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
+                        (!this->m_Rcu->m_IntBusylist[insn->PhyRs2].done)
                     )){
                         continue; 
                     }else{

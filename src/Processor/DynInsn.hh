@@ -20,7 +20,7 @@ struct Prediction_t
 };
 
 enum funcType_t {
-    ALU , MUL , DIV, BRU, CSR, LDU, STU, FPU
+    ALU , BRU, CSR, LDU, STU, FPU, MUL , DIV, 
 };
 
 
@@ -126,10 +126,7 @@ struct DynInsn
     IsaRegId_t   IsaRs1;
     IsaRegId_t   IsaRs2;
     IsaRegId_t   IsaRd;
-    //数据类型
-    RegType_t    Rs1Type;
-    RegType_t    Rs2Type;
-    RegType_t    RdType;
+
     //对应的物理寄存器
     PhyRegId_t   PhyRs1;
     PhyRegId_t   PhyRs2;

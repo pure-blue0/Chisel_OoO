@@ -77,8 +77,8 @@ public:
                 info.insn = insn;
                 if(insn){
                     if((!this->m_Rcu->ReadyForCommit(insn->RobTag)                                                ||
-                        (insn->Rs1Type == RegType_t::INT && !this->m_Rcu->m_IntBusylist[insn->PhyRs1].forwarding) ||
-                        (insn->Rs2Type == RegType_t::INT && !this->m_Rcu->m_IntBusylist[insn->PhyRs2].forwarding)
+                        (!this->m_Rcu->m_IntBusylist[insn->PhyRs1].forwarding) ||
+                        (!this->m_Rcu->m_IntBusylist[insn->PhyRs2].forwarding)
                     )){
                         continue; 
                     }else{

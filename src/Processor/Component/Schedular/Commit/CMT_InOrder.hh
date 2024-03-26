@@ -60,8 +60,8 @@ public:
             info.insn = insn;
             if(insn){
                 if(( !this->m_Rcu->ReadyForCommit(insn->RobTag)                                         ||
-                    (insn->Rs1Type == RegType_t::INT && !this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
-                    (insn->Rs2Type == RegType_t::INT && !this->m_Rcu->m_IntBusylist[insn->PhyRs2].done)
+                    (!this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
+                    (!this->m_Rcu->m_IntBusylist[insn->PhyRs2].done)
                 )){
                     return;                
                 }else{

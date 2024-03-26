@@ -49,7 +49,7 @@ void
 WriteBackPort::Forwarding(){
     if(this->m_CalcuPipe.InPort->valid){
         InsnPtr_t& insn = this->m_CalcuPipe.InPort->data;
-        if(insn->RdType != RegType_t::NONE && insn->IsaRd != 0){
+        if(insn->IsaRd != 0){
             this->m_Processor->getRcuPtr()->m_IntBusylist[insn->PhyRd].forwarding = true;
             if(this->m_Processor->m_forwardResult){
                 this->m_Processor->getRcuPtr()->m_IntBusylist[insn->PhyRd].done = true;//说明当前指令的rd是被前递了的

@@ -48,25 +48,17 @@ Lsq::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
     SuccessCount = 0;
     uint16_t AllocLdqCount = 0;
     uint16_t AllocStqCount = 0;
-    for(auto& insn : insnPkg){
-        if(insn){
-            
-            if(insn->Fu == funcType_t::LDU){
-                if(this->m_LoadQueue.getAvailEntryCount() > AllocLdqCount){
-                    AllocLdqCount++;
-                }else{
-                    break;
-                }
-            }else if(insn->Fu == funcType_t::STU){
-                if(this->m_StoreQueue.getAvailEntryCount() > AllocStqCount){
-                    AllocStqCount++;
-                }else{
-                    break;
-                }
-            }
-        }
-        SuccessCount++;
+    for(auto& insn : insnPkg){//根据insn的function type统计输入的两条指令立有多少条是load指令，有多少条是store指令
+        if(insn->Fu == funcType_t::LDU)      AllocLdqCount++;
+        else if(insn->Fu == funcType_t::STU) AllocStqCount++;    
     }
+    
+    if(this->m_LoadQueue.getAvailEntryCount()<AllocLdqCount)
+        SuccessCount=this->m_LoadQueue.getAvailEntryCount();
+    else if(this->m_StoreQueue.getAvailEntryCount()<AllocStqCount)
+        SuccessCount=this->m_StoreQueue.getAvailEntryCount();
+    else SuccessCount = insnPkg.size();
+
 }
 
 void 

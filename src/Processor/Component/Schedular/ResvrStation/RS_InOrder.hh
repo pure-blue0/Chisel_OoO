@@ -56,8 +56,8 @@ public:
         Success = false;
             insn = this->m_issueQueue.front();
             if(insn){
-                if(((insn->Rs1Type == RegType_t::INT && !insn->Operand1Ready) ||
-                    (insn->Rs2Type == RegType_t::INT && !insn->Operand2Ready)
+                if(((!insn->Operand1Ready) ||
+                    (!insn->Operand2Ready)
                 )){
                     return;
                 }else{
@@ -87,13 +87,13 @@ public:
 
 
     void Forwarding(InsnPtr_t& insn){
-        if(insn->RdType != RegType_t::NONE && insn->PhyRd != 0 && !this->Empty()){
+        if(insn->PhyRd != 0 && !this->Empty()){
             uint16_t iQPtr = this->m_issueQueue.getHeader();
             for(size_t i = 0; i < this->m_issueQueue.getUsage(); i++)
             {
                 InsnPtr_t& insn_wfIssue = this->m_issueQueue[iQPtr];
                 if(insn_wfIssue){
-                    if(insn->RdType == insn_wfIssue->Rs1Type && insn->PhyRd == insn_wfIssue->PhyRs1){
+                    if(insn->PhyRd == insn_wfIssue->PhyRs1){
                         insn_wfIssue->Operand1 = insn->RdResult;
                         insn_wfIssue->Operand1Ready  = true;
                         DPRINTF(Forwarding,"RobTag[{}],Pc[{:#x}] -> Get Forwarding Data Rs1[{}],PRs1[{}] - Value[{:#x}]",
@@ -104,7 +104,7 @@ public:
                             insn_wfIssue->Operand1
                         )
                     }
-                    if(insn->RdType == insn_wfIssue->Rs2Type && insn->PhyRd == insn_wfIssue->PhyRs2){
+                    if(insn->PhyRd == insn_wfIssue->PhyRs2){
                         insn_wfIssue->Operand2 = insn->RdResult;
                         insn_wfIssue->Operand2Ready = true;
                         DPRINTF(Forwarding,"RobTag[{}],Pc[{:#x}] -> Get Forwarding Data Rs2[{}],PRs2[{}] - Value[{:#x}]",

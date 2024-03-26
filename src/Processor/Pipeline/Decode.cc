@@ -95,7 +95,7 @@ Decode::SendReq(){
 
 void 
 Decode::DecodeInsn(InsnPtr_t& insn){
-    RISCV::Decode_Func(*insn.get(),this->m_Processor->m_ExecContext->getPriv());
+    RISCV::Decode_Func(*insn.get());
 }
 
 void 

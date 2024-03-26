@@ -47,15 +47,15 @@ Commit::CommitInsnPkg(){
         bool       needRedirect;
         for(auto& insn : insnPkg){
             if(insn){
-                if(insn->RdType != RegType_t::NONE){
-                    DPRINTF(CommitLog,"RobTag[{}],Pc[{:#x}] -> Write Result Rd[{}] PRd[{}] ({:#x})",
-                        insn->RobTag,
-                        insn->Pc,
-                        insn->IsaRd,
-                        insn->PhyRd,
-                        insn->RdResult
-                    );
-                }else if(insn->Fu == funcType_t::STU){
+                
+                DPRINTF(CommitLog,"RobTag[{}],Pc[{:#x}] -> Write Result Rd[{}] PRd[{}] ({:#x})",
+                    insn->RobTag,
+                    insn->Pc,
+                    insn->IsaRd,
+                    insn->PhyRd,
+                    insn->RdResult
+                );
+                if(insn->Fu == funcType_t::STU){
                     DPRINTF(CommitLog,"RobTag[{}],Pc[{:#x}] -> Write Mem Address[{:#x}] Data[{:#x}]",
                         insn->RobTag,
                         insn->Pc,

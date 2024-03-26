@@ -32,7 +32,7 @@ RfReadPort::Evaluate(){
     if(this->m_CalcuPipe.OutPort->valid){
         IssueInfo& t    = this->m_CalcuPipe.OutPort->data;
         InsnPtr_t& insn = t.insn;
-        if(insn->Rs1Type == RegType_t::INT && !insn->Operand1Ready){ 
+        if(!insn->Operand1Ready){ 
             if(this->m_Processor->getRcuPtr()->m_IntBusylist[insn->PhyRs1].done){
                 insn->Operand1 =  this->m_Processor->getRcuPtr()->m_IntRegfile[insn->PhyRs1];
                 insn->Operand1Ready = true;
@@ -45,7 +45,7 @@ RfReadPort::Evaluate(){
                 );
             }
         }
-        if(insn->Rs2Type == RegType_t::INT && !insn->Operand2Ready)
+        if(!insn->Operand2Ready)
         {
             if(this->m_Processor->getRcuPtr()->m_IntBusylist[insn->PhyRs2].done){
                 insn->Operand2 =  this->m_Processor->getRcuPtr()->m_IntRegfile[insn->PhyRs2];

@@ -27,7 +27,6 @@ struct Rob_entry_t
     funcType_t               Fu;
     uint16_t                 LSQtag;
 
-    RegType_t                RdType;
     IsaRegId_t               isaRd;
     PhyRegId_t               phyRd;
     PhyRegId_t               LphyRd;
