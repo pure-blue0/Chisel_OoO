@@ -1,0 +1,25 @@
+<Module type="Decode_Queue">
+	<Parameters>
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="clk" type="signal" description="A clock signal."/>
+	        <Input name="reset" type="signal" description="Reset signal, used to initialize or reset the FIFO state."/>
+	        <Input name="decoded_insn1" type="[95:0]" description="The first input data port, used to write data for the first instruction."/>
+	        <Input name="decoded_insn2" type="[95:0]" description="The second input data port, used to write the data of the second instruction."/>
+	        <Input name="wr_en1" type="signal" description="The first write enable signal controls whether decoded_insn1 is written to the FIFO."/>
+	        <Input name="wr_en2" type="signal" description="The second write enable signal controls whether decoded_insn2 is written to the FIFO."/>
+	        <Input name="pop_count" type="[1:0]" description="Specifies the number of entries to be read from and ejected from the FIFO."/>
+	        <!-- Outputs from each Functional Unit  -->
+	        <Output name="entry_out1" type="[95:0]" description="Used to output data in FIFO."/>
+	        <Output name="entry_out2" type="[95:0]" description="Used to output data in FIFO."/>
+	        <Output name="fifo_full" type="signal" description="Indicates whether the FIFO is full."/>
+	        <Output name="fifo_empty" type="signal" description="Indicates whether the FIFO is empty."/>
+	        <Output name="head_ptr" type="[3:0]" description="The current header pointer."/>
+	        <Output name="tail_ptr" type="[3:0]" description="The current tail pointer."/>
+	        <Output name="out_count" type="[1:0]" description="How many valid entries were actually output"/>
+	</Interface>
+	<Function description="1. Reset according to reset signal 2. It can read and write all the data in the entry 3. It has two input data ports decoded_insn1 and decoded_insn2 and two write enable signals wr_en1 and wr_en2, which can write one data or two data in sequence according to the value of write enable signal in one cycle. 4. Can read a specified number of entries out of the FIFO and pop them according to the pop_count signal 5. It can record the current head pointer and tail pointer and update them 6. Output whether the current queue is full or empty 7. Be able to keep track of how many valid entries were actually output"/>
+<ReferenceModel code=""/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

@@ -1,0 +1,18 @@
+<Module type="Rcu_TryAllocate">
+    <Parameters>
+    </Parameters>
+    <Interface>
+        <!-- Interfaces for each Functional Unit -->
+        <Input name="insn_num" type="[2:0]" description="The number of instructions fetched from decode_queue"/>
+        <Input name="Rob_unuse_count" type="[3:0]" description="The number of entries available in the rob queue"/>
+        <Input name="IntFreelist_unuse_count" type="[7:0]" description="Number of entries available in the IntFreelist queue"/>
+        <!-- Outputs from each Functional Unit  -->
+        <Output name="Rcu_success_count" type="[2:0]" description="Output the rcu entry count that can be allocated"/>
+    </Interface>
+    <Function description="This module is used to compare insn_num with the number of entries available in the m_Rob queue and the m_IntFreelist queue and assign the smaller one to the Rcu_success_count output"/>
+    <ReferenceModel code="void Rcu::TryAllocate(uint8_t&amp; insn_num, uint64_t&amp; SuccessCount){
+SuccessCount = this-&gt;m_Rob.getAvailEntryCount()&lt;this-&gt;m_IntFreelist.getAvailEntryCount()?this-&gt;m_Rob.getAvailEntryCount():this-&gt;m_IntFreelist.getAvailEntryCount();
+    SuccessCount =insn_num&lt;SuccessCount?insn_num:SuccessCount;
+};"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->
