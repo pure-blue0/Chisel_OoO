@@ -54,16 +54,16 @@ class GenAddress(val FetchByteWidth: Int, val iCacheAlignByte: Int) extends Modu
     io.PcRegisterIn := io.IEWRedirectTag
   }.elsewhen(io.DecodeRedirectVaild) {
     io.PcRegisterIn := io.DecodeRedirectTag
-  }.elsewhen(io.PcRegisteroutVaild) {
-    io.PcRegisterIn := io.PcRegisterout
-  }.otherwise {
+  }.elsewhen(io.sendSuccess) {
     val alignedPC = (io.PcRegisterout & ~(iCacheAlignByte.U - 1.U)) + FetchByteWidth.U
     io.PcRegisterIn := alignedPC
+  }.otherwise {
+    io.PcRegisterIn := io.PcRegisterout
   }
 }
 
 
 
-//object VerilogGen extends App {
-//  println((new chisel3.stage.ChiselStage).emitVerilog(new GenAddress(8,8)))
-//}
+object VerilogGen extends App {
+  println((new chisel3.stage.ChiselStage).emitVerilog(new GenAddress(8,8)))
+}
