@@ -53,9 +53,9 @@ Rcu::CreateRobEntry(InsnPtr_t& insn){
 
     insn->RobTag = this->m_Rob.Allocate();//返回一个可用的rob entry指针
 
-    bool isNop   = (insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0);
-    bool isFence = (insn->Fu == funcType_t::CSR) && (insn->SubOp == CSR_FENCE);
-    bool isMret  = (insn->Fu == funcType_t::CSR) && (insn->SubOp == CSR_MRET);
+    bool isNop   = (insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0);//nop
+    bool isFence = (insn->Fu == funcType_t::CSR) && (insn->SubOp == 9);//fence
+    bool isMret  = (insn->Fu == funcType_t::CSR) && (insn->SubOp == 7);//mret
 
     newEntry.valid              = true;
     newEntry.done               = isNop | insn->Excp.valid | isFence | isMret;//如果是这些情况则done
@@ -78,7 +78,7 @@ Rcu::CreateRobEntry(InsnPtr_t& insn){
         this->m_RollBackTag     = insn->RobTag;
         this->m_ExcpCause       = insn->Excp.Cause;
         this->m_ExcpTval        = insn->Excp.Tval;
-        this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//发生异常就把issue后的指令都变成气泡
+        this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//发生异常就把issue前的stage都插入气泡
     }else{
         if(insn->ControlFlowInsn){
             this->m_RobState        = rob_state_t::Rob_Undo;
@@ -88,11 +88,12 @@ Rcu::CreateRobEntry(InsnPtr_t& insn){
             }
         }
     }
-
-    newEntry.insnPtr = insn; // For Trace Usage, Keep the Pointer
-    this->m_Rob[insn->RobTag] = newEntry;
+    if(insn){//如果输入的是有效指令，则向rob队列写入数据
+        this->m_Rob[insn->RobTag] = newEntry;
+    }
+    
 }
-
+ 
 void
 Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
     for(size_t i = 0; i < allocCount; i++){

@@ -79,18 +79,7 @@ public:
                                     return;
                                 }
                             }
-                            for(auto subs : this->m_SubSchedular){
-                                if(subs->m_SupportFunc.count(insn->Fu) && !subs->Busy()){
-                                    info.entryIndex = subs->Allocate();
-                                    info.desIndex   = subs->m_SchedularId;
-                                    info.isToFu     = false;
-                                    Success         = true;
-                                    rfport->set(info);
-                                    insn->State = InsnState_t::State_ReadOperand;
-                                    return;
-                                }
-                            }
-                            return;
+
                         }
                     }
                 }

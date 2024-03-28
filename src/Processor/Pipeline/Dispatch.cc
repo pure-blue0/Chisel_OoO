@@ -116,16 +116,14 @@ Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
         ){
             insn->State = InsnState_t::State_Commit;//直接提交
         }else{
-            bool Success = false;
+            insn->State = InsnState_t::State_Issue;
             for(auto scheduler : this->m_SchedularVec){
-                if(scheduler.scheduler->m_SupportFunc.count(insn->Fu) && !scheduler.scheduler->Busy())
-                {//dispatchscheduler的m_SupportFunc与issuescheduler支持的是一样的，因此指令都会进入到第一集调度器中
+                if(scheduler.scheduler->m_SupportFunc.count(insn->Fu) )
+                {
                     scheduler.scheduler->Schedule(insn,scheduler.scheduler->Allocate());
-                    Success = true;
                     break;
                 }
             } 
-            DASSERT(Success,"Unexpected Dispatch Fail!")
         }
     }
 }
