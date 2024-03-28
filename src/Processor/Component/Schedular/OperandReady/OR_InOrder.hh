@@ -57,6 +57,7 @@ public:
     void IssueSelect(uint64_t& index, InsnPtr_t& insn, bool& Success){
         IssueInfo info;
         Success = false;
+            
             insn = this->m_issueQueue.front();
             info.insn = insn;
             if(insn){

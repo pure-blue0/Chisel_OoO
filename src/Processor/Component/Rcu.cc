@@ -46,14 +46,6 @@ Rcu::Reset(){
     this->m_IntFreelist.Reset();
 }
 
-void 
-Rcu::Rename(InsnPkg_t& insnPkg){
-    for(auto& insn : insnPkg){
-        insn->PhyRs1 = this->m_IntRenameTable[insn->IsaRs1];
-        insn->PhyRs2 = this->m_IntRenameTable[insn->IsaRs2];
-        insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
-    }
-}
 
 void 
 Rcu::CreateRobEntry(InsnPtr_t& insn){
@@ -61,115 +53,82 @@ Rcu::CreateRobEntry(InsnPtr_t& insn){
 
     insn->RobTag = this->m_Rob.Allocate();//返回一个可用的rob entry指针
 
-    if(insn){
-        bool isNop   = (insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0);
-        bool isFence = (insn->Fu == funcType_t::CSR) && (insn->SubOp == CSR_FENCE);
-        bool isMret  = (insn->Fu == funcType_t::CSR) && (insn->SubOp == CSR_MRET);
+    bool isNop   = (insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0);
+    bool isFence = (insn->Fu == funcType_t::CSR) && (insn->SubOp == CSR_FENCE);
+    bool isMret  = (insn->Fu == funcType_t::CSR) && (insn->SubOp == CSR_MRET);
 
-        newEntry.valid              = true;
-        newEntry.done               = isNop | insn->Excp.valid | isFence | isMret;//如果是这些情况则done
+    newEntry.valid              = true;
+    newEntry.done               = isNop | insn->Excp.valid | isFence | isMret;//如果是这些情况则done
 
-        newEntry.isStable           = newEntry.done;
-        newEntry.isMisPred          = false;
-        newEntry.isExcp             = insn->Excp.valid;
-        
-        //newEntry.isRvc              = insn->IsRvcInsn;
-        newEntry.pc                 = insn->Pc;
+    newEntry.isStable           = newEntry.done;
+    newEntry.isMisPred          = false;
+    newEntry.isExcp             = insn->Excp.valid;
 
-        newEntry.Fu                 = insn->Fu;
-        newEntry.LSQtag             = insn->LSQTag;
+    newEntry.pc                 = insn->Pc;
 
+    newEntry.Fu                 = insn->Fu;
+    newEntry.LSQtag             = insn->LSQTag;
 
-        newEntry.isaRd              = insn->IsaRd;
-        newEntry.phyRd              = insn->PhyRd;
-        newEntry.LphyRd             = insn->LPhyRd;
+    newEntry.isaRd              = insn->IsaRd;
+    newEntry.phyRd              = insn->PhyRd;
+    newEntry.LphyRd             = insn->LPhyRd;
 
-        if(insn->Excp.valid){
-            this->m_RobState        = rob_state_t::Rob_Undo;
-            this->m_RollBackTag     = insn->RobTag;
-            this->m_ExcpCause       = insn->Excp.Cause;
-            this->m_ExcpTval        = insn->Excp.Tval;
-            this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//发生异常就把issue后的指令都变成气泡
-        }else{
-            if(insn->ControlFlowInsn){
-                this->m_RobState        = rob_state_t::Rob_Undo;
-                this->m_RollBackTag     = insn->RobTag;   
-                if(isMret){
-                    this->m_RobState        = rob_state_t::Rob_Idle;
-                }
-            }
-            // if(insn->Fu == funcType_t::CSR && insn->SubOp == CSR_FENCE){
-                // DPRINTF(MemoryOrder,"RobTag[{}],Pc[{:#x}] -> Receive Fence, Change Memory Order",insn->RobTag,insn->Pc);
-            // }
-        }
+    if(insn->Excp.valid){
+        this->m_RobState        = rob_state_t::Rob_Undo;
+        this->m_RollBackTag     = insn->RobTag;
+        this->m_ExcpCause       = insn->Excp.Cause;
+        this->m_ExcpTval        = insn->Excp.Tval;
+        this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//发生异常就把issue后的指令都变成气泡
     }else{
-        newEntry.valid      = false;
-        newEntry.isStable   = true;
-        newEntry.done       = true;
-        newEntry.isExcp     = false;
-        newEntry.isMisPred  = false;
+        if(insn->ControlFlowInsn){
+            this->m_RobState        = rob_state_t::Rob_Undo;
+            this->m_RollBackTag     = insn->RobTag;   
+            if(isMret){
+                this->m_RobState        = rob_state_t::Rob_Idle;
+            }
+        }
     }
 
     newEntry.insnPtr = insn; // For Trace Usage, Keep the Pointer
-
     this->m_Rob[insn->RobTag] = newEntry;
 }
 
 void
 Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
-    this->Rename(insnPkg);
     for(size_t i = 0; i < allocCount; i++){
         InsnPtr_t insn = insnPkg[i];
-        if(insn){
-            if(insn->IsaRd != 0){
-                insn->PhyRd = this->m_IntFreelist.pop();//取出空闲的reg id
-                this->m_IntBusylist[insn->PhyRd].allocated = true;//根据reg id 将busylist中对应的entry进行更新
-                this->m_IntBusylist[insn->PhyRd].done      = false;
-                this->m_IntBusylist[insn->PhyRd].forwarding = false;
-                this->m_IntRenameTable[insn->IsaRd]        = insn->PhyRd;//保存rd对应的reg id
-            }
-        }
-    }
-    this->ResovleDependancy(insnPkg);
-    for(size_t i = 0; i < allocCount; i++){
-        InsnPtr_t insn = insnPkg[i];
-        this->CreateRobEntry(insn);
-    }
-}
-
-
-void 
-Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
-     
-    SuccessCount = this->m_Rob.getAvailEntryCount()<this->m_IntFreelist.getAvailEntryCount()?this->m_Rob.getAvailEntryCount():this->m_IntFreelist.getAvailEntryCount();
-    SuccessCount =insnPkg.size()<SuccessCount?insnPkg.size():SuccessCount;
-    
-};
-
-
-void 
-Rcu::ResovleDependancy(InsnPkg_t& insnPkg){//解决依赖的解释见daily learning
-    for(size_t i = 0 ; i < insnPkg.size(); i++){
-        InsnPtr_t& insn = insnPkg[i];
+        insn->PhyRs1 = this->m_IntRenameTable[insn->IsaRs1];
+        insn->PhyRs2 = this->m_IntRenameTable[insn->IsaRs2];
+        insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
         if(insn->IsaRd != 0){
-            for(size_t j = i + 1; j < insnPkg.size(); j++){//如果后面的指令的rs1或rs2等于当前指令的rd，且数据类型一致
-                InsnPtr_t& laterInsn = insnPkg[j];         //那么需要将后续指令的rs1或rs2也替换为当前rd映射的物理寄存器
-                if(laterInsn){
-                    if(insn->IsaRd == laterInsn->IsaRs1){
-                        laterInsn->PhyRs1 = insn->PhyRd;
-                    }
-                    if(insn->IsaRd == laterInsn->IsaRs2){
-                        laterInsn->PhyRs2 = insn->PhyRd;
-                    } 
-                    if(insn->IsaRd == laterInsn->IsaRd){
-                        laterInsn->LPhyRd = insn->PhyRd;
-                    } 
-                }
-            }
+            insn->PhyRd = this->m_IntFreelist.pop();//取出空闲的reg id
+            this->m_IntBusylist[insn->PhyRd].allocated = true;//根据reg id 将busylist中对应的entry进行更新
+            this->m_IntBusylist[insn->PhyRd].done      = false;
+            this->m_IntBusylist[insn->PhyRd].forwarding = false;
+            this->m_IntRenameTable[insn->IsaRd]        = insn->PhyRd;//保存rd对应的reg id
         }
+    }
+    if(allocCount==2){//处理指令2与指令1之间可能存在的依赖
+            InsnPtr_t& insn1 = insnPkg[0];
+            InsnPtr_t& Insn2 = insnPkg[1];
+            if(insn1->IsaRd != 0){
+                if(insn1->IsaRd == Insn2->IsaRs1)Insn2->PhyRs1 = insn1->PhyRd;
+                if(insn1->IsaRd == Insn2->IsaRs2)Insn2->PhyRs2 = insn1->PhyRd;
+                if(insn1->IsaRd == Insn2->IsaRd) Insn2->LPhyRd = insn1->PhyRd;
+            }
+    }
+    for(size_t i = 0; i < allocCount; i++){
+        InsnPtr_t insn = insnPkg[i];
+        this->CreateRobEntry(insn);//发送创建rob请求
     }
 }
 
+
+void 
+Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){ 
+    SuccessCount = this->m_Rob.getAvailEntryCount()<this->m_IntFreelist.getAvailEntryCount()?this->m_Rob.getAvailEntryCount():this->m_IntFreelist.getAvailEntryCount();
+    SuccessCount =insnPkg.size()<SuccessCount?insnPkg.size():SuccessCount; 
+};
 
 bool 
 Rcu::ReadyForCommit(uint64_t RobTag){
@@ -309,7 +268,7 @@ Rcu::ReleaseResource(uint16_t robTag){
         this->m_IntBusylist[entry.phyRd].forwarding = false;
         this->m_IntBusylist[entry.phyRd].done       = false;
         this->m_IntBusylist[entry.phyRd].allocated  = false;
-        this->m_IntRenameTable[entry.isaRd] = entry.LphyRd;//确保在回滚后，逻辑寄存器再次与正确的物理寄存器对应
+        this->m_IntRenameTable[entry.isaRd] = entry.LphyRd;
         DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}], Free phyRegister : Rd[{}], PRd[{}], LPRd[{}]",
             robTag,
             entry.pc,
@@ -414,6 +373,30 @@ Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect)
     }
 
 }
+
+// void 
+// Rcu::ResovleDependancy(InsnPkg_t& insnPkg){//解决依赖的解释见daily learning
+//     for(size_t i = 0 ; i < insnPkg.size(); i++){
+//         InsnPtr_t& insn = insnPkg[i];
+//         if(insn->IsaRd != 0){
+//             for(size_t j = i + 1; j < insnPkg.size(); j++){//如果后面的指令的rs1或rs2等于当前指令的rd，且数据类型一致
+//                 InsnPtr_t& laterInsn = insnPkg[j];         //那么需要将后续指令的rs1或rs2也替换为当前rd映射的物理寄存器
+//                 if(laterInsn){
+//                     if(insn->IsaRd == laterInsn->IsaRs1){
+//                         laterInsn->PhyRs1 = insn->PhyRd;
+//                     }
+//                     if(insn->IsaRd == laterInsn->IsaRs2){
+//                         laterInsn->PhyRs2 = insn->PhyRd;
+//                     } 
+//                     if(insn->IsaRd == laterInsn->IsaRd){
+//                         laterInsn->LPhyRd = insn->PhyRd;
+//                     } 
+//                 }
+//             }
+//         }
+//     }
+// }
+
 // void 
 // Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
     
@@ -438,6 +421,15 @@ Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect)
 //         SuccessCount++;
 //     }
 // };
+
+// void 
+// Rcu::Rename(InsnPkg_t& insnPkg){
+//     for(auto& insn : insnPkg){
+//         insn->PhyRs1 = this->m_IntRenameTable[insn->IsaRs1];
+//         insn->PhyRs2 = this->m_IntRenameTable[insn->IsaRs2];
+//         insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
+//     }
+// }
 
 
 } // namespace Emulator

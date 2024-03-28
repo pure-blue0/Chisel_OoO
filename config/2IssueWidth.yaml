@@ -71,8 +71,6 @@ Simulator : {
             {Name : BRU0 , FuncType : BRU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
             {Name : ALU0 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
             {Name : ALU1 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
-            {Name : MUL0 , FuncType : MUL, Latency : 3, Pipelined : true  , WriteBackPort : [0,1] },
-            {Name : DIV0 , FuncType : DIV, Latency : 7, Pipelined : false , WriteBackPort : [0,1] },
         ],
         Schedulers : [
             {
@@ -88,9 +86,9 @@ Simulator : {
             },
             {
               Name             : UnifiedDispatchQueue0,
-              EntryCount       : 8,
-              EnqueWidth       : 1,
-              DequeWidth       : 1,
+              EntryCount       : 12,
+              EnqueWidth       : 2,
+              DequeWidth       : 2,
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady,
               RFReadPort       : [0],
@@ -99,13 +97,13 @@ Simulator : {
             },
             {
               Name             : UnifiedDispatchQueue1,
-              EntryCount       : 8,
-              EnqueWidth       : 1,
-              DequeWidth       : 1,
+              EntryCount       : 12,
+              EnqueWidth       : 2,
+              DequeWidth       : 2,
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
               RFReadPort       : [1],
-              FunctionUnitPool : [2,3,4,5,6],
+              FunctionUnitPool : [2,3,4],
               SubScheduler     : []
             },
             

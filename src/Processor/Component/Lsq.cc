@@ -30,17 +30,14 @@ Lsq::Reset(){
 void 
 Lsq::WriteBack(InsnPtr_t& insn){
     if(insn->Fu == funcType_t::LDU){
-        this->m_LoadQueue[insn->LSQTag].isVirtual = false;
         this->m_LoadQueue[insn->LSQTag].addressReady = true;
         this->m_LoadQueue[insn->LSQTag].address  = insn->Agu_addr;
     }else if(insn->Fu == funcType_t::STU)
     {
-        this->m_StoreQueue[insn->LSQTag].isVirtual = false;
         this->m_StoreQueue[insn->LSQTag].addressReady = true;
         this->m_StoreQueue[insn->LSQTag].address  = insn->Agu_addr;
         this->m_StoreQueue[insn->LSQTag].data  = insn->Agu_data;
     }
-    
 }
 
 void 
@@ -65,52 +62,33 @@ void
 Lsq::Allocate(InsnPkg_t& insnPkg,uint64_t allocCount){
     for(size_t i = 0 ; i < allocCount; i++){
         auto& insn = insnPkg[i];
-        if(insn){
             if(insn->Fu == funcType_t::LDU){
-                insn->LSQTag = this->m_LoadQueue.Allocate();
-                this->CreateLdqEntry(insn);
+                LDQ_entry_t t; 
+                t.state = loadState_t::load_WaitSend;
+                t.commited = false;
+                t.killed = false;
+                
+                t.addressReady = false;
+                t.address      = 0;
+                t.insnPtr = insn;
+                insn->LSQTag = this->m_LoadQueue.Allocate();//获取load queue的尾指针，并将尾指针+1
+                this->m_LoadQueue[insn->LSQTag] = t;//将数据存入load queue的尾部
             }else if (insn->Fu == funcType_t::STU){
-                insn->LSQTag = this->m_StoreQueue.Allocate();
-                this->CreateStqEntry(insn);
+                STQ_entry_t t;
+                t.state = storeState_t::store_WaitSend;
+                t.commited = false;
+                t.addressReady = false;
+                t.address = 0;
+                t.killed = false;
+                t.dataReady = false;;
+                t.data = 0 ;
+                t.insnPtr = insn;
+                insn->LSQTag = this->m_StoreQueue.Allocate();//获取store queue的尾指针，并将尾指针+1
+                this->m_StoreQueue[insn->LSQTag] = t;  //将数据存入store queue的尾部
             }
-        }
     }
 }
 
-void
-Lsq::CreateLdqEntry(InsnPtr_t& insn){
-    LDQ_entry_t t; 
-    t.state = loadState_t::load_WaitSend;
-    t.commited = false;
-    t.killed = false;
-    t.hasDependancy = !this->m_StoreQueue.empty();
-    t.oldestStqTag = this->m_StoreQueue.getLastPtr(this->m_StoreQueue.getTail());
-    /* Load Address CAM */
-    t.addressReady = false;
-    t.isVirtual    = false;;
-    t.address      = 0;
-    t.op           = insn->SubOp;
-
-
-    t.insnPtr = insn;
-    this->m_LoadQueue[insn->LSQTag] = t;
-
-}
-
-void
-Lsq::CreateStqEntry(InsnPtr_t& insn){
-    STQ_entry_t t;
-    t.state = storeState_t::store_WaitSend;
-    t.commited = false;
-    t.addressReady = false;
-    t.isVirtual = false;
-    t.address = 0;
-    t.op = insn->SubOp;
-    t.dataReady = false;;
-    t.data = 0 ;
-    t.insnPtr = insn;
-    this->m_StoreQueue[insn->LSQTag] = t;   
-}
 
 
 void 
@@ -121,7 +99,7 @@ Lsq::TryIssueLoad(MemReq_t& memReq,bool& Success){
         for(size_t i = 0 ; i < this->m_LoadQueue.getUsage(); i++){
             auto& ldqEntry = this->m_LoadQueue[ldqPtr];
             if(ldqEntry.state == loadState_t::load_WaitSend && !ldqEntry.killed){//在dispatch stage就已经改变了load state
-                if(ldqEntry.addressReady && !ldqEntry.hasDependancy)
+                if(ldqEntry.addressReady )
                 {
                     Success = true;
                     ldqEntry.state = loadState_t::load_Inflight;
@@ -161,7 +139,7 @@ Lsq::TryIssueStore(MemReq_t& memReq,bool& Success){
                     }
                     memReq.Address      = stqEntry.address & ~(this->m_dCacheAlignByte - 1);
                     memReq.Length       = this->m_Processor->m_XLEN / 2;
-                    switch (stqEntry.op)
+                    switch (stqEntry.insnPtr->SubOp)
                     {
                     case STU_SB:
                         memReq.ByteMask = ((2 << (1-1)) - 1) << offset;
@@ -199,7 +177,7 @@ Lsq::KillLoadEntry(uint16_t LdqTag){
 
 void
 Lsq::KillStoreEntry(uint16_t StqTag){
-    this->m_StoreQueue.RollBack();
+    this->m_StoreQueue[StqTag].killed = true;
 }
 
 void 
@@ -214,31 +192,18 @@ Lsq::CommitStoreEntry(uint16_t StqTag){
 
 void
 Lsq::Evaulate(){
-    while(!this->m_StoreQueue.empty() && this->m_StoreQueue.front().state == storeState_t::store_Executed){
-        uint16_t ldqPtr = this->m_LoadQueue.getHeader();
-        for(size_t i = 0; i < this->m_LoadQueue.getUsage(); i++){
-            auto& ldqEntry = this->m_LoadQueue[ldqPtr];
-            if(ldqEntry.hasDependancy && ldqEntry.oldestStqTag == this->m_StoreQueue.getHeader()){
-                ldqEntry.hasDependancy = false;
-                DPRINTF(MemoryDependancy,"RobTag[{}],Pc[{:#x}] -> Clear Dependancy RobTag[{}],Pc[{:#x}]",
-                    this->m_StoreQueue.front().insnPtr->RobTag,
-                    this->m_StoreQueue.front().insnPtr->Pc,
-                    ldqEntry.insnPtr->RobTag,
-                    ldqEntry.insnPtr->Pc
-                );
-            }
-            ldqPtr = this->m_LoadQueue.getNextPtr(ldqPtr);
+    if(!this->m_StoreQueue.empty()){
+        auto& STqEntry = this->m_StoreQueue[this->m_StoreQueue.getHeader()];
+        if(STqEntry.killed && STqEntry.state != storeState_t::store_Inflight){
+            this->m_StoreQueue.Pop();
         }
-        this->m_StoreQueue.Pop();
     }
-    while(!this->m_LoadQueue.empty()){
+    if(!this->m_LoadQueue.empty()){
         auto& LdqEntry = this->m_LoadQueue[this->m_LoadQueue.getHeader()];
         if(LdqEntry.commited){
             this->m_LoadQueue.Pop();
         }else if(LdqEntry.killed && LdqEntry.state != loadState_t::load_Inflight){
             this->m_LoadQueue.Pop();
-        }else{
-            break;
         }
     }
 }

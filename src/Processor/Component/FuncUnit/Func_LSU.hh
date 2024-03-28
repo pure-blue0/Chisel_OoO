@@ -172,7 +172,7 @@ public:
                 insn->Excp = memResp.Excp;
                 if(!memResp.Excp.valid){
                     uint64_t offset = ldqEntry.address & (this->m_Lsq->m_dCacheAlignByte - 1);
-                    switch (ldqEntry.op)
+                    switch (ldqEntry.insnPtr->SubOp)
                     {
                     case LDU_LB  :
                         insn->RdResult = *(int8_t*)(memResp.Data + offset);
@@ -215,6 +215,7 @@ public:
         }else if(memResp.Opcode == MemOp_t::Store){
             auto& stqEntry = this->m_Lsq->m_StoreQueue[memResp.Id.TransId];
             stqEntry.state = storeState_t::store_Executed;
+            this->m_Lsq->m_StoreQueue.Pop();
         }
     }
 

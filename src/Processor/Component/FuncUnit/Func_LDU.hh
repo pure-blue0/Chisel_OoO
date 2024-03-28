@@ -119,7 +119,7 @@ public:
                 insn->Excp = memResp.Excp;
                 if(!memResp.Excp.valid){
                     uint64_t offset = ldqEntry.address & (this->m_Lsq->m_dCacheAlignByte - 1);
-                    switch (ldqEntry.op)
+                    switch (ldqEntry.insnPtr->SubOp)
                     {
                     case LDU_LB  :
                         insn->RdResult = *(int8_t*)(memResp.Data + offset);

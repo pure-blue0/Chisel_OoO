@@ -73,34 +73,33 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
     // Flush Status
     for(auto& scheduler : this->m_SchedularVec){//获取每个调度器的可用，EnqueWidth：表示的是一个周期内最大的允许指令入队的数量
         scheduler.AvailPort = std::min(scheduler.scheduler->GetAvailibleEntryCount(),scheduler.scheduler->m_EnqueWidth);
-    }
+    }//获取每个队列可用entry数
 
     SuccessCount = 0;
     for(auto& insn : insnPkg){
 
-        if(insn->Excp.valid){
+        if(insn->Excp.valid){//判断指令是否为异常指令
             SuccessCount++;
             break;
         }
-        if((insn->Fu == funcType_t::ALU && insn->IsaRd == 0)){ // NOP
+        if((insn->Fu == funcType_t::ALU && insn->IsaRd == 0)){ // 判断该指令是否为nop指令
             SuccessCount++;  
             continue;
         }
-        bool Success = false;
+        bool Success=false;
         for(auto& schedular : this->m_SchedularVec){//遍历调度器列表
-            //找到一个支持当前指令功能类型（Fu）且没有忙碌的调度器，并且该调度器有可用的端口
-            if(schedular.scheduler->m_SupportFunc.count(insn->Fu)
-                && !schedular.scheduler->Busy() && schedular.AvailPort)
+            //找到一个支持当前指令功能类型（Fu），并且该调度器有可用的端口
+            //if(schedular.scheduler->m_SupportFunc.count(insn->Fu)&& !schedular.scheduler->Busy() && schedular.AvailPort)//加上busy判断，更好的性能
+            if(schedular.scheduler->m_SupportFunc.count(insn->Fu) && schedular.AvailPort)
             {
                 SuccessCount++;
                 schedular.AvailPort--;//可用端口数-1
-                Success = true;
+                Success=true;
                 break;
             }
         }
-        //如果第二种情况成立，那么即使找到了可以接受当前指令的调度器，也会立即跳出循环，
-        //因为控制流指令通常会导致流水线中断或分支预测失败，需要额外的处理。
-        if(!Success || (CheckControlFlow && insn->ControlFlowInsn)){
+        //如果指令没有匹配到ISSUE队列或指令是控制流指令，则不再对后续指令进行判断
+        if(!Success || insn->ControlFlowInsn){
             break;  
         }
     }

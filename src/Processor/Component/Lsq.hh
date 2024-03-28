@@ -25,10 +25,7 @@ struct LDQ_entry_t
     uint16_t                 oldestStqTag;
     /* Load Address CAM */
     bool                     addressReady;
-    bool                     isVirtual;
     Addr_t                   address;
-    uint8_t                  op;
-
 
     InsnPtr_t                insnPtr;
 };
@@ -39,13 +36,11 @@ enum storeState_t{
 struct STQ_entry_t
 {
     storeState_t             state;
+    bool                     killed;
     bool                     commited;
     /* Store Address CAM */
     bool                     addressReady;
-    bool                     isVirtual;
     Addr_t                   address;
-    uint8_t                  op;
-
     bool                     dataReady;
     xReg_t                   data;
 
@@ -92,10 +87,6 @@ public:
     void TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount);
 
     void Allocate(InsnPkg_t& insnPkg,uint64_t allocCount);
-
-    void CreateLdqEntry(InsnPtr_t& insn);
-
-    void CreateStqEntry(InsnPtr_t& insn);
 
     void TryIssueLoad(MemReq_t& memReq,bool& Success);
 
