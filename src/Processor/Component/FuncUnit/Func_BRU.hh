@@ -28,39 +28,18 @@ public:
         insn->RdResult = (uint64_t)insn->Pc +  4;
         switch (insn->SubOp)
         {
-        case BRU_JAR  :
-            taken = true;
-            break;
-        case BRU_JALR :
-            taken = true;
-            break;
-        case BRU_BEQ  :
-            taken = (int64_t)insn->Operand1 == (int64_t)insn->Operand2;
-            break;
-        case BRU_BNE  :
-            taken = (int64_t)insn->Operand1 != (int64_t)insn->Operand2;
-            break;
-        case BRU_BLT  :
-            taken = (int64_t)insn->Operand1 < (int64_t)insn->Operand2;
-            break;
-        case BRU_BGE  :
-            taken = (int64_t)insn->Operand1 >= (int64_t)insn->Operand2;
-            break;
-        case BRU_BLTU :
-            taken = (uint64_t)insn->Operand1 < (uint64_t)insn->Operand2;
-            break;
-        case BRU_BGEU :
-            taken = (uint64_t)insn->Operand1 >= (uint64_t)insn->Operand2;
-            break;         
-        default:
-            break;
+        case BRU_JAR  :taken = true;break;
+        case BRU_JALR :taken = true;break;
+        case BRU_BEQ  :taken = (int64_t)insn->Operand1 == (int64_t)insn->Operand2;break;
+        case BRU_BNE  :taken = (int64_t)insn->Operand1 != (int64_t)insn->Operand2;break;
+        case BRU_BLT  :taken = (int64_t)insn->Operand1 < (int64_t)insn->Operand2;break;
+        case BRU_BGE  :taken = (int64_t)insn->Operand1 >= (int64_t)insn->Operand2;break;
+        case BRU_BLTU :taken = (uint64_t)insn->Operand1 < (uint64_t)insn->Operand2;break;
+        case BRU_BGEU :taken = (uint64_t)insn->Operand1 >= (uint64_t)insn->Operand2;break;         
+        default:taken = false;break;
         }
-        if(insn->SubOp == BRU_JALR){
-            insn->BruTarget = (int64_t)insn->Operand1 + (int64_t)insn->imm;
-        }else{
-            insn->BruTarget = (uint64_t)insn->Pc + (taken ? (int64_t)insn->imm :  4);
-        }
-
+        if(insn->SubOp == BRU_JALR)insn->BruTarget = (int64_t)insn->Operand1 + (int64_t)insn->imm;
+        else insn->BruTarget = (uint64_t)insn->Pc + (taken ? (int64_t)insn->imm :  4);
         insn->BruMisPred = (taken != insn->Pred.Taken) || (insn->BruTarget != insn->Pred.Target);
     };
 

@@ -26,56 +26,26 @@ public:
     void Compute(InsnPtr_t& insn){
         switch (insn->SubOp)
         {
-        case ALU_ADD  :
-            insn->RdResult = (int64_t)insn->Operand1 + (int64_t)insn->Operand2;
+        case ALU_ADD  :insn->RdResult = (int64_t)insn->Operand1 + (int64_t)insn->Operand2;
             break;       
-        case ALU_SLL  :
-            insn->RdResult = (uint64_t)insn->Operand1 << (uint64_t)insn->Operand2;
+        case ALU_SLL  :insn->RdResult = (uint64_t)insn->Operand1 << (uint64_t)insn->Operand2;
             break;
-        case ALU_SUB  :
-            insn->RdResult = (int64_t)insn->Operand1 - (int64_t)insn->Operand2;
-            break;
-        case ALU_SLT  :
-            insn->RdResult = (int64_t)insn->Operand1 < (int64_t)insn->Operand2;
-            break;
-        case ALU_SLTU :          
-            insn->RdResult = (uint64_t)insn->Operand1 < (uint64_t)insn->Operand2;
-            break;
-        case ALU_XOR  :
-            insn->RdResult = (uint64_t)insn->Operand1 ^ (uint64_t)insn->Operand2;
-            break;
-        case ALU_SRL  :
-            insn->RdResult = (uint64_t)insn->Operand1 >> (uint64_t)insn->Operand2;
-            break;
-        case ALU_SRA  :
-            insn->RdResult = (int64_t)insn->Operand1 >> (uint64_t)insn->Operand2;
-            break;
-        case ALU_OR   :
-            insn->RdResult = (uint64_t)insn->Operand1 | (uint64_t)insn->Operand2;
-            break;
-        case ALU_AND  :
-            insn->RdResult = (uint64_t)insn->Operand1 & (uint64_t)insn->Operand2;
-            break;
-        case ALU_ADDW :
-            insn->RdResult = (int32_t)insn->Operand1 + (int32_t)insn->Operand2;
-            break;
-        case ALU_SUBW :
-            insn->RdResult = (int32_t)insn->Operand1 - (int32_t)insn->Operand2;
-            break;
-        case ALU_SLLW :
-            insn->RdResult = (int32_t)insn->Operand1 << (uint32_t)insn->Operand2;
-            break;
-        case ALU_SRLW :
-            insn->RdResult = (int32_t)((uint32_t)insn->Operand1 >> (uint32_t)insn->Operand2);
-            break;
-        case ALU_SRAW :
-            insn->RdResult = (int32_t)insn->Operand1 >> (uint32_t)insn->Operand2;
-            break;
-        default:
-            break;
+        case ALU_SUB  :insn->RdResult = (int64_t)insn->Operand1 - (int64_t)insn->Operand2;break;
+        case ALU_SLT  :insn->RdResult = (int64_t)insn->Operand1 < (int64_t)insn->Operand2;break;
+        case ALU_SLTU :insn->RdResult = (uint64_t)insn->Operand1 < (uint64_t)insn->Operand2;break;
+        case ALU_XOR  :insn->RdResult = (uint64_t)insn->Operand1 ^ (uint64_t)insn->Operand2;break;
+        case ALU_SRL  :insn->RdResult = (uint64_t)insn->Operand1 >> (uint64_t)insn->Operand2;break;
+        case ALU_SRA  :insn->RdResult = (int64_t)insn->Operand1 >> (uint64_t)insn->Operand2;break;
+        case ALU_OR   :insn->RdResult = (uint64_t)insn->Operand1 | (uint64_t)insn->Operand2;break;
+        case ALU_AND  :insn->RdResult = (uint64_t)insn->Operand1 & (uint64_t)insn->Operand2;break;
+        case ALU_ADDW :insn->RdResult = (int32_t)insn->Operand1 + (int32_t)insn->Operand2;break;
+        case ALU_SUBW :insn->RdResult = (int32_t)insn->Operand1 - (int32_t)insn->Operand2;break;
+        case ALU_SLLW :insn->RdResult = (int32_t)insn->Operand1 << (uint32_t)insn->Operand2;break;
+        case ALU_SRLW :insn->RdResult = (int32_t)((uint32_t)insn->Operand1 >> (uint32_t)insn->Operand2);break;
+        case ALU_SRAW :insn->RdResult = (int32_t)insn->Operand1 >> (uint32_t)insn->Operand2;break;
+        default:insn->RdResult=0;break;
         }
     };
-
 };
 
 

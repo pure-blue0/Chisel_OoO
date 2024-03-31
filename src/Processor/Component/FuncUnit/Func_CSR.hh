@@ -28,7 +28,7 @@ public:
 
 
     void Compute(InsnPtr_t& insn){
-        switch (insn->SubOp)
+        switch (insn->SubOp)//注意：insn->imm内保存的是csr寄存器的地址
         {
         case CSR_CSRRW  :
             this->m_ExecContext->ReadCsr(insn->imm,insn->RdResult);

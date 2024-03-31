@@ -83,9 +83,9 @@ public:
         if(this->m_CalcuPipe.OutPort->valid){
             auto& insn = this->m_CalcuPipe.OutPort->data;
             bool  Success = false;
+            this->Compute(insn);
             for(auto& wbPort : this->m_wbPortVec){
                 if(!wbPort->valid){
-                    this->Compute(insn);
                     wbPort->set(insn);
                     Success = true;
                     insn->State = InsnState_t::State_WriteBack;
