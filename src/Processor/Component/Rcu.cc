@@ -232,23 +232,18 @@ Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect){
 
 void 
 Rcu::AGUFastDetect(InsnPtr_t& insn){
-    auto lsq = this->m_Processor->getLsqPtr();
     this->m_Rob[insn->RobTag].isStable = true;
     DPRINTF(WriteBack,"RobTag[{}],Pc[{:#x}] -> Scan AGU result, Exception [{}]",
-                    insn->RobTag,
-                    insn->Pc,
-                    insn->Excp.valid
-    );
+                    insn->RobTag,insn->Pc,insn->Excp.valid);
     if(insn->Fu == funcType_t::STU && insn->Agu_addr_ready && insn->Agu_data_ready)
     {
         this->m_Rob[insn->RobTag].done = true;
     }
+    else this->m_Rob[insn->RobTag].done = false;
     if(insn->Excp.valid){
         this->m_Rob[insn->RobTag].done   = true;
         this->m_Rob[insn->RobTag].isExcp = true;
-        if(this->m_RobState != rob_state_t::Rob_Idle || 
-            this->m_Rob.isOlder(insn->RobTag,this->m_RollBackTag)
-        )
+        if(this->m_RobState != rob_state_t::Rob_Idle )
         {
             this->m_RobState = rob_state_t::Rob_Undo;
             this->m_RollBackTag = insn->RobTag;

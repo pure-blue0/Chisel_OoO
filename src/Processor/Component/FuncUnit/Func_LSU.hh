@@ -129,7 +129,8 @@ public:
             auto& insn = this->m_CalcuPipe.OutPort->data;
             this->AddrGen(insn);
             if(insn->Fu == funcType_t::STU){
-                this->DataGen(insn);
+                insn->Agu_data_ready = true;
+                insn->Agu_data = insn->Operand2;
             }
             this->m_Rcu->AGUFastDetect(insn);//检测是否产生了有效的地址和数据，如果指令存在异常，则进行回滚操作
             this->m_Lsq->WriteBack(insn);//更新lsq中对应条目的地址和数据，方便后面的wb
@@ -174,29 +175,14 @@ public:
                     uint64_t offset = ldqEntry.address & (this->m_Lsq->m_dCacheAlignByte - 1);
                     switch (ldqEntry.insnPtr->SubOp)
                     {
-                    case LDU_LB  :
-                        insn->RdResult = *(int8_t*)(memResp.Data + offset);
-                        break;
-                    case LDU_LH  :
-                        insn->RdResult = *(int16_t*)(memResp.Data + offset);
-                        break;
-                    case LDU_LW  :
-                        insn->RdResult = *(int32_t*)(memResp.Data + offset);
-                        break;
-                    case LDU_LD  :
-                        insn->RdResult = *(int64_t*)(memResp.Data + offset);
-                        break;
-                    case LDU_LBU :
-                        insn->RdResult = *(uint8_t*)(memResp.Data + offset);
-                        break;
-                    case LDU_LHU :
-                        insn->RdResult = *(uint16_t*)(memResp.Data + offset);
-                        break;
-                    case LDU_LWU :
-                        insn->RdResult = *(uint32_t*)(memResp.Data + offset);
-                        break;
-                    default:
-                        break;
+                    case LDU_LB  :insn->RdResult = *(int8_t*)(memResp.Data + offset);break;
+                    case LDU_LH  :insn->RdResult = *(int16_t*)(memResp.Data + offset);break;
+                    case LDU_LW  :insn->RdResult = *(int32_t*)(memResp.Data + offset);break;
+                    case LDU_LD  :insn->RdResult = *(int64_t*)(memResp.Data + offset);break;
+                    case LDU_LBU :insn->RdResult = *(uint8_t*)(memResp.Data + offset);break;
+                    case LDU_LHU :insn->RdResult = *(uint16_t*)(memResp.Data + offset);break;
+                    case LDU_LWU :insn->RdResult = *(uint32_t*)(memResp.Data + offset);break;
+                    default:insn->RdResult =0;break;
                     }
                 }
                 bool Success = false;

@@ -141,27 +141,14 @@ Lsq::TryIssueStore(MemReq_t& memReq,bool& Success){
                     memReq.Length       = this->m_Processor->m_XLEN / 2;
                     switch (stqEntry.insnPtr->SubOp)
                     {
-                    case STU_SB:
-                        memReq.ByteMask = ((2 << (1-1)) - 1) << offset;
-                        break;
-                    case STU_SH:
-                        memReq.ByteMask = ((2 << (2-1)) - 1) << offset;
-                        break;
-                    case STU_SW:
-                        memReq.ByteMask = ((2 << (4-1)) - 1) << offset;
-                        break;
-                    case STU_SD:
-                        memReq.ByteMask = ((2 << (8-1)) - 1) << offset;
-                        break;
-                    default:
-                        break;
+                    case STU_SB:memReq.ByteMask = ((2 << (1-1)) - 1) << offset;break;
+                    case STU_SH:memReq.ByteMask = ((2 << (2-1)) - 1) << offset;break;
+                    case STU_SW:memReq.ByteMask = ((2 << (4-1)) - 1) << offset;break;
+                    case STU_SD:memReq.ByteMask = ((2 << (8-1)) - 1) << offset;break;
+                    default:memReq.ByteMask=0;break;
                     }
                     DPRINTF(StoreReq,"RobPtr[{}],Pc[{:#x}] -> Send Store Request : Address[{:#x} Data[{:#x}]]",
-                        stqEntry.insnPtr->RobTag,
-                        stqEntry.insnPtr->Pc,
-                        stqEntry.address,
-                        stqEntry.data
-                    );
+                        stqEntry.insnPtr->RobTag,stqEntry.insnPtr->Pc,stqEntry.address,stqEntry.data);
                 }
                 break;
             }
