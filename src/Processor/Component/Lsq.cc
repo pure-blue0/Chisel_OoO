@@ -96,7 +96,7 @@ Lsq::TryIssueLoad(MemReq_t& memReq,bool& Success){
     Success = false;
     if(!this->m_LoadQueue.empty()){//需要加载的地址都放在了loadqueue里
         uint16_t ldqPtr = this->m_LoadQueue.getHeader();
-        for(size_t i = 0 ; i < this->m_LoadQueue.getUsage(); i++){
+        //for(size_t i = 0 ; i < this->m_LoadQueue.getUsage(); i++){
             auto& ldqEntry = this->m_LoadQueue[ldqPtr];
             if(ldqEntry.state == loadState_t::load_WaitSend && !ldqEntry.killed){//在dispatch stage就已经改变了load state
                 if(ldqEntry.addressReady )
@@ -108,15 +108,12 @@ Lsq::TryIssueLoad(MemReq_t& memReq,bool& Success){
                     memReq.Address = ldqEntry.address & ~(this->m_dCacheAlignByte - 1);
                     memReq.Length  = this->m_Processor->m_XLEN / 2;
                     DPRINTF(LoadReq,"RobPtr[{}],Pc[{:#x}] -> Send Load Request : Address[{:#x}]",
-                        ldqEntry.insnPtr->RobTag,
-                        ldqEntry.insnPtr->Pc,
-                        ldqEntry.address
-                    );
+                        ldqEntry.insnPtr->RobTag,ldqEntry.insnPtr->Pc,ldqEntry.address);
                 }
-                break;
+                //break;
             }
             ldqPtr = this->m_LoadQueue.getNextPtr(ldqPtr);
-        }
+        //}
     }
 }
 
@@ -125,34 +122,28 @@ Lsq::TryIssueStore(MemReq_t& memReq,bool& Success){
     Success = false;
     if(!this->m_StoreQueue.empty()){
         uint16_t stqPtr = this->m_StoreQueue.getHeader();
-        for(size_t i = 0 ; i < this->m_StoreQueue.getUsage(); i++){
-            auto& stqEntry = this->m_StoreQueue[stqPtr];
-            if(stqEntry.state == storeState_t::store_WaitSend){
-                if(stqEntry.commited){
-                    uint64_t offset     = (stqEntry.address & (this->m_dCacheAlignByte - 1));
-                    Success             = true;
-                    stqEntry.state      = storeState_t::store_Inflight;
-                    memReq.Opcode       = MemOp_t::Store;
-                    memReq.Id.TransId   = stqPtr;
-                    for(size_t it = offset ; it < 8; it++){
-                        memReq.Data[it] = (stqEntry.data >> ((it-offset)<<3)) & 0xff;
-                    }
-                    memReq.Address      = stqEntry.address & ~(this->m_dCacheAlignByte - 1);
-                    memReq.Length       = this->m_Processor->m_XLEN / 2;
-                    switch (stqEntry.insnPtr->SubOp)
-                    {
-                    case STU_SB:memReq.ByteMask = ((2 << (1-1)) - 1) << offset;break;
-                    case STU_SH:memReq.ByteMask = ((2 << (2-1)) - 1) << offset;break;
-                    case STU_SW:memReq.ByteMask = ((2 << (4-1)) - 1) << offset;break;
-                    case STU_SD:memReq.ByteMask = ((2 << (8-1)) - 1) << offset;break;
-                    default:memReq.ByteMask=0;break;
-                    }
-                    DPRINTF(StoreReq,"RobPtr[{}],Pc[{:#x}] -> Send Store Request : Address[{:#x} Data[{:#x}]]",
-                        stqEntry.insnPtr->RobTag,stqEntry.insnPtr->Pc,stqEntry.address,stqEntry.data);
+        auto& stqEntry = this->m_StoreQueue[stqPtr];
+        if(stqEntry.state == storeState_t::store_WaitSend){
+            if(stqEntry.commited){
+                uint64_t offset     = (stqEntry.address & (this->m_dCacheAlignByte - 1));
+                Success             = true;
+                stqEntry.state      = storeState_t::store_Inflight;
+                memReq.Opcode       = MemOp_t::Store;
+                memReq.Id.TransId   = stqPtr;
+                for(size_t it = offset ; it < 8; it++){//将byte一个个从stqEntry.data中取出来，存入到对应的memreq_data中
+                    memReq.Data[it] = (stqEntry.data >> ((it-offset)<<3)) & 0xff;
                 }
-                break;
+                memReq.Address      = stqEntry.address & ~(this->m_dCacheAlignByte - 1);
+                memReq.Length       = this->m_Processor->m_XLEN / 2;
+                switch (stqEntry.insnPtr->SubOp)
+                {
+                case STU_SB:memReq.ByteMask = ((2 << (1-1)) - 1) << offset;break;
+                case STU_SH:memReq.ByteMask = ((2 << (2-1)) - 1) << offset;break;
+                case STU_SW:memReq.ByteMask = ((2 << (4-1)) - 1) << offset;break;
+                case STU_SD:memReq.ByteMask = ((2 << (8-1)) - 1) << offset;break;
+                default:memReq.ByteMask=0;break;
+                }
             }
-            stqPtr = this->m_StoreQueue.getNextPtr(stqPtr);
         }
     }
 }
