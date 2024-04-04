@@ -33,10 +33,7 @@ WriteBackPort::Evaluate(Redirect_t& RedirectReq, bool& needRedirect){
         this->m_Processor->getRcuPtr()->WriteBack(insn,needRedirect);
         RedirectReq.StageId = InsnState_t::State_Issue;
         RedirectReq.target  = insn->BruTarget;
-        DPRINTF(WriteBack,"RobTag[{}],Pc[{:#x}]",
-            insn->RobTag,
-            insn->Pc
-        );  
+        DPRINTF(WriteBack,"RobTag[{}],Pc[{:#x}]",insn->RobTag,insn->Pc);  
     }
 }
 
@@ -45,27 +42,13 @@ WriteBackPort::Advance(){
     this->m_CalcuPipe.advance();
 }
 
-void 
-WriteBackPort::Forwarding(){
+void  WriteBackPort::Forwarding(){
     if(this->m_CalcuPipe.InPort->valid){
         InsnPtr_t& insn = this->m_CalcuPipe.InPort->data;
         if(insn->IsaRd != 0){
             this->m_Processor->getRcuPtr()->m_IntBusylist[insn->PhyRd].forwarding = true;
-            if(this->m_Processor->m_forwardResult){
-                this->m_Processor->getRcuPtr()->m_IntBusylist[insn->PhyRd].done = true;//说明当前指令的rd是被前递了的
-                this->m_Processor->getRcuPtr()->Forwarding(insn);//把rd的数据直接写到对应的rd物理寄存器中，之后的读操作数可以直接从这里面读取
-            }
-            for(auto index : this->m_forwardingSchedularIdVec){
-                this->m_Processor->m_SchedularVec[index]->Forwarding(insn);//未进行操作
-            }
-            DPRINTF(Forwarding,"RobTag[{}],Pc[{:#x}] -> Forwarding Result[Rd[{}],PRd[{}],LPRd[{}],Result[{:#x}]]",
-                insn->RobTag,
-                insn->Pc,
-                insn->IsaRd,
-                insn->PhyRd,
-                insn->LPhyRd,
-                insn->RdResult
-            );
+            this->m_Processor->getRcuPtr()->m_IntBusylist[insn->PhyRd].done = true;//说明当前指令的rd是被前递了的
+            this->m_Processor->getRcuPtr()->m_IntRegfile[insn->PhyRd] = insn->RdResult;//把rd的数据直接写到对应的rd物理寄存器中，之后的读操作数可以直接从这里面读取
         }
     }
 }

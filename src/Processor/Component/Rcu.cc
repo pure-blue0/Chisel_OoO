@@ -162,8 +162,7 @@ Rcu::Forwarding(InsnPtr_t& insn){
     this->m_IntBusylist[insn->PhyRd].done = true;
 }
 
-void 
-Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect){
+void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect){
     needRedirect = false;
     if(!this->m_Rob.empty() && (this->m_Rob.isOlder(insn->RobTag,this->m_Rob.getLastest()) || insn->RobTag == this->m_Rob.getLastest())){
         this->m_Rob[insn->RobTag].done = true;
@@ -178,28 +177,13 @@ Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect){
                     ){
                         this->m_RobState = rob_state_t::Rob_Undo;
                         this->m_RollBackTag = insn->RobTag;
-                        this->m_Processor->FlushBackWard(InsnState_t::State_Issue);
+                        this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//刷新fetch1，decode，dispatch
                         needRedirect = true;
-                        DPRINTF(Redirect,"RobTag[{}],Pc[{:#x}] -> MisPredict, Redirect to [{:#x}]",
-                            insn->RobTag,
-                            insn->Pc,
-                            insn->BruTarget
-                        );
                     }
                 }else{
-                    if(!this->m_Processor->m_doSpeculation && this->m_RobState == rob_state_t::Rob_WaitForResume && 
-                        insn->RobTag == this->m_RollBackTag)//已经回滚完了，然后再下一个周期的wbstage恢复为正常状态，可以继续处理其他异常
+                    if(this->m_RobState == rob_state_t::Rob_WaitForResume && insn->RobTag == this->m_RollBackTag)//已经回滚完了，然后再下一个周期的wbstage恢复为正常状态，可以继续处理其他异常
                     {
                         this->m_RobState = rob_state_t::Rob_Idle;
-                        DPRINTF(WriteBack,"RobTag[{}],Pc[{:#x}] -> Resovled Branch, Resume Executing]",
-                            insn->RobTag,
-                            insn->Pc
-                        ); 
-                    }else{
-                        DPRINTF(WriteBack,"RobTag[{}],Pc[{:#x}] -> Resovled Branch, Predirect Successfully]",
-                            insn->RobTag,
-                            insn->Pc
-                        ); 
                     }
                 }
             }
@@ -207,19 +191,10 @@ Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect){
                 this->m_IntRegfile[insn->PhyRd] = insn->RdResult;
                 this->m_IntBusylist[insn->PhyRd].done = true;
                 this->m_IntBusylist[insn->PhyRd].forwarding = false;
-                DPRINTF(WriteBack,"RobTag[{}],Pc[{:#x}] -> Write Back Result[Rd[{}],PRd[{}],Result[{:#x}]",
-                    insn->RobTag,
-                    insn->Pc,
-                    insn->IsaRd,
-                    insn->PhyRd,
-                    insn->RdResult
-                );
             }
         }else{
             this->m_Rob[insn->RobTag].isExcp = true;
-            if(this->m_RobState == rob_state_t::Rob_Idle || 
-                this->m_Rob.isOlder(insn->RobTag,this->m_RollBackTag)
-            )
+            if(this->m_RobState == rob_state_t::Rob_Idle || this->m_Rob.isOlder(insn->RobTag,this->m_RollBackTag))
             {
                 this->m_RobState = rob_state_t::Rob_Undo;
                 this->m_RollBackTag = insn->RobTag;
@@ -252,9 +227,6 @@ Rcu::AGUFastDetect(InsnPtr_t& insn){
         }
     }
 }
-
-
-
 
 void 
 Rcu::ReleaseResource(uint16_t robTag){

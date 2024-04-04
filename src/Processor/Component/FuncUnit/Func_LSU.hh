@@ -185,16 +185,13 @@ public:
                     default:insn->RdResult =0;break;
                     }
                 }
-                bool Success = false;
                 for(auto& wbPort : this->m_wbPortVec){
                     if(!wbPort->valid){
                         wbPort->set(insn);
-                        Success = true;
                         insn->State = InsnState_t::State_WriteBack;
                         break;
                     }
                 }
-                DASSERT(Success,"RobTag[{}],Pc[{}] -> UnAllowed WriteBack Failed");
             }else{
                 ldqEntry.state = loadState_t::load_Executed;
             }

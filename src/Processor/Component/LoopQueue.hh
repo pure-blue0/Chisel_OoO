@@ -139,11 +139,12 @@ public:
         this->m_dataVec.resize(size);
     };
 
-    bool isOlder(uint64_t tag1, uint64_t tag2){
+    bool isOlder(uint64_t tag1, uint64_t tag2){//当tag1更先入队的话，则输出true
         bool tag1GeHeader = tag1 >= this->m_header;
         bool tag2GeHeader = tag2 >= this->m_header;
         bool tag1GeqTag2  = tag1 > tag2;
-        return (tag1GeHeader ^ tag2GeHeader) ? tag1 > tag2 : tag1 < tag2;  
+        bool older=(tag1GeHeader ^ tag2GeHeader) ? tag1 > tag2 : tag1 < tag2; 
+        return  older;
     }
 
 };
