@@ -122,7 +122,7 @@ public:
 
     bool ReadyForCommit(uint64_t RobTag);
 
-    void WriteBack(InsnPtr_t& insn, bool& needRedirect);
+    void WriteBack(InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq);
 
     void AGUFastDetect(InsnPtr_t& insn);
 

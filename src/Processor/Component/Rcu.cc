@@ -131,8 +131,7 @@ Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
     SuccessCount =insnPkg.size()<SuccessCount?insnPkg.size():SuccessCount; 
 };
 
-bool 
-Rcu::ReadyForCommit(uint64_t RobTag){
+bool Rcu::ReadyForCommit(uint64_t RobTag){
     uint64_t RobPtr = this->m_Rob.getHeader();
     if(this->m_RobState == rob_state_t::Rob_Idle ||  this->m_Rob.isOlder(RobTag,this->m_RollBackTag)){
         for(size_t i = 0; i < this->m_DeallocWidth && i < this->m_Rob.getUsage(); i++){
@@ -162,7 +161,7 @@ Rcu::Forwarding(InsnPtr_t& insn){
     this->m_IntBusylist[insn->PhyRd].done = true;
 }
 
-void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect){
+void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq){
     needRedirect = false;
     if(!this->m_Rob.empty() && (this->m_Rob.isOlder(insn->RobTag,this->m_Rob.getLastest()) || insn->RobTag == this->m_Rob.getLastest())){
         this->m_Rob[insn->RobTag].done = true;
@@ -179,6 +178,8 @@ void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect){
                         this->m_RollBackTag = insn->RobTag;
                         this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//刷新fetch1，decode，dispatch
                         needRedirect = true;
+                        RedirectReq.StageId = InsnState_t::State_Issue;
+                        RedirectReq.target  = insn->BruTarget;
                     }
                 }else{
                     if(this->m_RobState == rob_state_t::Rob_WaitForResume && insn->RobTag == this->m_RollBackTag)//已经回滚完了，然后再下一个周期的wbstage恢复为正常状态，可以继续处理其他异常
@@ -308,8 +309,7 @@ Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect)
                 }
                 if(robEntry.Fu == funcType_t::LDU){
                     DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Commit a Load LSQTag[{}]", 
-                    robPtr,robEntry.pc,robEntry.LSQtag
-                    );
+                    robPtr,robEntry.pc,robEntry.LSQtag);
                     this->m_Processor->getLsqPtr()->CommitLoadEntry(robEntry.LSQtag);
 
                 }else if(robEntry.Fu == funcType_t::STU){
@@ -322,7 +322,7 @@ Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect)
             //如果条件成立，说明当前正在处理的指令是最近一次发生异常需要回滚的指令。
             if(this->m_RobState == rob_state_t::Rob_WaitForResume && robPtr == this->m_RollBackTag){
                 this->m_RobState = rob_state_t::Rob_FlushBackend;
-                this->m_Processor->FlushForward(InsnState_t::State_Dispatch);
+                this->m_Processor->FlushForward(InsnState_t::State_Dispatch);//将issue_flush,commit_flush置1
                 if(robEntry.isExcp){
                     needRedirect = true;
                     redirectReq.StageId = InsnState_t::State_Commit;
@@ -330,7 +330,7 @@ Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect)
                     this->m_Processor->m_ExecContext->WriteCsr(CSR_MCAUSE,this->m_ExcpCause);
                     this->m_Processor->m_ExecContext->WriteCsr(CSR_MTVAL,this->m_ExcpTval);
                     this->m_Processor->m_ExecContext->ReadCsr(CSR_MTVEC,redirectReq.target);
-                    this->m_Processor->FlushBackWard(InsnState_t::State_Issue);
+                    this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//将fetch_flush,decode_flushdispatch_flush都置1
                     DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Commit an Exception, Redirect to {:#x}!",robPtr,robEntry.pc,redirectReq.target);
                 }
                 DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Resume Execution!",robPtr,robEntry.pc);

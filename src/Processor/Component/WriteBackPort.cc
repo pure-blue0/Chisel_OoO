@@ -30,9 +30,7 @@ WriteBackPort::Evaluate(Redirect_t& RedirectReq, bool& needRedirect){
     if(this->m_CalcuPipe.OutPort->valid){
         InsnPtr_t& insn = this->m_CalcuPipe.OutPort->data;
         insn->State = InsnState_t::State_Commit;
-        this->m_Processor->getRcuPtr()->WriteBack(insn,needRedirect);
-        RedirectReq.StageId = InsnState_t::State_Issue;
-        RedirectReq.target  = insn->BruTarget;
+        this->m_Processor->getRcuPtr()->WriteBack(insn,needRedirect,RedirectReq);
         DPRINTF(WriteBack,"RobTag[{}],Pc[{:#x}]",insn->RobTag,insn->Pc);  
     }
 }

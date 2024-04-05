@@ -21,8 +21,7 @@ Commit::SendCommitReq(){
     InsnPkg_t insnPkg;
     uint16_t robPtr = rcu->m_Rob.getHeader();
     DASSERT((this->m_ToNextStageInsnCount == rcu->m_DeallocWidth), 
-        "Commit[{}] & RCU Deallocate[{}] Width MisMatch!",this->m_ToNextStageInsnCount,rcu->m_DeallocWidth
-    );
+        "Commit[{}] & RCU Deallocate[{}] Width MisMatch!",this->m_ToNextStageInsnCount,rcu->m_DeallocWidth);
     for(size_t i = 0; i < this->m_ToNextStageInsnCount && i < rcu->m_Rob.getUsage(); i++){
         auto& entry = rcu->m_Rob[robPtr];
         if((entry.done | !entry.valid) && rcu->ReadyForCommit(robPtr)){
