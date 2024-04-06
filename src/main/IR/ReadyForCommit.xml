@@ -1,0 +1,23 @@
+<Module type="ReadyForCommit">
+	<Parameters>
+		<Parameter name="m_DeallocWidth" type="Integer" value="2" description="Maximum number of entries to deallocate per cycle"/>	
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="Rob_Tag" type="[3:0]" description="Pointer of the instruction that needs to be submitted in ROB"/>
+	        <Input name="Rob_Header" type="[3:0]" description="Rob's head pointer"/>
+	        <Input name="Rob_NextHeader" type="[3:0]" description="Rob's next header pointer"/>
+	        <Input name="m_RobState" type="[2:0]" description="ROB status"/>
+	        <Input name="m_RollBackTag" type="[3:0]" description="Rolling back labels"/>
+	        <Input name="Rob_Usage" type="[3:0]" description="Number of entries of Rob that have been used"/>
+	        <Input name="Header_isStable" type="Boolean" description="The isStable signal stored in Header entry"/>
+	        <Input name="Header_Function_type" type="[2:0]" description="The execution unit to call for the store instruction in Header entry"/>
+	        <Input name="NextHeader_isStable" type="Boolean" description="The isStable signal stored in NextHeader entry"/>
+	        <Input name="NextHeader_Function_type" type="[2:0]" description="The execution unit to call for the store instruction in NextHeader entry"/>
+	        <!-- Outputs from each Functional Unit  -->
+	        <Output name="Ready" type="Boolean" description="Indicates whether the entered Robtag is ready for submission"/>
+	</Interface>
+    <Function description="The ReadyForCommit function is used to check whether a given RobTag meets the commit criteria. This involves determining the status of the ROB, the order of the robtags, and the stability and type of the entries in the ROB. This is an important mechanism to ensure data consistency and correctness in out-of-order execution environments."/>
+	<ReferenceModel code="enum rob_state_t{Rob_Idle, Rob_Undo, Rob_Redo, Rob_WaitForResume, Rob_FlushBackend}; enum funcType_t { ALU , BRU, CSR, LDU, STU}; bool Rcu::ReadyForCommit(uint64_t RobTag){ uint64_t RobPtr = this-&gt;m_Rob.getHeader(); if(this-&gt;m_RobState == rob_state_t::Rob_Idle ||  this-&gt;m_Rob.isOlder(RobTag,this-&gt;m_RollBackTag)){ for(size_t i = 0; i &lt; this-&gt;m_DeallocWidth &amp;&amp; i &lt; this-&gt;m_Rob.getUsage(); i++){ if(RobPtr == RobTag){ return true; }else{ auto RobEntry = this-&gt;m_Rob[RobPtr]; if( !RobEntry.isStable &amp;&amp; (RobEntry.Fu == funcType_t::LDU || RobEntry.Fu == funcType_t::STU || RobEntry.Fu == funcType_t::BRU)) { return false; } RobPtr = this-&gt;m_Rob.getNextPtr(RobPtr); } } }else{ if(this-&gt;m_RobState == rob_state_t::Rob_WaitForResume &amp;&amp; this-&gt;m_RollBackTag == RobTag){//A rollback operation was performed in the rob of the previous cycle return true; } } return false; }"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

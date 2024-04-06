@@ -1,0 +1,21 @@
+<Module type="isolder">
+	<Parameters>
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="tag1" type="[3:0]" description="Label 1 to be compared"/>
+	        <Input name="tag2" type="[3:0]" description="Label 2 to be compared"/>
+	        <Input name="header" type="[3:0]" description="The head of the queue"/>
+	        <!-- Outputs from each Functional Unit  -->
+	        <Output name="older" type="" description="Indicates whether tag1 is an older tag"/>
+	</Interface>
+	<Function description="This function isOlder checks whether tag1 is 'older' than tag2, in an environment using m_header as a reference point. It returns true if tag1 appears before tag2 with respect to m_header, and false otherwise. tag1GeHeader: true if tag1 is greater than or equal to m_header. Otherwise, it is false. tag2GeHeader: true if tag2 is greater than or equal to m_header. Otherwise, false. finally, computes older by (tag1GeHeader ^ tag2GeHeader)? tag1 > tag2: tag1 < tag2."/>
+<ReferenceModel code="bool isOlder(uint64_t tag1, uint64_t tag2){//Output true if tag1 is queued first
+        bool tag1GeHeader = tag1 &gt;= this-&gt;m_header;
+        bool tag2GeHeader = tag2 &gt;= this-&gt;m_header;
+        bool tag1GeqTag2  = tag1 &gt; tag2;
+        bool older=(tag1GeHeader ^ tag2GeHeader) ? tag1 &gt; tag2 : tag1 &lt; tag2; 
+        return  older;
+    }"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

@@ -1,0 +1,34 @@
+<Module type="ALU">
+    <Parameters>
+    </Parameters>
+    <Interface>
+        <Input name="Insn_operand1" type="[63:0]" description="Operand 1"/>
+        <Input name="Insn_operand2" type="[63:0]" description="Operand 2"/>
+        <Input name="Sub_OP_out" type="[3:0]" description="The specific action that the instruction needs to perform in the execution unit"/>
+        <Output name="Insn_rdresult" type="[63:0]" description="Result of operation"/>
+    </Interface>
+    <Function description="This module implements various arithmetic and logical operations based on the instruction provided. It handles operations like addition, subtraction, logical and arithmetic shifts, comparisons, bitwise XOR, OR, AND, and their word variants. Special attention is given to the number of bits per operation and the signedness of the data."/>
+    <ReferenceModel code="void Compute(InsnPtr_t&amp; insn){
+        switch (insn-&gt;SubOp)
+        {
+        case ALU_ADD  :insn-&gt;RdResult = (int64_t)insn-&gt;Operand1 + (int64_t)insn-&gt;Operand2;
+            break;       
+        case ALU_SLL  :insn-&gt;RdResult = (uint64_t)insn-&gt;Operand1 &lt;&lt; (uint64_t)insn-&gt;Operand2;
+            break;
+        case ALU_SUB  :insn-&gt;RdResult = (int64_t)insn-&gt;Operand1 - (int64_t)insn-&gt;Operand2;break;
+        case ALU_SLT  :insn-&gt;RdResult = (int64_t)insn-&gt;Operand1 &lt; (int64_t)insn-&gt;Operand2;break;
+        case ALU_SLTU :insn-&gt;RdResult = (uint64_t)insn-&gt;Operand1 &lt; (uint64_t)insn-&gt;Operand2;break;
+        case ALU_XOR  :insn-&gt;RdResult = (uint64_t)insn-&gt;Operand1 ^ (uint64_t)insn-&gt;Operand2;break;
+        case ALU_SRL  :insn-&gt;RdResult = (uint64_t)insn-&gt;Operand1 &gt;&gt; (uint64_t)insn-&gt;Operand2;break;
+        case ALU_SRA  :insn-&gt;RdResult = (int64_t)insn-&gt;Operand1 &gt;&gt; (uint64_t)insn-&gt;Operand2;break;
+        case ALU_OR   :insn-&gt;RdResult = (uint64_t)insn-&gt;Operand1 | (uint64_t)insn-&gt;Operand2;break;
+        case ALU_AND  :insn-&gt;RdResult = (uint64_t)insn-&gt;Operand1 &amp; (uint64_t)insn-&gt;Operand2;break;
+        case ALU_ADDW :insn-&gt;RdResult = (int32_t)insn-&gt;Operand1 + (int32_t)insn-&gt;Operand2;break;
+        case ALU_SUBW :insn-&gt;RdResult = (int32_t)insn-&gt;Operand1 - (int32_t)insn-&gt;Operand2;break;
+        case ALU_SLLW :insn-&gt;RdResult = (int32_t)insn-&gt;Operand1 &lt;&lt; (uint32_t)insn-&gt;Operand2;break;
+        case ALU_SRLW :insn-&gt;RdResult = (int32_t)((uint32_t)insn-&gt;Operand1 &gt;&gt; (uint32_t)insn-&gt;Operand2);break;
+        case ALU_SRAW :insn-&gt;RdResult = (int32_t)insn-&gt;Operand1 &gt;&gt; (uint32_t)insn-&gt;Operand2;break;
+        default:insn-&gt;RdResult=0;break;
+        }
+    }"/>
+</Module>

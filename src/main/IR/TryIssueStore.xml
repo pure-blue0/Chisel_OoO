@@ -1,0 +1,58 @@
+<Module type="TryIssueStore">
+	<Parameters>
+		<Parameter name="dCacheAlignByte" type="Integer" value="8" description="Data cache alignment byte"/>
+		<Parameter name="X_LEN" type="Integer" value="16" description="Processor word length"/>	
+	</Parameters>
+	<Interface>
+	    <!-- Interfaces for each Functional Unit -->
+	    <Input name="StoreQueue_empty" type="Boolean" description="Describes whether the current storage queue is empty"/>
+	    <Input name="FrontQueue_commited" type="Boolean" description="Describes whether the current entry can be submitted"/>
+	    <Input name="FrontQueue_state" type="[1:0]" description="Describes the current entry state"/>
+	    <Input name="FrontQueue_Address" type="[31:0]" description="Describes the address at which the current entry needs to store data"/>
+	    <Input name="FrontQueue_data" type="[63:0]" description="Describes the data currently stored in entry"/>
+	    <Input name="stqPtr" type="[3:0]" description="The position of the current entry in storequeue"/>
+	    <Input name="Sub_OP" type="[3:0]" description="The specific action that the instruction needs to perform in the execution unit"/>
+	    <!-- Outputs from each Functional Unit  -->
+	    <Output name="Success" type="Boolean" description="Describe whether it can be fired"/>
+	    <Output name="mem_opcode" type="[1:0]" description="The type of request sent to mem"/>
+	    <Output name="mem_TransId" type="[3:0]" description="Record the position of the instruction that sent the mem request in storequeue"/>
+	    <Output name="mem_data" type="[63:0]" description="Records the stored data that currently needs to be sent to mem"/>
+	    <Output name="mem_Address" type="[31:0]" description="Describes the address of the stored data currently to be sent to mem"/>
+	    <Output name="mem_Length" type="[3:0]" description="Describes the size of the stored data address currently to be sent to mem"/>
+	    <Output name="mem_ByteMask" type="[63:0]" description="Records the stored data that currently needs to be sent to mem"/>
+	    <Output name="FrontQueue_update" type="Boolean" description="Signals that need to be updated"/>
+	    <Output name="FrontQueue_state_new" type="[1:0]" description="Describes the updated entry state"/>
+	    <Output name="stqPtr_out" type="[3:0]" description="The position of the current entry in storequeue"/>
+	</Interface>
+	<Function description="The module is responsible for checking the next pending entry in the storage queue, if it is ready and meets the conditions, it initiates a storage memory request, updates the queue entry state, and sets the corresponding memory request parameters. At the beginning of the function, the output parameter Success is set to false, indicating that the storage operation attempt defaults to failed. Check that the storage queue is not empty: if StoreQueue is not empty, proceed. Otherwise, the function terminates and Success remains false. If the status of the entered entry is store_WaitSend, then check the entry further. If the entry has been submitted, perform operations to compute the address offset, mark Success as true, update the entry status to store_Inflight, and set parameters related to the memory request such as Opcode, TransId, mem_Data, mem_Address, and mem_Length. Set the byte mask according to the suboperation type of the storage operation."/>
+<ReferenceModel code="void  Lsq::TryIssueStore(MemReq_t&amp; memReq,bool&amp; Success){
+    Success = false;
+    if(!this-&gt;m_StoreQueue.empty()){
+        uint16_t stqPtr = this-&gt;m_StoreQueue.getHeader();
+        auto&amp; stqEntry = this-&gt;m_StoreQueue[stqPtr];
+        if(stqEntry.state == storeState_t::store_WaitSend){
+            if(stqEntry.commited){
+                uint64_t offset     = (stqEntry.address &amp; (this-&gt;m_dCacheAlignByte - 1));
+                Success             = true;
+                stqEntry.state      = storeState_t::store_Inflight;
+                memReq.Opcode       = MemOp_t::Store;
+                memReq.Id.TransId   = stqPtr;
+                for(size_t it = offset ; it &lt; 8; it++){//将byte一个个从stqEntry.data中取出来，存入到对应的memreq_data中
+                    memReq.Data[it] = (stqEntry.data &gt;&gt; ((it-offset)&lt;&lt;3)) &amp; 0xff;
+                }
+                memReq.Address      = stqEntry.address &amp; ~(this-&gt;m_dCacheAlignByte - 1);
+                memReq.Length       = this-&gt;m_Processor-&gt;m_XLEN / 2;
+                switch (stqEntry.insnPtr-&gt;SubOp)
+                {
+                case STU_SB:memReq.ByteMask = ((2 &lt;&lt; (1-1)) - 1) &lt;&lt; offset;break;
+                case STU_SH:memReq.ByteMask = ((2 &lt;&lt; (2-1)) - 1) &lt;&lt; offset;break;
+                case STU_SW:memReq.ByteMask = ((2 &lt;&lt; (4-1)) - 1) &lt;&lt; offset;break;
+                case STU_SD:memReq.ByteMask = ((2 &lt;&lt; (8-1)) - 1) &lt;&lt; offset;break;
+                default:memReq.ByteMask=0;break;
+                }
+            }
+        }
+    }
+}"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

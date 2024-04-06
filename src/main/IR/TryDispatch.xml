@@ -1,0 +1,24 @@
+<Module type="TryDispatch">
+	<Parameters>
+		<Parameter name="Issue0_function_type" type="3'b" value="010" description="ISSUE0 only support CSR"/>	
+		<Parameter name="Issue1_function_type1" type="3'b" value="011" description="ISSUE1 support LDU"/>
+		<Parameter name="Issue1_function_type2" type="3'b" value="100" description="ISSUE1 support STU"/>
+		<Parameter name="Issue2_function_type1" type="3'b" value="000" description="ISSUE2 support ALU"/>
+		<Parameter name="Issue2_function_type2" type="3'b" value="001" description="ISSUE2 support BRU"/>
+		<Parameter name="EnqueWidth" type="" value="1" description="All issues have an enqueue width of 1"/>
+	</Parameters>
+	<Interface>
+	        <Input name="Scheduler0_AvailPort" type="[1:0]" description="Number of available entries for transmit queue 0 (dedicated to CSR)"/>
+	        <Input name="Scheduler1_AvailPort" type="[3:0]" description="Number of available entries for transmit queue 1"/>
+	        <Input name="Scheduler2_AvailPort" type="[3:0]" description="Number of available entries for transmit queue 2"/>
+	        <Input name="Insn1_excp_vaild" type="" description="Instruction 1 Whether an exception occurred"/>
+	        <Input name="Insn2_excp_vaild" type="" description="Instruction 2 Whether an exception occurred"/>
+	        <Input name="insn1_Function_type" type="[2:0]" description="The functional unit that instruction 1 needs to invoke"/>
+	        <Input name="insn2_Function_type" type="[2:0]" description="The functional unit that instruction 2 needs to invoke"/>
+	        <Input name="insn1_rd" type="[4:0]" description="The destination register of instruction 1"/>
+	        <Input name="insn2_rd" type="[4:0]" description="The destination register of instruction 2"/>
+	        <Output name="issue_success_count" type="[2:0]" description="Output the issue entry count that can be allocated"/>
+	</Interface>
+    <Function description="This module is used to figure out how many instructions can be sent to the issue queue. First, the number of available entries for each queue is obtained and compared to the EnqueWidth, taking the smaller value as the number of instructions that can be placed in each issue queue. Determine whether the first instruction is an exception instruction, if Insn1_excp_vaild=1, then directly set successcount+1, and no further judgment. If the instruction is not an exception instruction, judge whether the instruction is a nop instruction, if it is, set successcount+1, and then repeat the operation of '3-6' for instruction 2 to judge the second instruction. If the instruction is also not a nop instruction, the Function_type of the instruction is matched with the function unit responsible for each ISSUE in turn. If the match is successful and the ISSUE has AvailPort, then successcount+1 and the AvailPort of the Issue -1, Then the operation of '3-6' is repeated for instruction 2. If instruction 1 does not match the ISSUE queue or ControlFlowInsn=1 of instruction 1, the value of successcount is not changed and instruction 2 is no longer judged. Otherwise, the operation judgment of '3-6' is repeated for instruction 2."/>
+<ReferenceModel code="Void Dispatch::TryDispatch(InsnPkg_t&amp; insnPkg, uint64_t&amp; SuccessCount){ for(auto&amp; scheduler : this-&gt;m_SchedularVec){//Get the available for each scheduler, EnqueWidth: The maximum number of instructions allowed to be queued in a cycle scheduler.AvailPort = std::min(scheduler.scheduler-&gt;GetAvailibleEntryCount(),scheduler.scheduler-&gt;m_EnqueWidth); }//Gets the number of available entries per queue SuccessCount = 0; for(auto&amp; insn : insnPkg){ if(insn-&gt;Excp.valid){//Determine whether the instruction is an exception instruction SuccessCount++; break; } if((insn-&gt;Fu == funcType_t::ALU &amp;&amp; insn-&gt;IsaRd == 0)){ // Determine whether the instruction is a nop instruction SuccessCount++; continue; } bool Success=false; for(auto&amp; schedular : this-&gt;m_SchedularVec){//Iterate over the scheduler list if(schedular.scheduler-&gt;m_SupportFunc.count(insn-&gt;Fu) &amp;&amp; schedular.AvailPort) { SuccessCount++; schedular.AvailPort--;//Number of available ports-1 Success=true; break; } } if(!Success || insn-&gt;ControlFlowInsn){ break; } }}" />    
+</Module>

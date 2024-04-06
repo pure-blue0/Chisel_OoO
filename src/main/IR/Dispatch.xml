@@ -1,0 +1,57 @@
+<Module type="Dispatch">
+    <Parameters>
+        <Parameter name="Issue0_function_type" type="3'b" value="010" description="ISSUE0 only support CSR"/>
+        <Parameter name="Issue1_function_type1" type="3'b" value="011" description="ISSUE1 support LDU"/>
+        <Parameter name="Issue1_function_type2" type="3'b" value="100" description="ISSUE1 support STU"/>
+        <Parameter name="Issue2_function_type1" type="3'b" value="000" description="ISSUE2 support ALU"/>
+        <Parameter name="Issue2_function_type2" type="3'b" value="001" description="ISSUE2 support BRU"/>
+    </Parameters>
+    <Interface>
+        <Input name="DispatchCount" type="[1:0]" description="The number of instructions that can be issued"/>
+        <Input name="insn1" type="[127:0]" description="insn entry taken from decode_queue"/>
+        <Input name="insn2" type="[127:0]" description="insn entry taken from decode_queue"/>
+        <Input name="Scheduler0_AvailPort" type="[1:0]" description="Number of available entries for transmit queue 0 (dedicated to CSR)"/>
+        <Input name="Scheduler1_AvailPort" type="[3:0]" description="The number of available entries of transmit queue 1"/>
+        <Input name="Scheduler2_AvailPort" type="[3:0]" description="The number of available entries of transmit queue 2"/>
+        <Input name="Insn1_excp_vaild" type="" description="Check whether an exception occurs in instruction 1"/>
+        <Input name="Insn2_excp_vaild" type="" description="Check whether an exception occurs in instruction 2"/>
+        <Input name="insn1_Function_type" type="[2:0]" description="The functional unit that instruction 1 needs to invoke"/>
+        <Input name="insn2_Function_type" type="[2:0]" description="The functional unit that instruction 2 needs to invoke"/>
+        <Input name="insn1_rd" type="[4:0]" description="destination register for instruction 1"/>
+        <Input name="insn2_rd" type="[4:0]" description="destination register for instruction 2"/>
+        <Input name="Insn1_LSQTag_in" type="[3:0]" description="insn1 pointer in LoadQueue or StoreQueue"/>
+        <Input name="insn1_PhyRs1_in" type="[5:0]" description="PhyRs1 register address of insn1"/>
+        <Input name="insn1_PhyRs2_in" type="[5:0]" description="PhyRs2 register address of insn1"/>
+        <Input name="insn1_PhyRd_in" type="[5:0]" description="PhyRd register address of insn1"/>
+        <Input name="insn1_LPhyRd_in" type="[5:0]" description="LPhyRd register address of insn1"/>
+        <Input name="Insn1_RobTag_in" type="[3:0]" description="robtag of insn1"/>
+        <Input name="Insn1_State_in" type="[3:0]" description="The state of insn1"/>
+        <Input name="Insn2_LSQTag_in" type="[3:0]" description="insn2 pointer in LoadQueue or StoreQueue"/>
+        <Input name="insn2_PhyRs1_in" type="[5:0]" description="PhyRs1 register address of insn2"/>
+        <Input name="insn2_PhyRs2_in" type="[5:0]" description="PhyRs2 register address of insn2"/>
+        <Input name="insn2_PhyRd_in" type="[5:0]" description="PhyRd register address of insn2"/>
+        <Input name="insn2_LPhyRd_in" type="[5:0]" description="LPhyRd register address of insn2"/>
+        <Input name="Insn2_RobTag_in" type="[3:0]" description="robtag of insn2"/>
+        <Input name="Insn2_State_in" type="[3:0]" description="The state of insn2"/>
+        <Output name="Issue_num1" type="[1:0]" description="The issue number matched by instruction 1"/>
+        <Output name="insn1" type="[127:0]" description="insn entry taken from decode_queue"/>
+        <Output name="Insn1_LSQTag" type="[3:0]" description="insn1 pointer in LoadQueue or StoreQueue"/>
+        <Output name="insn1_PhyRs1" type="[5:0]" description="PhyRs1 register address of insn1"/>
+        <Output name="insn1_PhyRs2" type="[5:0]" description="PhyRs2 register address of insn1"/>
+        <Output name="insn1_PhyRd" type="[5:0]" description="PhyRd register address of insn1"/>
+        <Output name="insn1_LPhyRd" type="[5:0]" description="LPhyRd register address of insn1"/>
+        <Output name="Insn1_RobTag" type="[3:0]" description="robtag of insn1"/>
+        <Output name="Insn1_State" type="[3:0]" description="The state of insn1"/>
+        <Output name="Issue_num2" type="[1:0]" description="The issue number matched by instruction 2"/>
+        <Output name="insn2" type="[127:0]" description="insn entry taken from decode_queue"/>
+        <Output name="Insn2_LSQTag" type="[3:0]" description="insn2 pointer in LoadQueue or StoreQueue"/>
+        <Output name="insn2_PhyRs1" type="[5:0]" description="PhyRs1 register address of insn2"/>
+        <Output name="insn2_PhyRs2" type="[5:0]" description="PhyRs2 register address of insn2"/>
+        <Output name="insn2_PhyRd" type="[5:0]" description="PhyRd register address of insn2"/>
+        <Output name="insn2_LPhyRd" type="[5:0]" description="LPhyRd register address of insn2"/>
+        <Output name="Insn2_RobTag" type="[3:0]" description="robtag of insn2"/>
+        <Output name="Insn2_State" type="[3:0]" description="The state of insn2"/>
+    </Interface>
+    <Function description="The module dispatches the specified number of instructions to the issue queue based on DispatchCount. insn_State is set to commit if the instruction has an exception or is one of NOP, FENCE, or MRET instructions. If it does not conform to this, the insn_State is set to the Issue state, and then the Function_type of the instruction is matched with the function unit responsible for each ISSUE in turn. If the match is successful, insn is sent to the specified queue, and the matching queue number (0,1,2) is output. It will not match any subsequent ISSUE queue. If there is no match, the queue number is set to 4. Then start repeating this process for instruction 2."/>
+    <ReferenceModel code="void  Dispatch::DispatchInsn(InsnPkg_t&amp; insnPkg, uint64_t DispatchCount){ for(size_t i = 0 ; i &lt; DispatchCount; i++){ InsnPtr_t insn = insnPkg[i]; if(  insn-&gt;Excp.valid || ((insn-&gt;Fu == funcType_t::CSR) &amp;&amp; (insn-&gt;SubOp == 9)) || ((insn-&gt;Fu == funcType_t::ALU) &amp;&amp; (insn-&gt;IsaRd == 0)) || ((insn-&gt;Fu == funcType_t::CSR) &amp;&amp; (insn-&gt;SubOp ==7)) ){ insn-&gt;State = InsnState_t::State_Commit;}else{insn-&gt;State = InsnState_t::State_Issue; for(auto scheduler : this-&gt;m_SchedularVec){ if(scheduler.scheduler-&gt;m_SupportFunc.count(insn-&gt;Fu) ) { scheduler.scheduler-&gt;Schedule(insn,scheduler.scheduler-&gt;Allocate()); break; } } } } }"/>
+</Module>

@@ -1,0 +1,29 @@
+<Module type="Forwarding">
+	<Parameters>
+		<!-- No explicit parameters provided -->
+	</Parameters>
+	<Interface>
+	        <!-- Input Interfaces -->
+	        <Input name="data_valid" type="Boolean" description="Describe whether the data input is valid"/>
+	        <Input name="isa_rd" type="[4:0]" description="Describes the isa rd register id of the current instruction"/>
+	        <Input name="PhyRd_in" type="[5:0]" description="Describes the Rd physical register id of the current instruction"/>
+	        <Input name="RdResult_in" type="[63:0]" description="Data calculated by execute"/>
+	        <!-- Output Interfaces -->
+	        <Output name="update_valid" type="Boolean" description="Indicates that the output data is valid, and also serves as a valid signal to update IntBusylist and IntRegfile"/>
+	        <Output name="forwarding" type="Boolean" description="Indicates whether the calculation result of the instruction is forwarded"/>
+	        <Output name="done" type="Boolean" description="Indicates whether the data in the PhyRd register is ready"/>
+	        <Output name="RdResult_out" type="[63:0]" description="Data calculated by execute"/>
+	        <Output name="PhyRd_out" type="[5:0]" description="Describes the Rd physical register id of the current instruction"/>
+	</Interface>
+    <Function description="1. First, check data_valid to determine whether the input data is valid. If the valid flag is true, it means that there is an instruction to be processed. 2. If the target register index (IsaRd) of the instruction is not 0 (that is, a valid target register exists), the following is done to send an update to IntBusylist and IntRegfile: (1) Set update_valid to 1, indicating that data needs to be written to IntBusylist and IntRegfile. (2) Set the forwarding flag of the instruction target register to true, indicating that the value of the register will be forwarded. (3) Set the done flag of the instruction target register to true, indicating that the calculation result of the register is ready and can be used by subsequent instructions. (4) Write the calculation result (RdResult_in) to RdResult_out, and write PhyRd_in to PhyRd_out. 3. If the above conditions are not met, set all outputs to 0."/>
+    <ReferenceModel code="void  WriteBackPort::Forwarding(){
+    if(this->m_CalcuPipe.InPort-&gt;valid){
+        InsnPtr_t&amp; insn = this->m_CalcuPipe.InPort-&gt;data;
+        if(insn-&gt;IsaRd != 0){
+            this-&gt;m_Processor-&gt;getRcuPtr()-&gt;m_IntBusylist[insn-&gt;PhyRd].forwarding = true;
+            this-&gt;m_Processor-&gt;getRcuPtr()-&gt;m_IntBusylist[insn-&gt;PhyRd].done = true;//Indicates that the rd of the current instruction was passed forward
+            this-&gt;m_Processor-&gt;getRcuPtr()-&gt;m_IntRegfile[insn-&gt;PhyRd] = insn-&gt;RdResult;//Write the rd data directly to the rd physical register from which future read operands can be read
+        }
+    }
+}"/>    
+</Module>

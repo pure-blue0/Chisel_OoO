@@ -1,0 +1,92 @@
+<Module type="AddrGen">
+	<Parameters>
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="Insn_operand1" type="[63:0]" description="Operand 1"/>
+	        <Input name="imm" type="[63:0]" description="Operands of the current instruction"/>
+	        <Input name="Function_type" type="[2:0]" description="The execution unit that the instruction needs to invoke"/>
+	        <Input name="Sub_OP" type="[3:0]" description="The specific action that the instruction needs to perform in the execution unit"/>
+	        <!-- Outputs from each Functional Unit  -->
+	        <Output name="Agu_addr" type="[31:0]" description="The address in memory at which the instruction accesses data"/>
+	        <Output name="Agu_addr_ready" type="" description="Whether the address of the instruction to access data in memory is ready"/>
+	        <Output name="excp_vaild" type="" description="Stores exceptions for the current instruction"/>
+	        <Output name="excp_cause" type="[5:0]" description="Stores the type of the current exception instruction"/>
+	        <Output name="excpt_tval" type="[31:0]" description="The address where the current exception instruction is stored"/>
+	</Interface>
+	<Function description="1. Compute the address of the load or store instruction to access data in memory 2. Check if the addresses are aligned: If a load (LDU) instruction is accessed, check if the load address is aligned by load type (such as byte, half-word, word). If a storage (STU) instruction is accessed, the storage address is checked if it is aligned by the storage type (such as half-word, word, double-word). If the address is not aligned, the exception information is set for subsequent processing."/>
+	<ReferenceModel code="void AddrGen(InsnPtr_t&amp;amp; insn){
+        insn-&amp;gt;Agu_addr  =  insn-&amp;gt;Operand1 + insn-&amp;gt;imm;
+        insn-&amp;gt;Agu_addr_ready = true;
+        if(insn-&amp;gt;Fu == funcType_t::LDU){
+
+            switch (insn-&amp;gt;SubOp)
+            {
+            case LDU_LH  :
+                if((insn-&amp;gt;Agu_addr &amp;amp; 0b1) != 0){
+                    insn-&amp;gt;Excp.valid = false;
+                    insn-&amp;gt;Excp.Cause = RISCV::ExcpCause_t::LD_ADDR_MISALIGNED;
+                    insn-&amp;gt;Excp.Tval  = insn-&amp;gt;Agu_addr;
+                }
+                break;
+            case LDU_LW  :
+                if((insn-&amp;gt;Agu_addr &amp;amp; 0b11) != 0){
+                    insn-&amp;gt;Excp.valid = false;
+                    insn-&amp;gt;Excp.Cause = RISCV::ExcpCause_t::LD_ADDR_MISALIGNED;
+                    insn-&amp;gt;Excp.Tval  = insn-&amp;gt;Agu_addr;
+                }
+                break;
+            case LDU_LD  :
+                if((insn-&amp;gt;Agu_addr &amp;amp; 0b111) != 0){
+                    insn-&amp;gt;Excp.valid = false;
+                    insn-&amp;gt;Excp.Cause = RISCV::ExcpCause_t::LD_ADDR_MISALIGNED;
+                    insn-&amp;gt;Excp.Tval  = insn-&amp;gt;Agu_addr;
+                }
+                break;
+            case LDU_LHU :
+                if((insn-&amp;gt;Agu_addr &amp;amp; 0b1) != 0){
+                    insn-&amp;gt;Excp.valid = false;
+                    insn-&amp;gt;Excp.Cause = RISCV::ExcpCause_t::LD_ADDR_MISALIGNED;
+                    insn-&amp;gt;Excp.Tval  = insn-&amp;gt;Agu_addr;
+                }
+            case LDU_LWU :
+                if((insn-&amp;gt;Agu_addr &amp;amp; 0b11) != 0){
+                    insn-&amp;gt;Excp.valid = false;
+                    insn-&amp;gt;Excp.Cause = RISCV::ExcpCause_t::LD_ADDR_MISALIGNED;
+                    insn-&amp;gt;Excp.Tval  = insn-&amp;gt;Agu_addr;
+                }
+                break;
+            default:
+                break;
+            }
+        }else if (insn-&amp;gt;Fu == funcType_t::STU){
+            switch (insn-&amp;gt;SubOp)
+            {
+            case STU_SH:
+                if((insn-&amp;gt;Agu_addr &amp;amp; 0b1) != 0){
+                    insn-&amp;gt;Excp.valid = false;
+                    insn-&amp;gt;Excp.Cause = RISCV::ExcpCause_t::ST_ADDR_MISALIGNED;
+                    insn-&amp;gt;Excp.Tval  = insn-&amp;gt;Agu_addr;
+                }
+                break;
+            case STU_SW:
+                if((insn-&amp;gt;Agu_addr &amp;amp; 0b11) != 0){
+                    insn-&amp;gt;Excp.valid = false;
+                    insn-&amp;gt;Excp.Cause = RISCV::ExcpCause_t::ST_ADDR_MISALIGNED;
+                    insn-&amp;gt;Excp.Tval  = insn-&amp;gt;Agu_addr;
+                }
+                break;
+            case STU_SD:
+                if((insn-&amp;gt;Agu_addr &amp;amp; 0b111) != 0){
+                    insn-&amp;gt;Excp.valid = false;
+                    insn-&amp;gt;Excp.Cause = RISCV::ExcpCause_t::ST_ADDR_MISALIGNED;
+                    insn-&amp;gt;Excp.Tval  = insn-&amp;gt;Agu_addr;
+                }
+                break;
+            default:
+                break;
+            }
+        }
+    }"/>
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

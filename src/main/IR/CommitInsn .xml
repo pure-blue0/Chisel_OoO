@@ -1,0 +1,69 @@
+<Module type="CommitInsn">
+	<Parameters>
+		<Parameter name="m_DeallocWidth" type="int" value="2" description="The width of deallocation for instructions"/>	
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="insn_num" type="[1:0]" description="The number of instructions that can currently be committed"/>
+	        <Input name="Rob_Header" type="[3:0]" description="Rob's head pointer"/>
+	        <Input name="robEntry1_valid" type="bool" description="Whether the current entry is valid"/>
+	        <Input name="robEntry1_isExcp" type="bool" description="Whether the current entry is an exception"/>
+	        <Input name="robEntry1_LphyRd_in" type="[5:0]" description="LphyRd ID for the current entry ID"/>
+	        <Input name="robEntry1_isaRd" type="[4:0]" description="Current entry isaRd"/>
+	        <Input name="robEntry1_phyRd_data" type="[63:0]" description="The data stored in phyRd for the current entry"/>
+	        <Input name="robEntry1_Function_type" type="[2:0]" description="The execution unit to call for the store instruction in entry"/>
+	        <Input name="robEntry1_LSQtag_in" type="[3:0]" description="The location of the store instruction in entry in loadqueue or storequeue"/>
+	        <Input name="robEntry1_pc" type="[31:0]" description="The PC of the instructions stored in entry"/>
+	        <Input name="Rob_NextHeader" type="[3:0]" description="Rob's next header pointer"/>
+	        <Input name="robEntry2_valid" type="bool" description="Whether the current entry is valid"/>
+	        <Input name="robEntry2_isExcp" type="bool" description="Whether the current entry is an exception"/>
+	        <Input name="robEntry2_LphyRd_in" type="[5:0]" description="LphyRd ID for the current entry ID"/>
+	        <Input name="robEntry2_isaRd" type="[4:0]" description="Current entry isaRd"/>
+	        <Input name="robEntry2_phyRd_data" type="[63:0]" description="The data stored in phyRd for the current entry"/>
+	        <Input name="robEntry2_Function_type" type="[2:0]" description="The execution unit to call for the store instruction in entry"/>
+	        <Input name="robEntry2_LSQtag_in" type="[3:0]" description="The location of the store instruction in entry in loadqueue or storequeue"/>
+	        <Input name="robEntry2_pc" type="[31:0]" description="The PC of the instructions stored in entry"/>
+	        <Input name="m_ExcpCause" type="[5:0]" description="The cause of the current exception"/>
+	        <Input name="m_ExcpTval" type="[31:0]" description="The current exception address"/>
+	        <Input name="m_RobState" type="[2:0]" description="rob status"/>
+	        <Input name="m_RollBackTag" type="[3:0]" description="Rolling back labels"/>
+	        <Input name="CSR_MTVEC_data" type="[63:0]" description="Data read from CSR_MTVEC"/>
+	        <!-- Outputs from each Functional Unit  -->
+	        <Output name="ISA_Free_Busy_valid1" type="bool" description="m_IntFreelist and m_IntBusylist and ISA register update signals for entry 1"/>
+	        <Output name="robEntry1_LphyRd_out" type="[5:0]" description="The ID of the entry1 to be updated"/>
+	        <Output name="busy_done1" type="bool" description="Update the done signal in busylist for entry 1"/>
+	        <Output name="allocated_done1" type="bool" description="Update the allocated signal in busylist for entry 1"/>
+	        <Output name="isaRd1" type="[4:0]" description="Destination register ID for entry 1"/>
+	        <Output name="phyRd_data1" type="[63:0]" description="Data to be stored in the destination register for entry 1"/>
+	        <Output name="commit_Load_Vaild1" type="bool" description="The request to commits instructions in loadqueue for entry 1"/>
+	        <Output name="commit_Store_Vaild1" type="bool" description="The request to commits instructions in storequeue for entry 1"/>
+	        <Output name="LSQtag1_out" type="[3:0]" description="The position of the instructions to be submitted in the load or store queue for entry 1"/>
+	        <Output name="ISA_Free_Busy_valid2" type="bool" description="m_IntFreelist and m_IntBusylist and ISA register update signals for entry 2"/>
+	        <Output name="robEntry2_LphyRd_out" type="[5:0]" description="The ID of the entry2 to be updated"/>
+	        <Output name="busy_done2" type="bool" description="Update the done signal in busylist for entry 2"/>
+	        <Output name="allocated_done2" type="bool" description="Update the allocated signal in busylist for entry 2"/>
+	        <Output name="isaRd2" type="[4:0]" description="Destination register ID for entry 2"/>
+	        <Output name="phyRd_data2" type="[63:0]" description="Data to be stored in the destination register for entry 2"/>
+	        <Output name="commit_Load_Vaild2" type="bool" description="The request to commits instructions in loadqueue for entry 2"/>
+	        <Output name="commit_Store_Vaild2" type="bool" description="The request to commits instructions in storequeue for entry 2"/>
+	        <Output name="LSQtag2_out" type="[3:0]" description="The position of the instructions to be submitted in the load or store queue for entry 2"/>
+	        <Output name="CSR_Write_vaild" type="bool" description="Whether to write data to the CSR"/>
+	        <Output name="CSR_MEPC_data" type="[63:0]" description="Data written to CSR_MEPC"/>
+	        <Output name="CSR_MCAUSE_data" type="[63:0]" description="Data written to CSR_MCAUSE"/>
+	        <Output name="CSR_MTVAL_data" type="[63:0]" description="Data written to CSR_MTVAL"/>
+	        <Output name="m_RobState_new" type="[2:0]" description="The updated rob state"/>
+	        <Output name="needRedirect" type="bool" description="Indicates whether a redirect is required"/>
+	        <Output name="Redirect_ID" type="[3:0]" description="Represents a redirect request sent from the decode"/>
+	        <Output name="Redirect_Target" type="[31:0]" description="The destination address for the redirect"/>
+	        <Output name="fetch_flush" type="bool" description="fetch stage flush signal"/>
+	        <Output name="decode_flush" type="bool" description="decode stage flush signal"/>
+	        <Output name="dispatch_flush" type="bool" description="dispatch stage flush signal"/>
+	        <Output name="issue_flush" type="bool" description="IEW_flush signal"/>
+	        <Output name="commit_flush" type="bool" description="commit stage flush signal"/>
+	        <Output name="InstretUp" type="[1:0]" description="CSR_MINSTRET counts +1 signal"/>
+	        <Output name="rob_pop_num" type="[1:0]" description="The number of entries that need to Pop out of the ROB"/>
+	</Interface>
+    <Function description="CommitInsn function is responsible for processing and submitting instructions in the instruction package, including updating the status, handling exceptions, performing necessary redirects and other operations to ensure the correct update of processor status and the stable operation of the system."/>
+<ReferenceModel code="enum rob_state_t{Rob_Idle, Rob_Undo, Rob_Redo, Rob_WaitForResume, Rob_FlushBackend}; enum funcType_t { ALU , BRU, CSR, LDU, STU}; enum InsnState_t{State_Fetch1,State_Fetch2,_Decode,State_Dispatch,State_Issue,State_ReadOperand,State_Execute,State_WriteBack, State_Commit,State_Done}; void Rcu::CommitInsn(InsnPkg_t&amp; insnPkg, Redirect_t&amp; redirectReq, bool&amp; needRedirect){ needRedirect = false; for(size_t i = 0; i &lt; insnPkg.size(); i++){ uint16_t robPtr = this-&gt;m_Rob.getHeader(); auto&amp; robEntry = this-&gt;m_Rob[robPtr]; if(robEntry.valid){ if(!robEntry.isExcp){ if(robEntry.LphyRd != 0){ this-&gt;m_Processor-&gt;m_ExecContext-&gt;WriteIntReg(robEntry.isaRd,this-&gt;m_IntRegfile[robEntry.phyRd]); this-&gt;m_IntFreelist.push(robEntry.LphyRd); this-&gt;m_IntBusylist[robEntry.LphyRd].done = false; this-&gt;m_IntBusylist[robEntry.LphyRd].allocated = false; } if(robEntry.Fu == funcType_t::LDU){ this-&gt;m_Processor-&gt;getLsqPtr()-&gt;CommitLoadEntry(robEntry.LSQtag); }else if(robEntry.Fu == funcType_t::STU){ this-&gt;m_Processor-&gt;getLsqPtr()-&gt;CommitStoreEntry(robEntry.LSQtag); } } if(this-&gt;m_RobState == rob_state_t::Rob_WaitForResume &amp;&amp; robPtr == this-&gt;m_RollBackTag){ this-&gt;m_RobState = rob_state_t::Rob_FlushBackend; this-&gt;m_Processor-&gt;FlushForward(InsnState_t::State_Dispatch); if(robEntry.isExcp){ needRedirect = true; redirectReq.StageId = InsnState_t::State_Commit; this-&gt;m_Processor-&gt;m_ExecContext-&gt;WriteCsr(CSR_MEPC,robEntry.pc); this-&gt;m_Processor-&gt;m_ExecContext-&gt;WriteCsr(CSR_MCAUSE,this-&gt;m_ExcpCause); this-&gt;m_Processor-&gt;m_ExecContext-&gt;WriteCsr(CSR_MTVAL,this-&gt;m_ExcpTval); this-&gt;m_Processor-&gt;m_ExecContext-&gt;ReadCsr(CSR_MTVEC,redirectReq.target); this-&gt;m_Processor-&gt;FlushBackWard(InsnState_t::State_Issue); } } this-&gt;m_Processor-&gt;m_ExecContext-&gt;InstretInc(); this-&gt;m_Rob.Pop(); } }"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

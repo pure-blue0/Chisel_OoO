@@ -1,0 +1,46 @@
+<Module type="Lsq_Allocate">
+	<Parameters>
+		<!-- No Parameters defined -->
+	</Parameters>
+	<Interface>
+	    <!-- Inputs -->
+	    <Input name="allocCount" type="[1:0]" description="Number of instructions that can be allocated"/>
+	    <Input name="insn1_Function_type" type="[2:0]" description="The functional unit that instruction 1 needs to invoke"/>
+	    <Input name="insn2_Function_type" type="[2:0]" description="The functional unit that instruction 2 needs to invoke"/>
+	    <Input name="load_queue_tail" type="[3:0]" description="The tail pointer of load queue"/>
+	    <Input name="Store_queue_tail" type="[3:0]" description="The tail pointer of store queue"/>
+	    <!-- Outputs -->
+	    <Output name="Insn1_LSQTag" type="[3:0]" description="Instruction 1 pointer in LoadQueue or StoreQueue"/>
+	    <Output name="Insn2_LSQTag" type="[3:0]" description="Instruction 2 pointer in LoadQueue or StoreQueue"/>
+	    <Output name="WEn1_load_queue" type="" description="Write enable when instruction 1 needs to be put into loadqueue"/>
+	    <Output name="Load_insn1_state" type="[1:0]" description="The loading status of instruction 1"/>
+	    <Output name="Load_Commited1" type="" description="Instruction 1 Whether to commit"/>
+	    <Output name="Load_Killed1" type="" description="Whether instruction 1 is valid in the load queue"/>
+	    <Output name="Load_addressReady1" type="" description="Whether the load address of Instruction 1 is ready or not"/>
+	    <Output name="Load_address1" type="[31:0]" description="The loading address of instruction 1"/>
+	    <Output name="WEn2_load_queue" type="" description="Write enable when instruction 2 needs to be put into loadqueue"/>
+	    <Output name="Load_insn2_state" type="[1:0]" description="The loading status of instruction 2"/>
+	    <Output name="Load_commited2" type="" description="Instruction 2 Whether to commit"/>
+	    <Output name="Load_Killed2" type="" description="Whether instruction 2 is valid in the load queue"/>
+	    <Output name="Load_addressReady2" type="" description="Whether the load address of Instruction 2 is ready or not"/>
+	    <Output name="Load_address2" type="[31:0]" description="The loading address of instruction 2"/>
+	    <Output name="WEn1_store_queue" type="" description="Write enable when instruction 1 needs to put storequeue"/>
+	    <Output name="Store_insn1_state" type="[1:0]" description="The stored state of instruction 1"/>
+	    <Output name="Store_Commited1" type="" description="Instruction 1 Whether to commit"/>
+	    <Output name="Store_Killed1" type="" description="Whether instruction 1 is valid in the store queue"/>
+	    <Output name="Store_addressReady1" type="" description="Whether the store address of Instruction 1 is ready or not"/>
+	    <Output name="Store_address1" type="[31:0]" description="The storage address of instruction 1"/>
+	    <Output name="Store_dataReady1" type="" description="Whether the Instruction 1 storage data is ready"/>
+	    <Output name="Store_data1" type="[63:0]" description="The stored data of instruction 1"/>
+	    <Output name="WEn2_store_queue" type="" description="Write enable when instruction 2 needs to put storequeue"/>
+	    <Output name="Store_insn2_state" type="[1:0]" description="The stored state of instruction 2"/>
+	    <Output name="Store_Commited2" type="" description="Instruction 2 Whether to commit"/>
+	    <Output name="Store_Killed2" type="" description="Whether instruction 2 is valid in the store queue"/>
+	    <Output name="Store_addressReady2" type="" description="Whether the store address of Instruction 2 is ready or not"/>
+	    <Output name="Store_address2" type="[31:0]" description="The storage address of instruction 2"/>
+	    <Output name="Store_dataReady2" type="" description="Whether the Instruction 2 storage data is ready"/>
+	    <Output name="Store_data2" type="[63:0]" description="The stored data of instruction 2"/>
+	</Interface>
+	<Function description="This module is used to prepare the data required for the subsequent load queue or store queue according to the number of allocated instructions entered. If allocCount=0, all outputs are set to 0; if allocCount=1, only the first instruction is judged, and all outputs related to insn2 are judged to 0; if allocCount=2, both instructions are judged. When allocCount&gt;0, the instruction is judged, when Function_type=LDU, WEn1_load_queue=1, indicating that write enable is valid, state is set to load_WaitSend, and commited, killed, addressReady, address is set to 0, and Insn1_LSQTag=load queue tail pointer, and finally load queue tail pointer +1; When Function_type=STU, WEn1_store_queue=1, indicating that write enable is valid, state is set to store_WaitSend, and commited, killed, addressReady, address,dataReady,data are all set to 0, and Insn1_LSQTag=store queue tail pointer, and finally store queue tail pointer +1; When allocCount=2, repeat the operation of '3-4' for instruction 2 and output the result to the corresponding port."/>
+	<ReferenceModel code="In the reference model, the c++ code for the corresponding module is provided. Please refer to the code and implement the exact same function in chisel without omitting anything. The enum types used in the code are funcType_t (ALU, BRU, CSR, LDU, STU) and storeState_t (store_WaitSend, store_Inflight, store_Executed). The Allocate function iterates through the number of allocations, processes each instruction based on its function type, and updates the load or store queue accordingly."/>
+</Module>

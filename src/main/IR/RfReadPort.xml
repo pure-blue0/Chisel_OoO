@@ -1,0 +1,34 @@
+<Module type="RfReadPort">
+	<Parameters>
+	</Parameters>
+	<Interface>
+	    <!-- Inputs to the RfReadPort -->
+	    <Input name="Vaild" type="boolean" description="Indicates that the input data of each port of the current module is valid"/>
+	    <Input name="Insn_Operand1Ready" type="boolean" description="Whether Operand 1 is ready"/>
+	    <Input name="Insn_PhyRs1_data" type="[63:0]" description="The data stored in physical register 1"/>
+	    <Input name="Insn_Operand2Ready" type="boolean" description="Whether Operand 2 is ready"/>
+	    <Input name="Insn_PhyRs2_data" type="[63:0]" description="The data stored in physical register 2"/>
+	    <Input name="desIndex_in" type="[2:0]" description="The ID of the functional unit to which insn is assigned"/>
+	    <Input name="Sub_OP_in" type="[3:0]" description="The specific action that the instruction needs to perform in the execution unit"/>
+	    <Input name="imm_in" type="[63:0]" description="Operands of the current instruction"/>
+	    <Input name="pc_in" type="[63:0]" description="pc of the current instruction"/>
+	    <Input name="Pred_taken_in" type="boolean" description="Whether the current instruction has jumped"/>
+	    <Input name="pred_target_in" type="[63:0]" description="Branch prediction address for the current instruction"/>
+	    <Input name="Function_type_in" type="[2:0]" description="The execution unit that the instruction needs to invoke"/>
+	    
+	    <!-- Outputs from the RfReadPort -->
+	    <Output name="desIndex" type="[2:0]" description="The ID of the functional unit to which insn is assigned"/>
+	    <Output name="Insn_operand1" type="[63:0]" description="Operand 1"/>
+	    <Output name="Insn_operand2" type="[63:0]" description="Operand 2"/>
+	    <Output name="Sub_OP_out" type="[3:0]" description="The specific action that the instruction needs to perform in the execution unit"/>
+	    <Output name="desIndex_out" type="[2:0]" description="The ID of the functional unit to which insn is assigned"/>
+	    <Output name="imm_out" type="[63:0]" description="Operands of the current instruction"/>
+	    <Output name="pc_out" type="[63:0]" description="pc for the current instruction"/>
+	    <Output name="Pred_taken_out" type="boolean" description="Whether the current instruction has jumped"/>
+	    <Output name="pred_target_out" type="[63:0]" description="Branch prediction address for the current instruction"/>
+	    <Output name="Function_type_in" type="[2:0]" description="The execution unit that the instruction needs to invoke"/>
+	</Interface>
+	<Function description="When the input data valid is valid, execute: 1. Assign Insn_PhyRs1_data to Operand1 if Insn_Operand1Ready=1. 2. Assign Insn_PhyRs2_data to Operand2 if Insn_Operand2Ready=1. 3. Assign the signal with the suffix in to the corresponding port signal with the suffix out."/>
+	<ReferenceModel code="void RfReadPort::Evaluate(){ if(this-&gt;m_CalcuPipe.OutPort-&gt;valid){ IssueInfo&amp; t = this-&gt;m_CalcuPipe.OutPort-&gt;data; InsnPtr_t&amp; insn = t.insn; if(!insn-&gt;Operand1Ready){ insn-&gt;Operand1 = this-&gt;m_Processor-&gt;getRcuPtr()-&gt;m_IntRegfile[insn-&gt;PhyRs1]; } if(!insn-&gt;Operand2Ready) { insn-&gt;Operand2 = this-&gt;m_Processor-&gt;getRcuPtr()-&gt;m_IntRegfile[insn-&gt;PhyRs2]; } this-&gt;m_Processor-&gt;m_FuncUnitVec[t.desIndex]-&gt;Issue(insn); }}"/>
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

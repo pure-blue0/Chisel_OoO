@@ -1,0 +1,24 @@
+<Module type="Decode_Func">
+	<Parameters>
+	</Parameters>
+	<Interface>
+	    <!-- Interfaces for each Functional Unit -->
+	    <Input name="Insn" type="[31:0]" description="Instructions that need to be decoded"/>
+	    <!-- Outputs from each Functional Unit  -->
+	    <Output name="IsaRs1" type="[4:0]" description="Address of the rs1 register"/>
+	    <Output name="Operand1Ready" type="boolean" description="Whether the rs1 operand is ready"/>
+	    <Output name="IsaRs2" type="[4:0]" description="Address of the rs2 register"/>
+	    <Output name="Operand2Ready" type="boolean" description="Whether the rs2 operand is ready"/>
+	    <Output name="IsaRd" type="[4:0]" description="Address of the rd register"/>
+	    <Output name="ControlFlowInsn" type="boolean" description="Whether is Control-flow instruction, indicating whether the instruction changes the flow of program execution"/>
+	    <Output name="Function_type" type="[2:0]" description="The execution unit that the instruction needs to call, including ALU, BRU, CSR, LDU, STU"/>
+	    <Output name="Sub_OP" type="[3:0]" description="The specific action that the instruction needs to perform in the execution unit"/>
+	    <Output name="imm" type="[31:0]" description="Store immediate numbers"/>
+	    <Output name="excp_vaild" type="boolean" description="Stores exceptions for the current instruction"/>
+	    <Output name="excp_cause" type="[5:0]" description="Stores the type of the current exception instruction"/>
+	    <Output name="excpt_tval" type="[31:0]" description="The address of the current exception instruction is stored"/>
+	</Interface>
+    <Function description="This module is a decoding module for the riscv processor that supports riscv64i and m mode. It can parse instructions into internal control signals and operands, and needs to be able to handle the following instructions: 1. System control instructions (0b1110011): ECALL/EBREAK/MRET: Identify and process ecall, ebreak, and mret instructions by checking specific immediate values. For ecall and ebreak, set the corresponding exception types (environment calls and breakpoint exceptions). 2. CSR operations (CSRRW/CSRRS/CSRRC and its variants): Process CSR read and write instructions, set the functional unit to CSR, and set the sub-operation type according to the specific operation type (read and write, set, clear). 3. Memory access instructions (0b0001111): FENCE/FENCE. I: Process memory barrier instructions, mainly by setting it to CSR functional unit and labeling it as FENCE or FENCE. I operation."/>
+    <ReferenceModel code="void Decode_Func(Emulator::DynInsn&amp; insn){ StaticInsn instr(insn.UncompressedInsn); insn.IsaRs1  = instr.rs1();//insn[19:15] insn.IsaRs2  = instr.rs2();//insn[24:20] insn.IsaRd   = instr.rd();//insn[11:7] insn.Operand1Ready = false; insn.Operand2Ready = false; insn.ControlFlowInsn = false; insn.imm     = 0; insn.Fu          = Emulator::funcType_t::ALU; insn.SubOp       = ALU_ADD; bool    illegal_instr = false; bool    ecall   = false; bool    ebreak  = false; switch (instr.opcode())////insn[6:0] { case 0b1110011: insn.Fu = Emulator::funcType_t::CSR; if(instr.func3() &gt;&gt; 2){ insn.Operand1      = instr.rs1(); insn.Operand1Ready = true; } insn.imm = instr.csr(); switch (instr.func3() &amp; 0b11) { case 0b00: insn.IsaRd=0; if(instr.rd() == 0 &amp;&amp; instr.rs1() == 0){ insn.ControlFlowInsn = true; switch (instr.iimm()) { case 0b000000000000: insn.SubOp = CSR_ECALL; ecall = true; break; case 0b000000000001: insn.SubOp = CSR_EBREAK; ebreak = true; break; case 0b001100000010: insn.SubOp = CSR_MRET; break; default: illegal_instr = true;break; } }else illegal_instr = true; break; case 0b01: insn.SubOp = CSR_CSRRW; break; case 0b10: if(instr.rs1() == 0)insn.SubOp = CSR_CSRR ; else insn.SubOp = CSR_CSRRS; break; case 0b11: if(instr.rs1() == 0) insn.SubOp = CSR_CSRR ; else insn.SubOp = CSR_CSRRC; break; default:illegal_instr = true; break; } break; case 0b0001111: insn.Fu = Emulator::funcType_t::CSR; insn.imm = instr.iimm(); insn.IsaRd=0; if(instr.rs1() == 0 &amp;&amp; instr.rd() == 0){ switch (instr.func3()) { case 0b000: insn.Fu = Emulator::funcType_t::CSR; insn.SubOp = CSR_FENCE; break; case 0b001: if(instr.iimm() != 0){ illegal_instr = true; break; } insn.SubOp = CSR_FENCEI; insn.ControlFlowInsn = true; break; default: illegal_instr = true;break; } }else illegal_instr = true; break; default:illegal_instr = true;break; } if(ecall){ insn.Excp.valid = true; insn.Excp.Tval  = 0; insn.Excp.Cause =11; }else if(ebreak){ insn.Excp.valid = true; insn.Excp.Cause = 3; insn.Excp.Tval  = 0; } if(illegal_instr){ insn.Excp.valid = true; insn.Excp.Cause = 2; insn.Excp.Tval  = insn.UncompressedInsn; } else{ insn.Excp.valid    = 0; insn.Excp.Cause    = 0; insn.Excp.Tval     = 0; } }"/>
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

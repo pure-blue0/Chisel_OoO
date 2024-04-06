@@ -1,0 +1,25 @@
+<Module type="TryIssueLoad">
+    <Parameters>
+        <Parameter name="dCacheAlignByte" type="Integer" value="8" description="The byte alignment for the data cache."/>
+        <Parameter name="X_LEN" type="Integer" value="16" description="Processor word length."/>
+    </Parameters>
+    <Interface>
+        <Input name="LoadQueue_empty" type="Boolean" description="Describes whether the current load queue is empty."/>
+        <Input name="FrontQueue_addressReady" type="Boolean" description="Describes whether the current entry address is ready."/>
+        <Input name="FrontQueue_killed" type="Boolean" description="Describes whether the current entry is valid."/>
+        <Input name="FrontQueue_state" type="[1:0]" description="Describes the current entry state."/>
+        <Input name="FrontQueue_Address" type="[31:0]" description="Describes the current entry that needs to store the data address."/>
+        <Input name="ldqPtr" type="[3:0]" description="The position of the current entry in the load queue."/>
+        <Input name="Sub_OP" type="[3:0]" description="The specific action that the instruction needs to perform in the execution unit."/>
+        <Output name="Success" type="Boolean" description="Describe whether it can be fired."/>
+        <Output name="mem_opcode" type="[1:0]" description="The type of request sent to mem."/>
+        <Output name="mem_TransId" type="[3:0]" description="Record the position of the instruction that sent the mem request in store queue."/>
+        <Output name="mem_Address" type="[31:0]" description="Describes the address of the stored data currently to be sent to mem."/>
+        <Output name="mem_Length" type="[3:0]" description="Describes the size of the stored data address currently to be sent to mem."/>
+        <Output name="FrontQueue_update" type="Boolean" description="Signals that need to be updated."/>
+        <Output name="FrontQueue_state_new" type="[1:0]" description="Describes the updated entry state."/>
+        <Output name="ldqPtr_out" type="[3:0]" description="The position of the current entry in load queue."/>
+    </Interface>
+    <Function description="This module is responsible for checking the next pending entry in the load queue, making a load memory request if it is ready and the conditions are met, and updating the queue entry state. At the beginning of the function, the output parameter Success is set to false, indicating that the attempt to load the operation is failed by default. Check that the load queue is not empty: if the LoadQueue (store queue) is not empty, continue processing; Otherwise, the function terminates and Success remains false. If the state of the input entry is load_WaitSend and the entry has not been killed, check it further. If the address of the entry is ready, do the following: (1) Mark Success as true, indicating that the storage operation can be initiated. (2) Update the entry status to load_Inflight, indicating that the loading operation is in progress, and set FrontQueue_update to 1, lsqPtr_out=lsqPtr, FrontQueue_state_new=loadState_t::load_Inflight, which means that the request to modify data and the data to be modified are sent to load_queue (3) Set the memory request (memReq) parameters, including Opcode (Opcode set to load), transaction ID (TransId set to ldqPtr), and request address (mem_Address, calculated from address alignment). And mem_Length (set according to the processor word length m_XLEN)."/>
+    <ReferenceModel code="void Lsq::TryIssueLoad(MemReq_t&amp; memReq,bool&amp; Success){ Success = false; if(!this-&gt;m_LoadQueue.empty()){ uint16_t ldqPtr = this-&gt;m_LoadQueue.getHeader(); auto&amp; ldqEntry = this-&gt;m_LoadQueue[ldqPtr]; if(ldqEntry.state == loadState_t::load_WaitSend &amp;&amp; !ldqEntry.killed){ if(ldqEntry.addressReady ) { Success = true; ldqEntry.state = loadState_t::load_Inflight; memReq.Opcode  = MemOp_t::Load; memReq.Address = ldqEntry.address &amp; ~(this-&gt;m_dCacheAlignByte - 1); memReq.Id.TransId = ldqPtr; memReq.Length  = this-&gt;m_Processor-&gt;m_XLEN / 2; } } } }"/>
+</Module>

@@ -1,0 +1,50 @@
+<Module type="WriteBack">
+	<Parameters>
+		<!-- No explicit parameters provided, so this section is intentionally left blank -->
+	</Parameters>
+	<Interface>
+	        <!-- Inputs to the WriteBack module -->
+	        <Input name="rob_empty" type="boolean" description="Describes whether the current ROB is empty"/>
+	        <Input name="insn_ROBTag_in" type="[3:0]" description="The position of the current instruction in the rob"/>
+	        <Input name="rob_header" type="[3:0]" description="Line head pointer for the current ROB"/>
+	        <Input name="rob_lastest" type="[3:0]" description="The pointer to the latest entry of the current ROB"/>
+	        <Input name="excp_vaild" type="boolean" description="Stores exceptions of the current instruction"/>
+	        <Input name="excp_cause" type="[5:0]" description="Stores the type of the current exception instruction"/>
+	        <Input name="excp_tval" type="[31:0]" description="Store the address of the current exception instruction"/>
+	        <Input name="Function_type" type="[2:0]" description="The execution unit that the instruction needs to call"/>
+	        <Input name="BruMisPred" type="boolean" description="Whether the instruction predicts an error"/>
+	        <Input name="BruTarget" type="[31:0]" description="Branch prediction correction address"/>
+	        <Input name="m_RollBackTag" type="[3:0]" description="Rolling back labels"/>
+	        <Input name="m_RobState" type="[2:0]" description="rob status"/>
+	        <Input name="m_ExcpCause" type="[5:0]" description="Cause of exception"/>
+	        <Input name="m_ExcpTval" type="[31:0]" description="Exception address"/>
+	        <Input name="isa_rd" type="[4:0]" description="Describes the isa rd register id of the current instruction"/>
+	        <Input name="PhyRd_in" type="[5:0]" description="Describes the Rd physical register id of the current instruction"/>
+	        <Input name="RdResult_in" type="[63:0]" description="Data calculated by execute"/>
+	        <!-- Outputs from the WriteBack module -->
+	        <Output name="needRedirect" type="boolean" description="Indicates whether a redirect is required"/>
+	        <Output name="Redirect_ID" type="[3:0]" description="Represents a redirect request sent from the decode"/>
+	        <Output name="Redirect_Target" type="[31:0]" description="The destination address for the redirect"/>
+	        <Output name="ROB_vaild" type="boolean" description="Indicates whether the data of the ROB needs to be modified"/>
+	        <Output name="ROB_done" type="boolean" description="Indicates whether the instruction in ROB is completed"/>
+	        <Output name="ROB_isstable" type="boolean" description="Indicates whether the instructions in ROB are stable"/>
+	        <Output name="ROB_isexcp" type="boolean" description="Indicates whether an exception occurs for an instruction in the ROB"/>
+	        <Output name="insn_ROBTag_out" type="[3:0]" description="The position of the current instruction in the rob"/>
+	        <Output name="isMisPred" type="boolean" description="Indicates whether the instruction in ROB predicted incorrectly"/>
+	        <Output name="fetch_flush" type="boolean" description="fetch stage flush signal"/>
+	        <Output name="decode_flush" type="boolean" description="decode stage flush signal"/>
+	        <Output name="dispatch_flush" type="boolean" description="dispatch stage flush signal"/>
+	        <Output name="Reg_busy_vaild" type="boolean" description="Indicates whether IntRegfile and IntBusylist data are required"/>
+	        <Output name="PhyRd_out" type="[5:0]" description="Describes the Rd physical register id of the current instruction"/>
+	        <Output name="RdResult_out" type="[63:0]" description="Data calculated by execute"/>
+	        <Output name="Reg_busy_forwarding" type="boolean" description="Indicates whether the calculation result of the instruction is forwarded"/>
+	        <Output name="Reg_busy_done" type="boolean" description="Indicates whether the data in the PhyRd register is ready"/>
+	        <Output name="m_RollBackTag_new" type="[3:0]" description="The updated rollback label"/>
+	        <Output name="m_RobState_new" type="[2:0]" description="The updated rob state"/>
+	        <Output name="m_ExcpCause_new" type="[5:0]" description="The updated ExcpCause"/>
+	        <Output name="m_ExcpTval_new" type="[31:0]" description="The updated exception address"/>
+	</Interface>
+	<Function description="This module handles the write back logic of instructions, including updating the state of the reorder buffer, handling branch prediction errors and exception cases, and triggering the redirection flow to roll back to the correct program execution state when necessary."/>
+	<ReferenceModel code="void Rcu::WriteBack(InsnPtr_t&amp; insn, bool&amp; needRedirect){ ... }"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

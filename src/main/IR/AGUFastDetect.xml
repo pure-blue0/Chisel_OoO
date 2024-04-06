@@ -1,0 +1,27 @@
+<Module type="AGUFastDetect">
+	<Parameters>
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="RobTag_in" type="[3:0]" description="The position of the current instruction in the ROB"/>
+	        <Input name="Function_type" type="[2:0]" description="The execution unit that the instruction needs to invoke"/>
+	        <Input name="Agu_addr_ready" type="Boolean" description="Whether the address in memory is ready for the instruction to access data"/>
+	        <Input name="Agu_data_ready" type="Boolean" description="Whether the data stored in memory by the instruction is ready"/>
+	        <Input name="RobState" type="[2:0]" description="ROB's current state"/>
+	        <Input name="excp_vaild_in" type="Boolean" description="Stores exceptions for the current instruction"/>
+	        <Input name="excp_cause_in" type="[5:0]" description="Stores the type of the current exception instruction"/>
+	        <Input name="excpt_tval_in" type="[31:0]" description="Store the address of the current exception instruction"/>
+	        <!-- Outputs from each Functional Unit  -->
+	        <Output name="isStable" type="Boolean" description="Is the current instruction stable"/>
+	        <Output name="Done" type="Boolean" description="Whether the address and data of the current STU instruction are ready"/>
+	        <Output name="isExcp" type="Boolean" description="Whether an exception occurred for the current store instruction"/>
+	        <Output name="RobTag" type="[3:0]" description="The position of the current instruction in the ROB"/>
+	        <Output name="RollBackTag" type="[3:0]" description="The updated rollback label of rob"/>
+	        <Output name="excp_vaild_out" type="Boolean" description="Stores exceptions for the current instruction"/>
+	        <Output name="excp_cause_out" type="[5:0]" description="Stores the type of the current exception instruction"/>
+	        <Output name="excpt_tval_out" type="[31:0]" description="Store the address of the current exception instruction"/>
+	</Interface>
+	<Function description="1. Set RobTag=RobTag_in to output the index of the current instruction in rob. 2. According to the index of rob, set the corresponding isStable variable to 1. 3. If the current instruction is a storage instruction, and the data and address are ready, set the Done signal to 1, otherwise 0. 4. If there is an exception in the current instruction, the done signal is set to 1, and the isExcp signal is also 1, indicating that the instruction has been completed but an exception occurred. If the current state of the reorder buffer is not idle (Rob_Idle), then the state of the reorder buffer is set to need to be undone (Rob_Undo).The instruction tag that triggered the undo operation (RobTag) is recorded in the RollBackTag, the cause of the exception (excp_cause_in) in the excp_cause_out, and the outlier (excpt_tval_in) in the excpt_tval_out. This means that the reorder buffer needs to undo some action or state because of this exception."/>
+<ReferenceModel code="void  Rcu::AGUFastDetect(InsnPtr_t&amp; insn){    this-&gt;m_Rob[insn-&gt;RobTag].isStable = true;    if(insn-&gt;Fu == funcType_t::STU &amp;&amp; insn-&gt;Agu_addr_ready &amp;&amp; insn-&gt;Agu_data_ready)    {        this-&gt;m_Rob[insn-&gt;RobTag].done = true;    }    else this-&gt;m_Rob[insn-&gt;RobTag].done = false;    if(insn-&gt;Excp.valid){        this-&gt;m_Rob[insn-&gt;RobTag].done   = true;        this-&gt;m_Rob[insn-&gt;RobTag].isExcp = true;        if(this-&gt;m_RobState != rob_state_t::Rob_Idle )        {            this-&gt;m_RobState = rob_state_t::Rob_Undo;            this-&gt;m_RollBackTag = insn-&gt;RobTag;            this-&gt;m_ExcpCause   = insn-&gt;Excp.Cause;            this-&gt;m_ExcpTval    = insn-&gt;Excp.Tval;        }    }}" />    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

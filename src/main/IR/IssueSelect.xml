@@ -1,0 +1,32 @@
+<Module type="IssueSelect">
+	<Parameters>
+		<Parameter name="support_function1" type="binary" value="001" description=""/>
+		<Parameter name="support_function2" type="binary" value="000" description=""/>
+		<Parameter name="support_function3" type="binary" value="000" description=""/>
+		<Parameter name="Index_function1" type="binary" value="010" description=""/>
+		<Parameter name="Index_function2" type="binary" value="011" description=""/>
+		<Parameter name="Index_function3" type="binary" value="100" description=""/>
+	</Parameters>
+	<Interface>
+	    <!-- Interfaces for each Functional Unit -->
+	    <Input name="PhyRs1_done" type="[5:0]" description="Whether physical register 1 of the instruction has received data"/>
+	    <Input name="PhyRs2_done" type="[5:0]" description="Whether physical register 2 of the instruction has received data"/>
+	    <Input name="Insn" type="[163:0]" description="An instruction packet sent from an issue"/>
+	    <Input name="RF_port_vaild" type="Boolean" description="Whether the currently connected rfport is valid"/>
+	    <Input name="Execute_fun1_busy" type="Boolean" description="Whether the function1 execution unit is busy"/>
+	    <Input name="Execute_fun2_busy" type="Boolean" description="Whether the function2 execution unit is busy"/>
+	    <Input name="Execute_fun3_busy" type="Boolean" description="Whether the function3 execution unit is busy"/>
+	    <!-- Outputs from each Functional Unit  -->
+	    <Output name="PhyRs1" type="[5:0]" description="ID of physical register 1 of the instruction"/>
+	    <Output name="PhyRs2" type="[5:0]" description="ID of physical register 2 of the instruction"/>
+	    <Output name="Allocate_fun1" type="Boolean" description="Whether the execution unit of function1 is occupied"/>
+	    <Output name="Allocate_fun2" type="Boolean" description="Whether the execution unit of function2 is occupied"/>
+	    <Output name="Allocate_fun3" type="Boolean" description="Whether the execution unit of function3 is occupied"/>
+	    <Output name="desIndex" type="[2:0]" description="ID of the functional unit to which insn is assigned"/>
+	    <Output name="Insn_out" type="[163:0]" description="The instruction packet sent to rfport"/>
+	    <Output name="Success" type="Boolean" description="Whether the launch was successful"/>
+	</Interface>
+	<Function description="1. Look up data in busylist by outputting PhyRs1 (insn[149:140]) and PhyRs2 (insn[139:134]), The returned PhyRs1_done and PhyRs2_done are used to determine whether the physical registers stored in busylist have received the data, and only when both are 1, the data is ready and the subsequent operation is continued. Otherwise, no further operations are performed. 2. When the data is ready, we determine if the rfport for the current connection is valid, and if not, we do nothing further 3. Find the corresponding execute cell according to Insn[51:49] of the current transmit queue, and determine whether its busy signal is busy. (The function type of the current instruction is compared with the support function in parameter in turn, and if the ith fun_busy signal is equal, it is determined whether the ith FUN_busy signal is busy or not) until an available execute unit is found or all connected execution units are iterated 4. If an available execution unit is found, Allocate_fun is set to 1 to indicate that the execution unit is occupied, and the corresponding desIndex is output, then success is set to 1, and insn is sent to the insn_out port."/>
+	<ReferenceModel code="In the reference model, the c++ code for the corresponding module is as follows. Please refer to the code and implement the exact same function in chisel without omitting anything: Possible enumeration types： enum InsnState_t{ State_Fetch1, State_Fetch2, State_Decode, State_Dispatch, State_Issue,State_ReadOperand,State_Execute,State_WriteBack, State_Commit, State_Done }; void IssueSelect(uint64_t&amp; index, InsnPtr_t&amp; insn, bool&amp; Success){ IssueInfo info; Success = false; insn = this-&gt;m_issueQueue.front();//That's where the data is, and that's where the input signals come in when you connect info.insn = insn; if(((!this-&gt;m_Rcu-&gt;m_IntBusylist[insn-&gt;PhyRs1].done) || (!this-&gt;m_Rcu-&gt;m_IntBusylist[insn-&gt;PhyRs2].done) )){//It determines whether the corresponding physical register in busylist stores the completed data return; }else{ for(auto rfport : this-&gt;m_RFReadPortVec){ if(!rfport-&gt;valid){ for(auto fu : this-&gt;m_FuncUnitVec){ if(fu-&gt;m_SupportFunc.count(insn-&gt;Fu) &amp;&amp; !fu-&gt;Busy()){ fu-&gt;Allocate(); //Set the function unit to busy info.desIndex = fu-&gt;m_FuncUnitId;//The ID of the execution unit info.isToFu = true;//In cross-validation, we need to attach the result of success to this variable, and then finally send the data via rfport Success = true; rfport-&gt;set(info);//Send data to rfport insn-&gt;State = InsnState_t::State_ReadOperand; return; } } } } } };"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

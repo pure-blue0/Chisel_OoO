@@ -1,0 +1,47 @@
+<Module type="Branch">
+	<Parameters>
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="Insn_operand1" type="[63:0]" description="Operand 1"/>
+	        <Input name="Insn_operand2" type="[63:0]" description="Operand 2"/>
+	        <Input name="imm" type="[63:0]" description="Operands of the current instruction"/>
+	        <Input name="pc" type="[63:0]" description="pc for the current instruction"/>
+	        <Input name="Pred_taken" type="" description="Whether the current instruction has jumped"/>
+	        <Input name="pred_target" type="[63:0]" description="Branch prediction address for the current instruction"/>
+	        <Input name="Sub_OP_out" type="[3:0]" description="The specific action that the instruction needs to perform in the execution unit"/>
+	        <!-- Outputs from each Functional Unit  -->
+	        <Output name="Insn_rdresult" type="[63:0]" description="Result of operation"/>
+	        <Output name="Insn_BruTarget" type="[63:0]" description="Correct jump target address"/>
+	        <Output name="BruMisPred" type="" description="Whether a branch prediction error occurred"/>
+	</Interface>
+	<Function description="This is a Branch Prediction Unit for handling instructions of type BRU_JAR, BRU_JALR, BRU_BEQ, BRU_BNE, BRU_BLT, BRU_BGE, BRU_BLTU, BRU_BGEU, etc. It calculates the next instruction address, uses the SubOp field to determine branching, and updates the BruMisPred field based on condition judgment and prediction results."/>
+<ReferenceModel code="possible define:
+#define BRU_JAR         0
+#define BRU_JALR        1
+#define BRU_BEQ         2
+#define BRU_BNE         3
+#define BRU_BLT         4
+#define BRU_BGE         5
+#define BRU_BLTU        6
+#define BRU_BGEU        7    
+   void Compute(InsnPtr_t&amp; insn){
+        bool taken;
+        insn-&gt;RdResult = (uint64_t)insn-&gt;Pc +  4;
+        switch (insn-&gt;SubOp)
+        {
+        case BRU_JAR  :taken = true;break;
+        case BRU_JALR :taken = true;break;
+        case BRU_BEQ  :taken = (int64_t)insn-&gt;Operand1 == (int64_t)insn-&gt;Operand2;break;
+        case BRU_BNE  :taken = (int64_t)insn-&gt;Operand1 != (int64_t)insn-&gt;Operand2;break;
+        case BRU_BLT  :taken = (int64_t)insn-&gt;Operand1 &lt; (int64_t)insn-&gt;Operand2;break;
+        case BRU_BGE  :taken = (int64_t)insn-&gt;Operand1 &gt;= (int64_t)insn-&gt;Operand2;break;
+        case BRU_BLTU :taken = (uint64_t)insn-&gt;Operand1 &lt; (uint64_t)insn-&gt;Operand2;break;
+        case BRU_BGEU :taken = (uint64_t)insn-&gt;Operand1 &gt;= (uint64_t)insn-&gt;Operand2;break;         
+        default:taken = false;break;
+        }
+        if(insn-&gt;SubOp == BRU_JALR)insn-&gt;BruTarget = (int64_t)insn-&gt;Operand1 + (int64_t)insn-&gt;imm;
+        else insn-&gt;BruTarget = (uint64_t)insn-&gt;Pc + (taken ? (int64_t)insn-&gt;imm :  4);
+        insn-&gt;BruMisPred = (taken != insn-&gt;Pred.Taken) || (insn-&gt;BruTarget != insn-&gt;Pred.Target);
+    };" />    
+</Module>

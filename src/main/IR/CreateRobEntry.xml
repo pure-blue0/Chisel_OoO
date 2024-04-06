@@ -1,0 +1,43 @@
+<Module type="CreateRobEntry">
+	<Parameters>
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="Rob_tail" type="[3:0]" description="The tail pointer to Rob"/>
+	        <Input name="insn_Function_type" type="[2:0]" description="The functional unit that instruction needs to invoke"/>
+	        <Input name="Sub_OP" type="[3:0]" description="The specific action that the instruction needs to perform in the execution unit"/>
+	        <Input name="excp_vaild" type="" description="Exception condition for the current instruction"/>
+	        <Input name="excp_cause" type="[5:0]" description="The type of the current exception instruction"/>
+	        <Input name="excpt_tval" type="[31:0]" description="The address of the current exception instruction"/>
+	        <Input name="insn_Pc" type="[31:0]" description="pc for the current instruction"/>
+	        <Input name="LSQTag" type="[3:0]" description="tag of the current instruction in the LSQ"/>
+	        <Input name="IsaRd" type="[4:0]" description="isaRd of the current instruction"/>
+	        <Input name="PhyRd" type="[5:0]" description="phyrd for the current instruction"/>
+	        <Input name="LPhyRd" type="[5:0]" description="lphyrd for the current instruction"/>
+	        <Input name="ControlFlowInsn" type="" description="Whether the current instruction is a control flow instruction"/>
+	        <Input name="Insn_vaild" type="" description="The instruction currently entered is a valid instruction"/>
+	        <!-- Outputs from each Functional Unit  -->
+	        <Output name="Entry_vaild" type="" description="Indicates whether the current rob entry is valid"/>
+	        <Output name="Entry_done" type="" description="Whether the ROB entry is complete or not"/>
+	        <Output name="Entry_isStable" type="" description="Whether the ROB entry is stable or not"/>
+	        <Output name="Entry_isMisPred" type="" description="Whether the ROB entry is a misprediction"/>
+	        <Output name="Entry_isExcp" type="" description="Whether the ROB entry is abnormal"/>
+	        <Output name="Entry_pc" type="[31:0]" description="The instruction address where the ROB entry is stored"/>
+	        <Output name="Entry_Fu" type="[2:0]" description="ROB entry stored instruction function"/>
+	        <Output name="Entry_LSQtag" type="[3:0]" description="The lsqtag of the instruction stored by the ROB entry"/>
+	        <Output name="Entry_isaRd" type="[4:0]" description="The isard of the instructions stored by the ROB entry"/>
+	        <Output name="Entry_phyRd" type="[5:0]" description="phyrd of the instructions stored by the ROB entry"/>
+	        <Output name="Entry_LphyRd" type="[5:0]" description="The lphyrd of the instruction stored by the ROB entry"/>
+	        <Output name="RobState" type="[2:0]" description="ROB's current state"/>
+	        <Output name="RollBackTag" type="[3:0]" description="The location to which ROB needs to roll back"/>
+	        <Output name="ExcpCause" type="[5:0]" description="The cause of rob's current exception"/>
+	        <Output name="ExcpTval" type="[31:0]" description="The address of rob's current exception"/>
+	        <Output name="Flush_fetch" type="" description="flush fetch stage signal"/>
+	        <Output name="Flush_decode" type="" description="flush decode stage signal"/>
+	        <Output name="Flush_dispatch" type="" description="flush dispatch stage signal"/>
+	        <Output name="ROB_EN" type="" description="The ROB queue writes enable valid signals"/>
+	</Interface>
+	<Function description="This module is used to create the data needed for the rob entry. Set the retrieved Rob_tail to RobTag and set Flush_fetch, Flush_decode, and Flush_dispatch to 0. If instruction is NOP, there is an exception, FENCE instruction or MRET instruction, done flag is true. Set valid, isStable, isMisPred, isExcp, pc, Fu, LSQtag, isaRd, phyRd, LphyRd of entry. If there is an exception to the instruction, set the ROB state to Rob_Undo, record the rollback label, the cause of the exception, and the outlier, and initiate a FlushBackWard by setting Flush_fetch=1, Flush_decode=1, Flush_dispatch=1, and so on. Clear all instructions prior to the issue phase. If it is a control flow instruction, also set the ROB state to Rob_Undo and record the rollback label. If this control flow instruction is MRET, the ROB state is set to Rob_Idle. If the input is a valid instruction, set ROB_EN=1 to indicate that data will be written to the rob queue"/>
+<ReferenceModel code="enum funcType_t { ALU , BRU, CSR, LDU, STU}; enum rob_state_t{ Rob_Idle, Rob_Undo, Rob_Redo, Rob_WaitForResume, Rob_FlushBackend}; void Rcu::CreateRobEntry(InsnPtr_t&amp; insn){ Rob_entry_t newEntry; insn-&gt;RobTag = this-&gt;m_Rob.Allocate(); bool isNop = (insn-&gt;Fu == funcType_t::ALU) &amp;&amp; (insn-&gt;IsaRd == 0); bool isFence = (insn-&gt;Fu == funcType_t::CSR) &amp;&amp; (insn-&gt;SubOp ==9); bool isMret = (insn-&gt;Fu == funcType_t::CSR) &amp;&amp; (insn-&gt;SubOp == 7); newEntry.valid = true; newEntry.done = isNop | insn-&gt;Excp.valid | isFence | isMret; newEntry.isStable = newEntry.done; newEntry.isMisPred = false; newEntry.isExcp = insn-&gt;Excp.valid; newEntry.pc = insn-&gt;Pc; newEntry.Fu = insn-&gt;Fu; newEntry.LSQtag = insn-&gt;LSQTag; newEntry.isaRd = insn-&gt;IsaRd; newEntry.phyRd = insn-&gt;PhyRd; newEntry.LphyRd = insn-&gt;LPhyRd; if(insn-&gt;Excp.valid){ this-&gt;m_RobState = rob_state_t::Rob_Undo; this-&gt;m_RollBackTag = insn-&gt;RobTag; this-&gt;m_ExcpCause = insn-&gt;Excp.Cause; this-&gt;m_ExcpTval = insn-&gt;Excp.Tval; this-&gt;m_Processor-&gt;FlushBackWard(InsnState_t::State_Issue);}else{ if(insn-&gt;ControlFlowInsn){ this-&gt;m_RobState = rob_state_t::Rob_Undo; this-&gt;m_RollBackTag = insn-&gt;RobTag; if(isMret){ this-&gt;m_RobState = rob_state_t::Rob_Idle; } } } if(insn){ this-&gt;m_Rob[insn-&gt;RobTag] = newEntry; }}"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->
