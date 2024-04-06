@@ -76,8 +76,8 @@ Simulator : {
             {
               Name             : CSRBuffer,
               EntryCount       : 2,
-              EnqueWidth       : 1,
-              DequeWidth       : 1,
+              EnqueWidth       : 2,
+              DequeWidth       : 2,
               IssuePolicy      : In-Order,
               WakeUpPolicy     : Commit,
               RFReadPort       : [0],

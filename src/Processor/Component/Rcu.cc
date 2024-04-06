@@ -48,50 +48,43 @@ Rcu::Reset(){
 
 
 void 
-Rcu::CreateRobEntry(InsnPtr_t& insn){
-    Rob_entry_t newEntry;
+Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
+    for(size_t i = 0; i < allocCount; i++){
+        InsnPtr_t insn = insnPkg[i];
+        Rob_entry_t newEntry;
+        insn->RobTag = this->m_Rob.Allocate();//返回一个可用的rob entry指针
+        bool isNop   = (insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0);//nop
+        bool isFence = (insn->Fu == funcType_t::CSR) && (insn->SubOp == 9);//fence
+        bool isMret  = (insn->Fu == funcType_t::CSR) && (insn->SubOp == 7);//mret
+        newEntry.valid              = true;
+        newEntry.done               = isNop | insn->Excp.valid | isFence | isMret;//如果是这些情况则done
+        newEntry.isStable           = newEntry.done;
+        newEntry.isMisPred          = false;
+        newEntry.isExcp             = insn->Excp.valid;
+        newEntry.pc                 = insn->Pc;
+        newEntry.Fu                 = insn->Fu;
+        newEntry.LSQtag             = insn->LSQTag;
+        newEntry.isaRd              = insn->IsaRd;
+        newEntry.phyRd              = insn->PhyRd;
+        newEntry.LphyRd             = insn->LPhyRd;
 
-    insn->RobTag = this->m_Rob.Allocate();//返回一个可用的rob entry指针
-
-    bool isNop   = (insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0);//nop
-    bool isFence = (insn->Fu == funcType_t::CSR) && (insn->SubOp == 9);//fence
-    bool isMret  = (insn->Fu == funcType_t::CSR) && (insn->SubOp == 7);//mret
-
-    newEntry.valid              = true;
-    newEntry.done               = isNop | insn->Excp.valid | isFence | isMret;//如果是这些情况则done
-
-    newEntry.isStable           = newEntry.done;
-    newEntry.isMisPred          = false;
-    newEntry.isExcp             = insn->Excp.valid;
-
-    newEntry.pc                 = insn->Pc;
-
-    newEntry.Fu                 = insn->Fu;
-    newEntry.LSQtag             = insn->LSQTag;
-
-    newEntry.isaRd              = insn->IsaRd;
-    newEntry.phyRd              = insn->PhyRd;
-    newEntry.LphyRd             = insn->LPhyRd;
-
-    if(insn->Excp.valid){
-        this->m_RobState        = rob_state_t::Rob_Undo;
-        this->m_RollBackTag     = insn->RobTag;
-        this->m_ExcpCause       = insn->Excp.Cause;
-        this->m_ExcpTval        = insn->Excp.Tval;
-        this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//发生异常就把issue前的stage都插入气泡
-    }else{
-        if(insn->ControlFlowInsn){
+        if(insn->Excp.valid){
             this->m_RobState        = rob_state_t::Rob_Undo;
-            this->m_RollBackTag     = insn->RobTag;   
-            if(isMret){
-                this->m_RobState        = rob_state_t::Rob_Idle;
+            this->m_RollBackTag     = insn->RobTag;
+            this->m_ExcpCause       = insn->Excp.Cause;
+            this->m_ExcpTval        = insn->Excp.Tval;
+            this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//发生异常就把issue前的stage都插入气泡
+        }else{
+            if(insn->ControlFlowInsn){
+                this->m_RobState        = rob_state_t::Rob_Undo;
+                this->m_RollBackTag     = insn->RobTag;   
+                if(isMret){
+                    this->m_RobState        = rob_state_t::Rob_Idle;
+                }
             }
         }
-    }
-    if(insn){//如果输入的是有效指令，则向rob队列写入数据
         this->m_Rob[insn->RobTag] = newEntry;
-    }
-    
+    }   
 }
  
 void
@@ -118,10 +111,9 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
                 if(insn1->IsaRd == Insn2->IsaRd) Insn2->LPhyRd = insn1->PhyRd;
             }
     }
-    for(size_t i = 0; i < allocCount; i++){
-        InsnPtr_t insn = insnPkg[i];
-        this->CreateRobEntry(insn);//发送创建rob请求
-    }
+    
+    this->CreateRobEntry(insnPkg,allocCount);//发送创建rob请求
+    
 }
 
 

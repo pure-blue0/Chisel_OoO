@@ -112,7 +112,7 @@ public:
 
     void Rename(InsnPkg_t& insnPkg);
 
-    void CreateRobEntry(InsnPtr_t& insn);
+    void CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount);
 
     void TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount);
 

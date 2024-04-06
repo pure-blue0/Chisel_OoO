@@ -43,7 +43,6 @@ Dispatch::Evaluate(){
         if(rcu->m_RobState != rob_state_t::Rob_Idle){
             this->m_StageInPort->stall();
         }else{
-            
                 rcu->TryAllocate(insnPkg,TryAllocSuccessCount[0]);
                 lsq->TryAllocate(insnPkg,TryAllocSuccessCount[1]);
                 this->TryDispatch(insnPkg,TryAllocSuccessCount[2],true);
@@ -114,12 +113,13 @@ Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
              ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
              ((insn->Fu == funcType_t::CSR) && (insn->SubOp == CSR_MRET))
         ){
-            insn->State = InsnState_t::State_Commit;//直接提交
+            ;//insn->State = InsnState_t::State_Commit;//直接提交
         }else{
-            insn->State = InsnState_t::State_Issue;
+            //insn->State = InsnState_t::State_Issue;
             for(auto scheduler : this->m_SchedularVec){
                 if(scheduler.scheduler->m_SupportFunc.count(insn->Fu) )
                 {
+                    
                     scheduler.scheduler->Schedule(insn,scheduler.scheduler->Allocate());
                     break;
                 }

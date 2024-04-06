@@ -49,13 +49,12 @@ Lsq::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
         if(insn->Fu == funcType_t::LDU)      AllocLdqCount++;
         else if(insn->Fu == funcType_t::STU) AllocStqCount++;    
     }
-    
+
     if(this->m_LoadQueue.getAvailEntryCount()<AllocLdqCount)
         SuccessCount=this->m_LoadQueue.getAvailEntryCount();
     else if(this->m_StoreQueue.getAvailEntryCount()<AllocStqCount)
         SuccessCount=this->m_StoreQueue.getAvailEntryCount();
     else SuccessCount = insnPkg.size();
-
 }
 
 void 

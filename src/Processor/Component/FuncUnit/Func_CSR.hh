@@ -42,12 +42,8 @@ public:
             this->m_ExecContext->ReadCsr(insn->imm,insn->RdResult);
             this->m_ExecContext->WriteCsr(insn->imm,(~(uint64_t)insn->Operand1) & (uint64_t)insn->RdResult);
             break;
-        case CSR_CSRR   :
-            this->m_ExecContext->ReadCsr(insn->imm,insn->RdResult);
-            break;
-        case CSR_FENCEI :
-
-            break;
+        case CSR_CSRR   :this->m_ExecContext->ReadCsr(insn->imm,insn->RdResult);break;
+        case CSR_FENCEI :break;
         default:
             break;
         }

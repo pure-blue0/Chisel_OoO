@@ -54,18 +54,18 @@ Decode::ReceiveReq(){
         DASSERT((this->m_DecodeQueue.getSize() >= this->m_FromLastStageInsnCount), "Can Never Taken All Insn");
         if(this->m_DecodeQueue.getAvailEntryCount() >= this->m_FromLastStageInsnCount){
             InsnPkg_t insnPkg;       
-                for(auto insn : this->m_StageInPort->data){
-                    this->Predecode(*insn.get(),insnPkg); 
-                }
-                if(insnPkg.size()){
-                    for(auto insn1 : insnPkg){
-                        insn1->State = InsnState_t::State_Decode;
-                        if(!insn1->Excp.valid){
-                            this->DecodeInsn(insn1);
-                        }
-                        this->m_DecodeQueue.Push(insn1);
+            for(auto insn : this->m_StageInPort->data){
+                this->Predecode(*insn.get(),insnPkg); 
+            }
+            if(insnPkg.size()){
+                for(auto insn1 : insnPkg){
+                    insn1->State = InsnState_t::State_Decode;
+                    if(!insn1->Excp.valid){
+                        this->DecodeInsn(insn1);
                     }
+                    this->m_DecodeQueue.Push(insn1);
                 }
+            }
             #ifdef TRACE_ON
             std::stringstream insnInfo;
             
