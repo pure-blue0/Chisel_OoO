@@ -49,7 +49,6 @@ public:
         insn->Agu_addr  =  insn->Operand1 + insn->imm;
         insn->Agu_addr_ready = true;
         if(insn->Fu == funcType_t::LDU){
-
             switch (insn->SubOp)
             {
             case LDU_LH  :

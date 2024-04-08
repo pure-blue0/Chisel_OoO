@@ -147,12 +147,6 @@ bool Rcu::ReadyForCommit(uint64_t RobTag){
     return false;
 }
 
-void 
-Rcu::Forwarding(InsnPtr_t& insn){
-    this->m_IntRegfile[insn->PhyRd] = insn->RdResult;
-    this->m_IntBusylist[insn->PhyRd].done = true;
-}
-
 void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq){
     needRedirect = false;
     if(!this->m_Rob.empty() && (this->m_Rob.isOlder(insn->RobTag,this->m_Rob.getLastest()) || insn->RobTag == this->m_Rob.getLastest())){
@@ -390,6 +384,10 @@ Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect)
 //         insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
 //     }
 // }
-
+void 
+Rcu::Forwarding(InsnPtr_t& insn){
+    this->m_IntRegfile[insn->PhyRd] = insn->RdResult;
+    this->m_IntBusylist[insn->PhyRd].done = true;
+}
 
 } // namespace Emulator

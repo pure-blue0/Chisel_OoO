@@ -44,8 +44,7 @@ public:
             break;
         case CSR_CSRR   :this->m_ExecContext->ReadCsr(insn->imm,insn->RdResult);break;
         case CSR_FENCEI :break;
-        default:
-            break;
+        default:break;
         }
     };
 
