@@ -81,7 +81,7 @@ Lsq::Allocate(InsnPkg_t& insnPkg,uint64_t allocCount){
                 t.killed = false;
                 t.dataReady = false;;
                 t.data = 0 ;
-                t.insnPtr = insn;
+                t.SubOp = insn->SubOp;
                 insn->LSQTag = this->m_StoreQueue.Allocate();//获取store queue的尾指针，并将尾指针+1
                 this->m_StoreQueue[insn->LSQTag] = t;  //将数据存入store queue的尾部
             }
@@ -134,7 +134,7 @@ Lsq::TryIssueStore(MemReq_t& memReq,bool& Success){
                 }
                 memReq.Address      = stqEntry.address & ~(this->m_dCacheAlignByte - 1);
                 memReq.Length       = this->m_Processor->m_XLEN / 2;
-                switch (stqEntry.insnPtr->SubOp)
+                switch (stqEntry.SubOp)
                 {
                 case STU_SB:memReq.ByteMask = ((2 << (1-1)) - 1) << offset;break;
                 case STU_SH:memReq.ByteMask = ((2 << (2-1)) - 1) << offset;break;

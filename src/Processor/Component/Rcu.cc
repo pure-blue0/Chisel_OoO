@@ -117,8 +117,7 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
 }
 
 
-void 
-Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){ 
+void Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){ 
     SuccessCount = this->m_Rob.getAvailEntryCount()<this->m_IntFreelist.getAvailEntryCount()?this->m_Rob.getAvailEntryCount():this->m_IntFreelist.getAvailEntryCount();
     SuccessCount =insnPkg.size()<SuccessCount?insnPkg.size():SuccessCount; 
 };
@@ -145,12 +144,6 @@ bool Rcu::ReadyForCommit(uint64_t RobTag){
         }
     }
     return false;
-}
-
-void 
-Rcu::Forwarding(InsnPtr_t& insn){
-    this->m_IntRegfile[insn->PhyRd] = insn->RdResult;
-    this->m_IntBusylist[insn->PhyRd].done = true;
 }
 
 void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq){
@@ -198,8 +191,7 @@ void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq)
     }
 }
 
-void 
-Rcu::AGUFastDetect(InsnPtr_t& insn){
+void Rcu::AGUFastDetect(InsnPtr_t& insn){
     this->m_Rob[insn->RobTag].isStable = true;
     DPRINTF(WriteBack,"RobTag[{}],Pc[{:#x}] -> Scan AGU result, Exception [{}]",
                     insn->RobTag,insn->Pc,insn->Excp.valid);
@@ -247,7 +239,7 @@ Rcu::ReleaseResource(uint16_t robTag){
 
 void 
 Rcu::RollBack(){
-    uint16_t RobPtr = this->m_Rob.getLastest();
+    uint16_t RobPtr = this->m_Rob.getLastest();//获取ROB尾指针
     for(size_t i = 0 ; i < this->m_AllocWidth && 
         this->m_Rob.isOlder(this->m_RollBackTag,RobPtr) || 
         RobPtr == this->m_RollBackTag;i++)//如果当前的robptr比回滚标记更旧，或者robptr恰好等于回滚标记，那么就需要进行回滚处理。
@@ -262,8 +254,10 @@ Rcu::RollBack(){
                 DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}] -> RollBack Finish, Wait For Resume",RobPtr,entry.pc);
                 break;
             }
-            entry.valid = false;//将条目设置为无效，表示没有在使用了
-            this->ReleaseResource(RobPtr);
+           else{
+             entry.valid = false;//将条目设置为无效，表示没有在使用了
+             this->ReleaseResource(RobPtr);
+           }
             DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}]",RobPtr,entry.pc);
         }
         this->m_Rob.RollBack();//更新rob尾指针
@@ -282,8 +276,7 @@ Rcu::Evaulate(){
 }
 
 
-void 
-Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect){
+void Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect){
     needRedirect = false;
     for(size_t i = 0; i < insnPkg.size(); i++){
         uint16_t robPtr = this->m_Rob.getHeader();
@@ -295,6 +288,7 @@ Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect)
                     this->m_Processor->m_ExecContext->WriteIntReg(robEntry.isaRd,this->m_IntRegfile[robEntry.phyRd]);
                     this->m_IntFreelist.push(robEntry.LphyRd);
                     this->m_IntBusylist[robEntry.LphyRd].done = false;
+                    this->m_IntBusylist[robEntry.LphyRd].forwarding = false;
                     this->m_IntBusylist[robEntry.LphyRd].allocated = false;
                     DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Deallocate Last PRd[{}]",robPtr,robEntry.pc,robEntry.LphyRd);
                     
@@ -390,6 +384,10 @@ Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect)
 //         insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
 //     }
 // }
-
+// void 
+// Rcu::Forwarding(InsnPtr_t& insn){
+//     this->m_IntRegfile[insn->PhyRd] = insn->RdResult;
+//     this->m_IntBusylist[insn->PhyRd].done = true;
+// }
 
 } // namespace Emulator
