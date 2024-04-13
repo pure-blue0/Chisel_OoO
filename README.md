@@ -15,6 +15,7 @@
 7.修改obj_dir/V模块名.h文件中的eval函数，使其能够输出多个变量，具体操作见示例。
 8.在终端中输入./run.sh 运行重新编译，若能成功输出dhrystone的 结果，则表示模块没有问题。
 
+
 ### eg alu 模块
 1.将alu的chisel代码复制到当前根目录的.v文件里。
 2.修改./convert.sh文件里的第21行代码，改成./src/Processor/Component/FuncUnit（即ALU模块所在的目录）
