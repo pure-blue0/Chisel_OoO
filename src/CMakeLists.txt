@@ -6,9 +6,9 @@ project(model)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-file(GLOB_RECURSE SRC_LIST "*.cc")
+file(GLOB_RECURSE SRC_LIST "*.cc""*.cpp")
 
-add_executable(model ${SRC_LIST} ../thirdParty/cmdline/cmdline.h)
+add_executable(model ${SRC_LIST} ../thirdParty/cmdline/cmdline.h )
 
 
 
