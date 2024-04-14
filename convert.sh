@@ -19,4 +19,4 @@ verilator --cc $input_name.v
 rm -rf ./src/Processor/Component/FuncUnit/obj_dir
 
 mv ./obj_dir ./src/Processor/Component/FuncUnit #改成需要交叉测试的模块所在的目录
-
+echo "已生成的C++文件，并复制到了目标路径"

@@ -3,7 +3,6 @@
 
 #include "BaseFuncUnit.hh"
 #include <verilated.h>          // Defines common routines
-#include <iostream>             // Need std::cout
 #include "./obj_dir/Valu.h"
 namespace Emulator
 {

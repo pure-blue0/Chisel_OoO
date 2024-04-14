@@ -54,10 +54,7 @@ class Valu VL_NOT_FINAL {
   public:
     // API METHODS
     /// Evaluate the model.  Application must call when inputs change.
-    void eval(uint64_t& Rdresult) { 
-      eval_step();
-      Rdresult=io_Insn_rdresult; 
-    }
+    void eval(uint64_t& RdResult) { eval_step(); RdResult=io_Insn_rdresult;}
     /// Evaluate when calling multiple units/models per time step.
     void eval_step();
     /// Evaluate at end of a timestep for tracing, when using eval_step().

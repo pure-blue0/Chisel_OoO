@@ -15,7 +15,6 @@
 7.修改obj_dir/V模块名.h文件中的eval函数，使其能够输出多个变量，具体操作见示例。
 8.在终端中输入./run.sh 运行重新编译，若能成功输出dhrystone的 结果，则表示模块没有问题。
 
-
 ### eg alu 模块
 1.将alu的chisel代码复制到当前根目录的.v文件里。
 2.修改./convert.sh文件里的第21行代码，改成./src/Processor/Component/FuncUnit（即ALU模块所在的目录）
@@ -46,17 +45,20 @@
 7.在终端中输入./run.sh 运行重新编译，若能成功输出dhrystone的 结果，则表示模块没有问题。
 
 ### 调试方式
-1.若出现运行失败，可以不删除需要原始代码，然后把需要交叉验证的代码加载原始代码的前面，再加上DPRINTF，然后对比两者的输入输出，就可以知道是哪里出现了问题。具体例子见Func_ALU.hh中被注释掉的compute函数。
+1.若出现运行失败，可以不删除需要原始代码，然后把需要交叉验证的代码加载原始代码的前面，再加上DPRINTF，然后对比两者的输入输出，就可以知道是哪里出现了问题。具体例子见Func_ALU.hh中被注释掉的compute函数。（eg（见./branch模块的调试代码.png）：以branch exe unit模块为例，列出了一个具体的调试例子）
 通过如下方式将输入输出打印
     ````
         //交叉验证的模块的代码
         DPRINTF(temptest,"Verilog data1 {:#x}，data2 {:#x} data3 {:#x}",data1,data2,data3);//输出交叉验证得到的数据
+        #记录模块的输出变量
+        #code
         //原始模块的代码
         DPRINTF(temptest,"Origin data1 {:#x}，data2 {:#x} data3 {:#x}",data11,data22,data33);//输出原始模块的数据
         //对比两者的输出数据，如果出现数据不相等，则退出程序
         if(xxx)exit(1);
     ````
 2.在做交叉验证时，请注意针对两者差异做出的兼容性修改
+
 
 ## 架构的配置文件都在config里，我们用的是2issuewidth.yaml
 
