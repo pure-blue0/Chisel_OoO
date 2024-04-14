@@ -26,7 +26,7 @@ struct LDQ_entry_t
     /* Load Address CAM */
     bool                     addressReady;
     Addr_t                   address;
-
+    
     InsnPtr_t                insnPtr;
 };
 
@@ -43,7 +43,7 @@ struct STQ_entry_t
     Addr_t                   address;
     bool                     dataReady;
     xReg_t                   data;
-
+    uint8_t                  SubOp;
     InsnPtr_t                insnPtr;           
 };
 
