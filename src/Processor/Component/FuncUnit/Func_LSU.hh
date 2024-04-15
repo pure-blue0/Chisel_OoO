@@ -9,7 +9,7 @@
 #include "../Rcu.hh"
 
 #include "../dCachePort.hh"
-
+//#include "./obj_dir/VAddrGen.h"
 namespace Emulator
 {
 class Func_LSU : public BaseFuncUnit
@@ -44,7 +44,22 @@ public:
         this->m_CalcuPipe.reset();
         this->m_dCachePort.Reset();
     };
-
+    // void AddrGen(InsnPtr_t& insn){
+    //     VAddrGen *AddrGen=new VAddrGen;//创建对象
+    //     //连接输入
+    //     AddrGen->io_Insn_operand1=insn->Operand1;
+    //     AddrGen->io_imm=insn->imm;
+    //     AddrGen->io_Function_type=insn->Fu;
+    //     AddrGen->io_Sub_OP=insn->SubOp;
+    //     //运行模块
+    //     AddrGen->eval();
+    //     //连接输出
+    //     insn->Agu_addr=AddrGen->io_Agu_addr;
+    //     insn->Agu_addr_ready=AddrGen->io_Agu_addr_ready;
+    //     insn->Excp.valid=AddrGen->io_excp_valid;
+    //     insn->Excp.Cause=AddrGen->io_excp_cause;
+    //     insn->Excp.Tval=AddrGen->io_excpt_tval;
+    // }
     void AddrGen(InsnPtr_t& insn){
         insn->Agu_addr  =  insn->Operand1 + insn->imm;
         insn->Agu_addr_ready = true;
@@ -117,6 +132,7 @@ public:
             }
         }
     };
+    
     void DataGen(InsnPtr_t& insn){
         insn->Agu_data_ready = true;
         insn->Agu_data = insn->Operand2;

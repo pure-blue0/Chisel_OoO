@@ -5,19 +5,19 @@
 // The class here is then constructed to instantiate the design.
 // See the Verilator manual for examples.
 
-#ifndef VERILATED_VALU_H_
-#define VERILATED_VALU_H_  // guard
+#ifndef VERILATED_VREADYFORCOMMIT_H_
+#define VERILATED_VREADYFORCOMMIT_H_  // guard
 
 #include "verilated_heavy.h"
 
-class Valu__Syms;
-class Valu___024root;
+class VReadyForCommit__Syms;
+class VReadyForCommit___024root;
 
 // This class is the main interface to the Verilated model
-class Valu VL_NOT_FINAL {
+class VReadyForCommit VL_NOT_FINAL {
   private:
     // Symbol table holding complete model state (owned by this class)
-    Valu__Syms* const vlSymsp;
+    VReadyForCommit__Syms* const vlSymsp;
 
   public:
 
@@ -26,10 +26,15 @@ class Valu VL_NOT_FINAL {
     // propagate new values into/out from the Verilated model.
     VL_IN8(&clock,0,0);
     VL_IN8(&reset,0,0);
-    VL_IN64(&io_Insn_operand1,63,0);
-    VL_IN64(&io_Insn_operand2,63,0);
-    VL_IN8(&io_Sub_OP_out,3,0);
-    VL_OUT64(&io_Insn_rdresult,63,0);
+    VL_IN8(&io_Rob_Tag,3,0);
+    VL_IN8(&io_Rob_Header,3,0);
+    VL_IN8(&io_Rob_NextHeader,3,0);
+    VL_IN8(&io_m_RobState,2,0);
+    VL_IN8(&io_m_RollBackTag,3,0);
+    VL_IN8(&io_Rob_Usage,3,0);
+    VL_IN8(&io_Header_isStable,0,0);
+    VL_IN8(&io_Header_Function_type,2,0);
+    VL_OUT8(&io_Ready,0,0);
 
     // CELLS
     // Public to allow access to /* verilator public */ items.
@@ -37,24 +42,24 @@ class Valu VL_NOT_FINAL {
 
     // Root instance pointer to allow access to model internals,
     // including inlined /* verilator public_flat_* */ items.
-    Valu___024root* const rootp;
+    VReadyForCommit___024root* const rootp;
 
     // CONSTRUCTORS
     /// Construct the model; called by application code
     /// If contextp is null, then the model will use the default global context
     /// If name is "", then makes a wrapper with a
     /// single model invisible with respect to DPI scope names.
-    explicit Valu(VerilatedContext* contextp, const char* name = "TOP");
-    explicit Valu(const char* name = "TOP");
+    explicit VReadyForCommit(VerilatedContext* contextp, const char* name = "TOP");
+    explicit VReadyForCommit(const char* name = "TOP");
     /// Destroy the model; called (often implicitly) by application code
-    virtual ~Valu();
+    virtual ~VReadyForCommit();
   private:
-    VL_UNCOPYABLE(Valu);  ///< Copying not allowed
+    VL_UNCOPYABLE(VReadyForCommit);  ///< Copying not allowed
 
   public:
     // API METHODS
     /// Evaluate the model.  Application must call when inputs change.
-    void eval(uint64_t& RdResult) { eval_step(); RdResult=io_Insn_rdresult;}
+    void eval() { eval_step(); }
     /// Evaluate when calling multiple units/models per time step.
     void eval_step();
     /// Evaluate at end of a timestep for tracing, when using eval_step().

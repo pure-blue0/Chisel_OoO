@@ -15,8 +15,10 @@ file_name=$(basename "${files%.v}") #提取文件名
 read -p "请输入数据名称： " input_name
 mv "$file_name.v" "${input_name}.v" #重命名
 echo "文件已重命名为 $input_name.v"
-verilator --cc $input_name.v 
-rm -rf ./src/Processor/Component/FuncUnit/obj_dir
 
-mv ./obj_dir ./src/Processor/Component/FuncUnit #改成需要交叉测试的模块所在的目录
+#3.运行verilator生成C++文件，移动C++文件到目标目录中
+verilator --cc $input_name.v 
+rm -rf ./src/Processor/Component/obj_dir
+mv ./obj_dir ./src/Processor/Component #改成需要交叉测试的模块所在的目录
 echo "已生成的C++文件，并复制到了目标路径"
+echo "请在需要交叉验证的模块的文件前添加#include \"./obj_dir/V${input_name}.h\""

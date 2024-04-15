@@ -1,7 +1,7 @@
 #include "Rcu.hh"
 #include "../Processor.hh"
 #include "../../RISCV/encoding.out.h"
-
+//#include "./obj_dir/VReadyForCommit.h"
 namespace Emulator
 {
     
@@ -45,10 +45,25 @@ Rcu::Reset(){
     /* Reset FreeList */
     this->m_IntFreelist.Reset();
 }
+bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先入队的话，则输出true
 
+        // VIsOlder *IsOlder;
+        // IsOlder=new VIsOlder;//创建对象
+        // //连接输入
+        // IsOlder->io_tag1=tag1;
+        // IsOlder->io_tag2=tag2;
+        // IsOlder->io_header=header;
+        // //连接输出
+        // IsOlder->eval();
+        // return IsOlder->io_older;
+        // delete IsOlder;//删除创建的对象
+        bool tag1GeHeader = tag1 >= header;
+        bool tag2GeHeader = tag2 >= header;
+        bool older=(tag1GeHeader ^ tag2GeHeader) ? tag1 > tag2 : tag1 < tag2; 
+        return  older;
+}
 
-void 
-Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
+void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
     for(size_t i = 0; i < allocCount; i++){
         InsnPtr_t insn = insnPkg[i];
         Rob_entry_t newEntry;
@@ -116,26 +131,63 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
     
 }
 
-
 void Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){ 
+    // VRcu_TryAllocate *Rcu_TryAllocate;
+    // Rcu_TryAllocate=new VRcu_TryAllocate;//创建对象
+    // //连接输入
+    // Rcu_TryAllocate->io_insn_num=insnPkg.size();
+    // Rcu_TryAllocate->io_Rob_unuse_count=this->m_Rob.getAvailEntryCount();
+    // Rcu_TryAllocate->io_IntFreelist_unuse_count=this->m_IntFreelist.getAvailEntryCount();
+    // //连接输出
+    // Rcu_TryAllocate->eval();
+    // SuccessCount=Rcu_TryAllocate->io_Rcu_success_count;
+    // delete Rcu_TryAllocate;//删除创建的对象
     SuccessCount = this->m_Rob.getAvailEntryCount()<this->m_IntFreelist.getAvailEntryCount()?this->m_Rob.getAvailEntryCount():this->m_IntFreelist.getAvailEntryCount();
     SuccessCount =insnPkg.size()<SuccessCount?insnPkg.size():SuccessCount; 
 };
+// bool Rcu::ReadyForCommit(uint64_t RobTag){
+//     VReadyForCommit *ReadyForCommit;
+//     ReadyForCommit=new VReadyForCommit;//创建对象
+//     //连接输入
+//     ReadyForCommit->io_Rob_Tag=RobTag;
+//     ReadyForCommit->io_Rob_Header=this->m_Rob.getHeader();
+//     ReadyForCommit->io_Rob_NextHeader=this->m_Rob.getNextHeader();
+//     ReadyForCommit->io_m_RobState=this->m_RobState;
+//     ReadyForCommit->io_m_RollBackTag=this->m_RollBackTag;
+//     ReadyForCommit->io_Rob_Usage=this->m_Rob.getUsage();
+//     ReadyForCommit->io_Header_isStable=this->m_Rob[this->m_Rob.getHeader()].isStable;
+//     ReadyForCommit->io_Header_Function_type=this->m_Rob[this->m_Rob.getHeader()].Fu;
+    
+//     //连接输出
+//     ReadyForCommit->eval();
+//     return ReadyForCommit->io_Ready;
+//     // DPRINTF(temptest,"Verilog: I1 {:#x} I2 {:#x} I3 {:#x} I4 {:#x} I5 {:#x} I6 {:#x} I7 {:#x} I8 {:#x} Out {:#x}",
+//     //             ReadyForCommit->io_Rob_Tag,ReadyForCommit->io_Rob_Header,ReadyForCommit->io_Rob_NextHeader,ReadyForCommit->io_m_RobState,
+//     //             ReadyForCommit->io_m_RollBackTag,ReadyForCommit->io_Rob_Usage,ReadyForCommit->io_Header_isStable,ReadyForCommit->io_Header_Function_type,a); 
+// }
 
 bool Rcu::ReadyForCommit(uint64_t RobTag){
     uint64_t RobPtr = this->m_Rob.getHeader();
-    if(this->m_RobState == rob_state_t::Rob_Idle ||  this->m_Rob.isOlder(RobTag,this->m_RollBackTag)){
-        for(size_t i = 0; i < this->m_DeallocWidth && i < this->m_Rob.getUsage(); i++){
-            if(RobPtr == RobTag){
-                return true;
-            }else{
+    if(this->m_RobState == rob_state_t::Rob_Idle ||  this->isOlder(RobTag,this->m_RollBackTag,this->m_Rob.getHeader())){
+        if(this->m_Rob.getUsage()==0)return false;
+        else if(this->m_Rob.getUsage()==1){
+            if(RobPtr == RobTag)return true;
+            else return false;
+        }
+        else if(this->m_Rob.getUsage()>=2){
+            if(RobPtr == RobTag)return true;
+            else{
                 auto RobEntry = this->m_Rob[RobPtr];
                 if( !RobEntry.isStable && (RobEntry.Fu == funcType_t::LDU || 
                     RobEntry.Fu == funcType_t::STU || RobEntry.Fu == funcType_t::BRU))
                 {
                     return false;
                 }
-                RobPtr = this->m_Rob.getNextPtr(RobPtr);
+                else {
+                    RobPtr = this->m_Rob.getNextHeader();//get rob next head ptr
+                    if(RobPtr == RobTag)return true;
+                    else return false;
+                }
             }
         }
     }else{
@@ -143,12 +195,11 @@ bool Rcu::ReadyForCommit(uint64_t RobTag){
             return true;
         }
     }
-    return false;
 }
 
 void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq){
     needRedirect = false;
-    if(!this->m_Rob.empty() && (this->m_Rob.isOlder(insn->RobTag,this->m_Rob.getLastest()) || insn->RobTag == this->m_Rob.getLastest())){
+    if(!this->m_Rob.empty() && (this->isOlder(insn->RobTag,this->m_Rob.getLastest(),this->m_Rob.getHeader()) || insn->RobTag == this->m_Rob.getLastest())){
         this->m_Rob[insn->RobTag].done = true;
         this->m_Rob[insn->RobTag].isStable = true;
         if(!insn->Excp.valid){
@@ -156,7 +207,7 @@ void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq)
                 if(insn->BruMisPred){
                     this->m_Rob[insn->RobTag].isMisPred = true;  
                     if(this->m_RobState == rob_state_t::Rob_Idle || 
-                        (this->m_Rob.isOlder(insn->RobTag,this->m_RollBackTag) ||
+                        (this->isOlder(insn->RobTag,this->m_RollBackTag,this->m_Rob.getHeader()) ||
                         insn->RobTag == this->m_RollBackTag)
                     ){
                         this->m_RobState = rob_state_t::Rob_Undo;
@@ -180,7 +231,7 @@ void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq)
             }
         }else{
             this->m_Rob[insn->RobTag].isExcp = true;
-            if(this->m_RobState == rob_state_t::Rob_Idle || this->m_Rob.isOlder(insn->RobTag,this->m_RollBackTag))
+            if(this->m_RobState == rob_state_t::Rob_Idle || this->isOlder(insn->RobTag,this->m_RollBackTag,this->m_Rob.getHeader()))
             {
                 this->m_RobState = rob_state_t::Rob_Undo;
                 this->m_RollBackTag = insn->RobTag;
@@ -241,7 +292,7 @@ void
 Rcu::RollBack(){
     uint16_t RobPtr = this->m_Rob.getLastest();//获取ROB尾指针
     for(size_t i = 0 ; i < this->m_AllocWidth && 
-        this->m_Rob.isOlder(this->m_RollBackTag,RobPtr) || 
+        this->isOlder(this->m_RollBackTag,RobPtr,this->m_Rob.getHeader()) || 
         RobPtr == this->m_RollBackTag;i++)//如果当前的robptr比回滚标记更旧，或者robptr恰好等于回滚标记，那么就需要进行回滚处理。
     {
         Rob_entry_t entry = this->m_Rob[RobPtr];

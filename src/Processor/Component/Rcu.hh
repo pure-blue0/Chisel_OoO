@@ -114,6 +114,8 @@ public:
 
     void CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount);
 
+    bool isOlder(uint64_t tag1, uint64_t tag2,uint64_t header);
+
     void TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount);
 
     void Allocate(InsnPkg_t& insnPkg,uint64_t allocCount);

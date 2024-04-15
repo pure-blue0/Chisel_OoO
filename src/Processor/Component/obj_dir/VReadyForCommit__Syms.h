@@ -4,31 +4,31 @@
 // Internal details; most calling programs do not need this header,
 // unless using verilator public meta comments.
 
-#ifndef VERILATED_VALU__SYMS_H_
-#define VERILATED_VALU__SYMS_H_  // guard
+#ifndef VERILATED_VREADYFORCOMMIT__SYMS_H_
+#define VERILATED_VREADYFORCOMMIT__SYMS_H_  // guard
 
 #include "verilated_heavy.h"
 
 // INCLUDE MODEL CLASS
 
-#include "Valu.h"
+#include "VReadyForCommit.h"
 
 // INCLUDE MODULE CLASSES
-#include "Valu___024root.h"
+#include "VReadyForCommit___024root.h"
 
 // SYMS CLASS (contains all model state)
-class Valu__Syms final : public VerilatedSyms {
+class VReadyForCommit__Syms final : public VerilatedSyms {
   public:
     // INTERNAL STATE
-    Valu* const __Vm_modelp;
+    VReadyForCommit* const __Vm_modelp;
     bool __Vm_didInit = false;
 
     // MODULE INSTANCE STATE
-    Valu___024root                 TOP;
+    VReadyForCommit___024root      TOP;
 
     // CONSTRUCTORS
-    Valu__Syms(VerilatedContext* contextp, const char* namep, Valu* modelp);
-    ~Valu__Syms();
+    VReadyForCommit__Syms(VerilatedContext* contextp, const char* namep, VReadyForCommit* modelp);
+    ~VReadyForCommit__Syms();
 
     // METHODS
     const char* name() { return TOP.name(); }
