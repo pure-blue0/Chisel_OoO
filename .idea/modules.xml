@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Chisel_OoO.iml" filepath="$PROJECT_DIR$/.idea/modules/Chisel_OoO.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Chisel_OoO-build.iml" filepath="$PROJECT_DIR$/.idea/modules/Chisel_OoO-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Chisel_OoO.Chisel_OoO-build.iml" filepath="$PROJECT_DIR$/.idea/modules/Chisel_OoO.Chisel_OoO-build.iml" />
     </modules>
   </component>
 </project>
