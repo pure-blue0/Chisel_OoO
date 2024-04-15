@@ -1,0 +1,21 @@
+<Module type="Decode_Queue">
+    <Parameters>
+    </Parameters>
+    <Interface>
+        <Input name="clk" type="signal" description="A clock signal."/>
+        <Input name="reset" type="signal" description="Reset signal, used to initialize or reset the FIFO state."/>
+        <Input name="decoded_insn1" type="[127:0]" description="The first input data port, used to write data for the first instruction."/>
+        <Input name="decoded_insn2" type="[127:0]" description="The second input data port is used to write the data of the second instruction."/>
+        <Input name="wr_en1" type="signal" description="The first write enable signal controls whether decoded_insn1 is written to the FIFO."/>
+        <Input name="wr_en2" type="signal" description="The second write enable signal controls whether decoded_insn2 is written to the FIFO."/>
+        <Input name="pop_count" type="[1:0]" description="Specifies the number of entries to be read from and ejected from the FIFO."/>
+        <Output name="entry_out1" type="[127:0]" description="Used to output data in FIFO."/>
+        <Output name="entry_out2" type="[127:0]" description="Used to output data in FIFO."/>
+        <Output name="fifo_full" type="signal" description="Indicates whether the FIFO is full."/>
+        <Output name="fifo_empty" type="signal" description="Indicates whether the FIFO is empty."/>
+        <Output name="head_ptr" type="[3:0]" description="The current header pointer."/>
+        <Output name="tail_ptr" type="[3:0]" description="The current tail pointer."/>
+    </Interface>
+    <Function description="1. According to the reset signal for reset. 2. Able to achieve all data in the entry read and write. 3. With two input data port decoded_insn1 and decoded_insn2 and two write enable signals wr_en1 and wr_en2, can be in a cycle according to the value of the write enable signal to write a data or write two data in order. 4. Able to read two entry data from the FIFO at a time, pay attention to this time will not read the data pop. 5. More able to according to the value of the input pop_count will be specified number of entry data from the queue pop. 6. Able to record the current header and tail pointer, and update. 7. Output the current queue is full or empty"/>
+    <ReferenceModel code=""/>
+</Module>

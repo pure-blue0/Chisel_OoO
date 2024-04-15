@@ -1,0 +1,51 @@
+<Module type="TryDispatch">
+	<Parameters>
+		<Parameter name="Issue0_function_type" type="3’b" value="010" description="ISSUE0 only support CSR"/>	
+		<Parameter name="Issue1_function_type1" type="3’b" value="011" description="ISSUE1 support LDU"/>	
+		<Parameter name="Issue1_function_type2" type="3’b" value="100" description="ISSUE1 support STU"/>	
+		<Parameter name="Issue2_function_type1" type="3’b" value="000" description="ISSUE2 support ALU"/>	
+		<Parameter name="Issue2_function_type2" type="3’b" value="001" description="ISSUE2 support BRU"/>	
+		<Parameter name="EnqueWidth" type="int" value="1; 2" description="All issues have an enqueue width of 1; All issues have an enqueue width of 2"/>
+	</Parameters>
+	<Interface>
+	    <Input name="Scheduler0_AvailPort" type="[1:0]" description="Number of available entries for transmit queue 0 (dedicated to CSR)"/>
+	    <Input name="Scheduler1_AvailPort" type="[3:0]" description="Number of available entries for transmit queue 1"/>
+	    <Input name="Scheduler2_AvailPort" type="[3:0]" description="Number of available entries for transmit queue 2"/>
+	    <Input name="Insn1_excp_vaild" type="bool" description="Instruction 1 Whether an exception occurred"/>
+	    <Input name="Insn2_excp_vaild" type="bool" description="Instruction 2 Whether an exception occurred"/>
+	    <Input name="insn1_Function_type" type="[2:0]" description="The functional unit that instruction 1 needs to invoke"/>
+	    <Input name="insn2_Function_type" type="[2:0]" description="The functional unit that instruction 2 needs to invoke"/>
+	    <Input name="insn1_rd" type="[4:0]" description="The destination register of instruction 1"/>
+	    <Input name="insn2_rd" type="[4:0]" description="The destination register of instruction 2"/>
+	    <Input name="insn_num" type="[1:0]" description="Enter the number of instructions to evaluate"/>
+	    <Output name="issue_success_count" type="[2:0]" description="Output the issue entry count that can be allocated"/>
+	</Interface>
+	<Function description="This module is used to figure out how many instructions can be sent to the issue queue. First, the number of available entries in each queue is obtained, and then compared with EnqueWidth in turn. The smaller value is taken as the number of instructions that can be put into each launch queue, and stored in the intermediate variables AvailPort1, AvailPort2, AvailPort3 for subsequent comparison. Special conditions apply for instructions based on their type and exception status."/>
+<ReferenceModel code="Void Dispatch::TryDispatch(InsnPkg_t&amp; insnPkg, uint64_t&amp; SuccessCount){
+    for(auto&amp; scheduler : this-&gt;m_SchedularVec){//Get the available for each scheduler, EnqueWidth: The maximum number of instructions allowed to be queued in a cycle
+        scheduler.AvailPort = std::min(scheduler.scheduler-&gt;GetAvailibleEntryCount(),scheduler.scheduler-&gt;m_EnqueWidth);
+    }//Gets the number of available entries per queue
+ 
+    SuccessCount = 0;
+    for(auto&amp; insn : insnPkg){
+ 
+        if(insn-&gt;Excp.valid){//Determine whether the instruction is an exception instruction
+            SuccessCount++;
+            break;
+        }
+        if((insn-&gt;Fu == funcType_t::ALU &amp;&amp; insn-&gt;IsaRd == 0)){ // Determine whether the instruction is a nop instruction
+            SuccessCount++;  
+            continue;
+        }
+        bool Success=false;
+        for(auto&amp; schedular : this-&gt;m_SchedularVec){//Iterate over the scheduler list
+            //Find a scheduler that supports the current instruction function type (Fu) and has available ports
+            if(schedular.scheduler-&gt;m_SupportFunc.count(insn-&gt;Fu) &amp;&amp; schedular.AvailPort)
+            {
+                SuccessCount++;
+                schedular.AvailPort--;//Number of available ports-1
+                Success=true;
+                break;
+            }
+        }
+        //

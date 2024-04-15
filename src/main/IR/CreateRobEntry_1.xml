@@ -1,0 +1,74 @@
+<Module type="CreateRobEntry">
+	<Parameters>
+		<!-- No explicit parameters provided to be listed here -->
+	</Parameters>
+	<Interface>
+	        <!-- Inputs -->
+	        <Input name="allocCount" type="[1:0]" description="The number of instructions that need to be allocated to ROB"/>
+	        <Input name="Rob_Tail" type="[3:0]" description="The tail pointer to Rob for instruction 1"/>
+	        <Input name="insn1_Function_type" type="[2:0]" description="The functional unit that instruction 1 needs to invoke"/>
+	        <Input name="insn1_Sub_OP" type="[3:0]" description="The specific actions that instruction 1 needs to perform in the execution unit"/>
+	        <Input name="insn1_excp_vaild" type="boolean" description="Exception case of instruction 1"/>
+	        <Input name="insn1_excp_cause" type="[5:0]" description="The exception type of instruction 1"/>
+	        <Input name="insn1_excpt_tval" type="[31:0]" description="The exception address of instruction 1"/>
+	        <Input name="insn1_Pc" type="[31:0]" description="The pc of instruction 1"/>
+	        <Input name="insn1_LSQTag" type="[3:0]" description="tag of instruction 1 in LSQ"/>
+	        <Input name="insn1_IsaRd" type="[4:0]" description="isaRd of instruction 1"/>
+	        <Input name="insn1_PhyRd" type="[5:0]" description="phyrd of instruction 1"/>
+	        <Input name="insn1_LPhyRd" type="[5:0]" description="lphyrd of instruction 1"/>
+	        <Input name="insn1_ControlFlowInsn" type="boolean" description="Whether instruction 1 is a control flow instruction"/>
+	        <Input name="Rob_NextTail" type="[3:0]" description="The next pointer to the tail pointer of the Rob for instruction 2"/>
+	        <Input name="insn2_Function_type" type="[2:0]" description="The functional unit that instruction 2 needs to invoke"/>
+	        <Input name="insn2_Sub_OP" type="[3:0]" description="The specific actions that instruction 2 needs to perform in the execution unit"/>
+	        <Input name="insn2_excp_vaild" type="boolean" description="Exception case of instruction 2"/>
+	        <Input name="insn2_excp_cause" type="[5:0]" description="The exception type of instruction 2"/>
+	        <Input name="insn2_excpt_tval" type="[31:0]" description="The exception address of instruction 2"/>
+	        <Input name="insn2_Pc" type="[31:0]" description="The pc of instruction 2"/>
+	        <Input name="insn2_LSQTag" type="[3:0]" description="tag of instruction 2 in LSQ"/>
+	        <Input name="insn2_IsaRd" type="[4:0]" description="isaRd of instruction 2"/>
+	        <Input name="insn2_PhyRd" type="[5:0]" description="phyrd of instruction 2"/>
+	        <Input name="insn2_LPhyRd" type="[5:0]" description="lphyrd of instruction 2"/>
+	        <Input name="insn2_ControlFlowInsn" type="boolean" description="Whether instruction 2 is a control flow instruction"/>
+	        <Input name="m_RobState" type="[2:0]" description="ROB's current state"/>
+	        <Input name="m_RollBackTag" type="[3:0]" description="The location to which ROB needs to roll back"/>
+	        <Input name="m_ExcpCause" type="[5:0]" description="The cause of rob's current exception"/>
+	        <Input name="m_ExcpTval" type="[31:0]" description="The address of rob's current exception"/>
+	        <!-- Outputs -->
+	        <Output name="ROB_EN1" type="boolean" description="The ROB queue writes enable valid signals for instruction 1"/>
+	        <Output name="insn1_Entry_vaild" type="boolean" description="Indicates whether the current rob entry for instruction 1 is valid"/>
+	        <Output name="insn1_Entry_done" type="boolean" description="Whether the ROB entry for instruction 1 is complete or not"/>
+	        <Output name="insn1_Entry_isStable" type="boolean" description="Whether the ROB entry for instruction 1 is stable or not"/>
+	        <Output name="insn1_Entry_isMisPred" type="boolean" description="Whether the ROB entry for instruction 1 is a misprediction"/>
+	        <Output name="insn1_Entry_isExcp" type="boolean" description="Whether the ROB entry for instruction 1 is abnormal"/>
+	        <Output name="insn1_Entry_pc" type="[31:0]" description="The address of the instruction stored by the ROB entry for instruction 1"/>
+	        <Output name="insn1_Entry_Fu" type="[2:0]" description="ROB entry stored instruction function for instruction 1"/>
+	        <Output name="insn1_Entry_LSQtag" type="[3:0]" description="The lsqtag of the instruction stored by the ROB entry for instruction 1"/>
+	        <Output name="insn1_Entry_isaRd" type="[4:0]" description="The isard of the instructions stored by the ROB entry for instruction 1"/>
+	        <Output name="insn1_Entry_phyRd" type="[5:0]" description="phyrd of the instructions stored by the ROB entry for instruction 1"/>
+	        <Output name="insn1_Entry_LphyRd" type="[5:0]" description="The lphyrd of the instruction stored by the ROB entry for instruction 1"/>
+	        <Output name="insn1_RobTag" type="[3:0]" description="The current Entry in Rob's position for instruction 1"/>
+	        <Output name="ROB_EN2" type="boolean" description="The ROB queue writes enable valid signals for instruction 2"/>
+	        <Output name="insn2_Entry_vaild" type="boolean" description="Indicates whether the current rob entry for instruction 2 is valid"/>
+	        <Output name="insn2_Entry_done" type="boolean" description="Whether the ROB entry for instruction 2 is complete or not"/>
+	        <Output name="insn2_Entry_isStable" type="boolean" description="Whether the ROB entry for instruction 2 is stable or not"/>
+	        <Output name="insn2_Entry_isMisPred" type="boolean" description="Whether the ROB entry for instruction 2 is a misprediction"/>
+	        <Output name="insn2_Entry_isExcp" type="boolean" description="Whether the ROB entry for instruction 2 is abnormal"/>
+	        <Output name="insn2_Entry_pc" type="[31:0]" description="The address of the instruction stored by the ROB entry for instruction 2"/>
+	        <Output name="insn2_Entry_Fu" type="[2:0]" description="ROB entry stored instruction function for instruction 2"/>
+	        <Output name="insn2_Entry_LSQtag" type="[3:0]" description="The lsqtag of the instruction stored by the ROB entry for instruction 2"/>
+	        <Output name="insn2_Entry_isaRd" type="[4:0]" description="The isard of the instructions stored by the ROB entry for instruction 2"/>
+	        <Output name="insn2_Entry_phyRd" type="[5:0]" description="phyrd of the instructions stored by the ROB entry for instruction 2"/>
+	        <Output name="insn2_Entry_LphyRd" type="[5:0]" description="The lphyrd of the instruction stored by the ROB entry for instruction 2"/>
+	        <Output name="insn2_RobTag" type="[3:0]" description="The current Entry in Rob's position for instruction 2"/>
+	        <Output name="m_RobState_new" type="[2:0]" description="ROB's updated state"/>
+	        <Output name="m_RollBackTag_new" type="[3:0]" description="The location to which ROB needs to roll back after update"/>
+	        <Output name="m_ExcpCause_new" type="[5:0]" description="The cause of rob's updated exception"/>
+	        <Output name="m_ExcpTval_new" type="[31:0]" description="The address of rob's updated exception"/>
+	        <Output name="Flush_fetch" type="boolean" description="Flush fetch stage signal"/>
+	        <Output name="Flush_decode" type="boolean" description="Flush decode stage signal"/>
+	        <Output name="Flush_dispatch" type="boolean" description="Flush dispatch stage signal"/>
+	</Interface>
+	<Function description="This module is used to create the data needed for the ROB entry, including handling of two instructions with conditional logic based on allocCount. It also updates ROB state and triggers flushes under specific conditions."/>
+	<ReferenceModel code="void Rcu::CreateRobEntry(InsnPkg_t&amp; insnPkg, uint64_t allocCount){ for(size_t i = 0; i &lt; allocCount; i++){ InsnPtr_t insn = insnPkg[i]; Rob_entry_t newEntry; insn-&gt;RobTag = this-&gt;m_Rob.Allocate(); bool isNop = (insn-&gt;Fu == funcType_t::ALU) &amp;&amp; (insn-&gt;IsaRd == 0); bool isFence = (insn-&gt;Fu == funcType_t::CSR) &amp;&amp; (insn-&gt;SubOp == 9); bool isMret = (insn-&gt;Fu == funcType_t::CSR) &amp;&amp; (insn-&gt;SubOp == 7); newEntry.valid = true; newEntry.done = isNop | insn-&gt;Excp.valid | isFence | isMret; newEntry.isStable = newEntry.done; newEntry.isMisPred = false; newEntry.isExcp = insn-&gt;Excp.valid; newEntry.pc = insn-&gt;Pc; newEntry.Fu = insn-&gt;Fu; newEntry.LSQtag = insn-&gt;LSQTag; newEntry.isaRd = insn-&gt;IsaRd; newEntry.phyRd = insn-&gt;PhyRd; newEntry.LphyRd = insn-&gt;LPhyRd; if(insn-&gt;Excp.valid){ this-&gt;m_RobState = rob_state_t::Rob_Undo; this-&gt;m_RollBackTag = insn-&gt;RobTag; this-&gt;m_ExcpCause = insn-&gt;Excp.Cause; this-&gt;m_ExcpTval = insn-&gt;Excp.Tval; this-&gt;m_Processor-&gt;FlushBackWard(InsnState_t::State_Issue); }else{ if(insn-&gt;ControlFlowInsn){ this-&gt;m_RobState = rob_state_t::Rob_Undo; this-&gt;m_RollBackTag = insn-&gt;RobTag; if(isMret){ this-&gt;m_RobState = rob_state_t::Rob_Idle; } } } this-&gt;m_Rob[insn-&gt;RobTag] = newEntry; }}" />
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

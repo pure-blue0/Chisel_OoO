@@ -1,0 +1,37 @@
+<Module type="Rcu_Allocate">
+	<Parameters>
+		<!-- No specific parameters provided in the input -->
+	</Parameters>
+	<Interface>
+	        <!-- Input Interface -->
+	        <Input name="allocCount" type="[1:0]" description="Number of instructions that can be allocated"/>
+	        <Input name="EN_Update" type="bool" description="Update the IntRenameTable enable signal"/>
+	        <Input name="IsaRd_Update" type="[4:0]" description="Address of the updated IntRenameTable"/>
+	        <Input name="Data_Update" type="[5:0]" description="Updated IntRenameTable data"/>
+	        <Input name="IntFreelist_phyrd1" type="[5:0]" description="phyrd_id available to IntFreelist"/>
+	        <Input name="IntFreelist_phyrd2" type="[5:0]" description="phyrd_id available to IntFreelist"/>
+	        <Input name="insn1_IsaRs1" type="[4:0]" description="Address of the ISA_rs1 register for insn1"/>
+	        <Input name="insn1_IsaRs2" type="[4:0]" description="Address of the ISA_rs2 register for insn1"/>
+	        <Input name="insn1_IsaRd" type="[4:0]" description="Address of the ISA_rd register for insn1"/>
+	        <Input name="insn2_IsaRs1" type="[4:0]" description="Address of the ISA_rs1 register for insn2"/>
+	        <Input name="insn2_IsaRs2" type="[4:0]" description="Address of the ISA_rs2 register for insn2"/>
+	        <Input name="insn2_IsaRd" type="[4:0]" description="Address of the ISA_rd register of insn2"/>
+	        <!-- Output Interface -->
+	        <Output name="WEN1_IntBusylist" type="bool" description="Send an update request to IntBusylist according to the condition of instruction 1"/>
+	        <Output name="WEN2_IntBusylist" type="bool" description="Send an update request to IntBusylist according to the condition of instruction 2"/>
+	        <Output name="insn1_PhyRs1" type="[5:0]" description="PhyRs1 register address for insn1"/>
+	        <Output name="insn1_PhyRs2" type="[5:0]" description="PhyRs2 register address for insn1"/>
+	        <Output name="insn1_PhyRd" type="[5:0]" description="PhyRd register address for insn1"/>
+	        <Output name="insn1_LPhyRd" type="[5:0]" description="LPhyRd register address for insn1"/>
+	        <Output name="insn2_PhyRs1" type="[5:0]" description="PhyRs1 register address for insn2"/>
+	        <Output name="insn2_PhyRs2" type="[5:0]" description="PhyRs2 register address for insn2"/>
+	        <Output name="insn2_PhyRd" type="[5:0]" description="PhyRd register address for insn2"/>
+	        <Output name="insn2_LPhyRd" type="[5:0]" description="Address of the LPhyRd register of insn2"/>
+	        <Output name="Freelist_pop_num" type="[1:0]" description="The number of entries that IntFreelist needs to pop up"/>
+	        <Output name="WEN1_CreateRob" type="bool" description="Send rob creation request to CreateRob according to the condition of instruction 1"/>
+	        <Output name="WEN2_CreateRob" type="bool" description="Send rob creation request to CreateRob according to the condition of instruction 2"/>
+	</Interface>
+	<Function description="This module is used to implement the allocation operation of renaming control units and refresh the IntRenameTable in the module according to the signal of other modules, where IntRenameTable is a lookup table with a depth of 32 and a width of 6. It sets all output signals to 0 by default, updates IntRenameTable based on EN_Update, assigns physical registers from IntRenameTable and IntFreelist, and sends rob creation requests to CreateRob. Handles data dependency between instructions when allocCount=2."/>
+	<ReferenceModel code="Void Rcu::Allocate(InsnPkg_t&amp; insnPkg, uint64_t allocCount){ for(size_t i = 0; i &lt; allocCount; i++){ InsnPtr_t insn = insnPkg[i]; insn-&gt;PhyRs1 = this-&gt;m_IntRenameTable[insn-&gt;IsaRs1]; insn-&gt;PhyRs2 = this-&gt;m_IntRenameTable[insn-&gt;IsaRs2]; insn-&gt;LPhyRd = this-&gt;m_IntRenameTable[insn-&gt;IsaRd]; if(insn-&gt;IsaRd != 0){ insn-&gt;PhyRd = this-&gt;m_IntFreelist.pop(); this-&gt;m_IntBusylist[insn-&gt;PhyRd].allocated = true; this-&gt;m_IntBusylist[insn-&gt;PhyRd].done = false; this-&gt;m_IntBusylist[insn-&gt;PhyRd].forwarding = false; this-&gt;m_IntRenameTable[insn-&gt;IsaRd] = insn-&gt;PhyRd; } } if(allocCount==2){ InsnPtr_t&amp; insn1 = insnPkg[0]; InsnPtr_t&amp; Insn2 = insnPkg[1]; if(insn1-&gt;IsaRd != 0){ if(insn1-&gt;IsaRd == Insn2-&gt;IsaRs1)Insn2-&gt;PhyRs1 = insn1-&gt;PhyRd; if(insn1-&gt;IsaRd == Insn2-&gt;IsaRs2)Insn2-&gt;PhyRs2 = insn1-&gt;PhyRd; if(insn1-&gt;IsaRd == Insn2-&gt;IsaRd) Insn2-&gt;LPhyRd = insn1-&gt;PhyRd; } } for(size_t i = 0; i &lt; allocCount; i++){ InsnPtr_t insn = insnPkg[i]; this-&gt;CreateRobEntry(insn); }}" />
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

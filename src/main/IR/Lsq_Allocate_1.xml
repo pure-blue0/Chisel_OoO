@@ -1,0 +1,48 @@
+<Module type="Lsq_Allocate">
+    <Parameters>
+    </Parameters>
+    <Interface>
+        <!-- Interfaces for each Functional Unit -->
+        <Input name="allocCount" type="[1:0]" description="Number of instructions that can be allocated"/>
+        <Input name="insn1_Function_type" type="[2:0]" description="The functional unit that instruction 1 needs to invoke"/>
+        <Input name="insn2_Function_type" type="[2:0]" description="The functional unit that instruction 2 needs to invoke"/>
+        <Input name="load_queue_tail" type="[3:0]" description="The tail pointer of load queue"/>
+        <Input name="Store_queue_tail" type="[3:0]" description="The tail pointer of store queue"/>
+        <Input name="Load_queue_nextTail" type="[3:0]" description="The next pointer to the tail pointer of the load queue"/>
+        <Input name="Store_queue_nextTail" type="[3:0]" description="The next pointer to the tail pointer of the Store queue"/>
+        <!-- Outputs from each Functional Unit  -->
+        <Output name="Insn1_LSQTag" type="[3:0]" description="Instruction 1 pointer in LoadQueue or StoreQueue"/>
+        <Output name="Insn2_LSQTag" type="[3:0]" description="Instruction 2 pointer in LoadQueue or StoreQueue"/>
+        <Output name="WEn1_load_queue" type="" description="Write enable when instruction 1 needs to be put into loadqueue"/>
+        <Output name="Load_insn1_state" type="[1:0]" description="The loading status of instruction 1"/>
+        <Output name="Load_Commited1" type="" description="Instruction 1 Whether to commit"/>
+        <Output name="Load_Killed1" type="" description="Whether instruction 1 is valid in the load queue"/>
+        <Output name="Load_addressReady1" type="" description="Whether the load address of Instruction 1 is ready or not"/>
+        <Output name="Load_address1" type="[31:0]" description="The loading address of instruction 1"/>
+        <Output name="WEn2_load_queue" type="" description="Write enable when instruction 2 needs to be put into loadqueue"/>
+        <Output name="Load_insn2_state" type="[1:0]" description="The loading status of instruction 2"/>
+        <Output name="Load_commited2" type="" description="Instruction 2 Whether to commit"/>
+        <Output name="Load_Killed2" type="" description="Whether instruction 2 is valid in the load queue"/>
+        <Output name="Load_addressReady2" type="" description="Whether the load address of Instruction 2 is ready or not"/>
+        <Output name="Load_address2" type="[31:0]" description="The loading address of instruction 2"/>
+        <Output name="WEn1_store_queue" type="" description="Write enable when instruction 1 needs to put storequeue"/>
+        <Output name="Store_insn1_state" type="[1:0]" description="The stored state of instruction 1"/>
+        <Output name="Store_Commited1" type="" description="Instruction 1 Whether to commit"/>
+        <Output name="Store_Killed1" type="" description="Whether instruction 1 is valid in the store queue"/>
+        <Output name="Store_addressReady1" type="" description="Whether the store address of Instruction 1 is ready or not"/>
+        <Output name="Store_address1" type="[31:0]" description="The storage address of instruction 1"/>
+        <Output name="Store_dataReady1" type="" description="Whether the Instruction 1 storage data is ready"/>
+        <Output name="Store_data1" type="[63:0]" description="The stored data of instruction 1"/>
+        <Output name="WEn2_store_queue" type="" description="Write enable when instruction 2 needs to put storequeue"/>
+        <Output name="Store_insn2_state" type="[1:0]" description="The stored state of instruction 2"/>
+        <Output name="Store_Commited2" type="" description="Instruction 2 Whether to commit"/>
+        <Output name="Store_Killed2" type="" description="Whether instruction 2 is valid in the store queue"/>
+        <Output name="Store_addressReady2" type="" description="Whether the store address of Instruction 2 is ready or not"/>
+        <Output name="Store_address2" type="[31:0]" description="The storage address of instruction 2"/>
+        <Output name="Store_dataReady2" type="" description="Whether the Instruction 2 storage data is ready"/>
+        <Output name="Store_data2" type="[63:0]" description="The stored data of instruction 2"/>
+    </Interface>
+    <Function description="This module is used to prepare the data required for the subsequent load queue or store queue according to the number of allocated instructions entered. If allocCount=0, all outputs are set to 0; if allocCount=1, only the first instruction is judged, and all outputs related to insn2 are judged to 0; if allocCount=2, both instructions are judged. When allocCount&gt;0, the instruction is judged, when insn1_Function_type=LDU, WEn1_load_queue=1, indicating that write enable is valid, state is set to load_WaitSend, and commited, killed, addressReady, address is set to 0, and insn1_LSQTag=load_queue_tail; When insn1_Function_type=STU, WEn1_store_queue=1, indicating that write enable is valid, state is set to store_WaitSend, and commited, killed, addressReady, address,dataReady,data are all set to 0, and insn1_LSQTag=store_queue_tail; When allocCount=2, if insn2_Function_type=LDU, WEn2_load_queue=1, indicating that write enable is valid, and the corresponding state is set to load_WaitSend, and commited, killed, addressReady, address is set to 0, and Insn2_LSQTag=Load_queue_nextTail; If insn2_Function_type=STU, WEn2_store_queue=1, indicating that write enable is valid, the state is set to store_WaitSend, and the corresponding commited, killed, addressReady, address,dataReady, and data are set to 0, and Insn2_LSQTag=Store_queue_nextTail"/>
+    <ReferenceModel code="enum funcType_t { ALU , BRU, CSR, LDU, STU,}; enum storeState_t{ store_WaitSend,store_Inflight,store_Executed}; void Lsq::Allocate(InsnPkg_t&amp; insnPkg,uint64_t allocCount){ for(size_t i = 0 ; i &lt; allocCount; i++){ auto&amp; insn = insnPkg[i]; if(insn-&gt;Fu == funcType_t::LDU){ LDQ_entry_t t; t.state = loadState_t::load_WaitSend; t.commited = false; t.killed = false; t.addressReady = false; t.address = 0; t.insnPtr = insn; insn-&gt;LSQTag = this-&gt;m_LoadQueue.Allocate(); this-&gt;m_LoadQueue[insn-&gt;LSQTag] = t;}else if (insn-&gt;Fu == funcType_t::STU){ STQ_entry_t t; t.state = storeState_t::store_WaitSend; t.commited = false; t.addressReady = false; t.address = 0; t.killed = false; t.dataReady = false;; t.data = 0 ; t.insnPtr = insn; insn-&gt;LSQTag = this-&gt;m_StoreQueue.Allocate(); this-&gt;m_StoreQueue[insn-&gt;LSQTag] = t; }}}" />  
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->
