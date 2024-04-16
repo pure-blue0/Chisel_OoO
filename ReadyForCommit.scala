@@ -60,7 +60,6 @@ class ReadyForCommit extends Module {
   }.otherwise{
     ready := true.B
   }
-
   io.Ready := ready
 }
 
