@@ -1,0 +1,55 @@
+<Module type="IntBusylist">
+    <Parameters>
+        <Parameter name="Busylist_size" type="integer" value="40" description="The depth of the Busylist, indicating how many physical registers status it can record."/>
+    </Parameters>
+    <Interface>
+        <!-- Inputs -->
+        <Input name="Clk" type="signal" description="Clock signal."/>
+        <Input name="Reset" type="signal" description="Reset signal, used for initializing or resetting the FIFO state."/>
+        <Input name="RA_IntBusylist1" type="signal" description="Update request for PhyRd1 received from Rcu_Allocate."/>
+        <Input name="RA_IntBusylist2" type="signal" description="Update request for PhyRd2 received from Rcu_Allocate."/>
+        <Input name="RA_PhyRd1" type="[5:0]" description="Physical register address PhyRd1 to be updated, received from Rcu_Allocate."/>
+        <Input name="RA_PhyRd2" type="[5:0]" description="Physical register address PhyRd2 to be updated, received from Rcu_Allocate."/>
+        <Input name="Forward1_valid" type="signal" description="Update request valid signal from Forwarding1."/>
+        <Input name="Forward1_PhyRd" type="[5:0]" description="Physical register PhyRd to be updated, from Forwarding1."/>
+        <Input name="Forward1_forwarding" type="signal" description="Data for update request from Forwarding1."/>
+        <Input name="Forward1_done" type="signal" description="Data for update request from Forwarding1."/>
+        <Input name="Forward2_valid" type="signal" description="Update request valid signal from Forwarding2."/>
+        <Input name="Forward2_PhyRd" type="[5:0]" description="Physical register PhyRd to be updated, from Forwarding2."/>
+        <Input name="Forward2_forwarding" type="signal" description="Data for update request from Forwarding2."/>
+        <Input name="Forward2_done" type="signal" description="Data for update request from Forwarding2."/>
+        <Input name="WB1_valid" type="signal" description="Update request valid signal from WriteBack1."/>
+        <Input name="WB1_PhyRd" type="[5:0]" description="Physical register PhyRd to be updated, from WriteBack1."/>
+        <Input name="WB1_forwarding" type="signal" description="Data for update request from WriteBack1."/>
+        <Input name="WB1_done" type="signal" description="Data for update request from WriteBack1."/>
+        <Input name="WB2_valid" type="signal" description="Update request valid signal from WriteBack2."/>
+        <Input name="WB2_PhyRd" type="[5:0]" description="Physical register PhyRd to be updated, from WriteBack2."/>
+        <Input name="WB2_forwarding" type="signal" description="Data for update request from WriteBack2."/>
+        <Input name="WB2_done" type="signal" description="Data for update request from WriteBack2."/>
+        <Input name="RR_valid1" type="signal" description="Update signal request 1 from ReleaseResource module."/>
+        <Input name="phyRd1" type="[5:0]" description="Physical register phyRd1 to be reset to 0, from ReleaseResource."/>
+        <Input name="RR_valid2" type="signal" description="Update signal request 2 from ReleaseResource module."/>
+        <Input name="phyRd2" type="[5:0]" description="Physical register phyRd2 to be reset to 0, from ReleaseResource."/>
+        <Input name="Commit_valid1" type="signal" description="Update request from CommitInsn module."/>
+        <Input name="Commit_LphyRd1" type="[5:0]" description="Physical register phyRd1 to be placed into the freelist, from CommitInsn."/>
+        <Input name="Commit_valid2" type="signal" description="Update request from CommitInsn module."/>
+        <Input name="Commit_LphyRd2" type="[5:0]" description="Physical register phyRd2 to be placed into the freelist, from CommitInsn."/>
+        <Input name="Inquire1_PhyRs1" type="[5:0]" description="Inquiry for PhyRs1 from queue 1."/>
+        <Input name="Inquire1_PhyRs2" type="[5:0]" description="Inquiry for PhyRs2 from queue 1."/>
+        <Input name="Inquire2_PhyRs1" type="[5:0]" description="Inquiry for PhyRs1 from queue 2."/>
+        <Input name="Inquire2_PhyRs2" type="[5:0]" description="Inquiry for PhyRs2 from queue 2."/>
+        <Input name="Inquire3_PhyRs1" type="[5:0]" description="Inquiry for PhyRs1 from queue 3."/>
+        <Input name="Inquire3_PhyRs2" type="[5:0]" description="Inquiry for PhyRs2 from queue 3."/>
+
+        <!-- Outputs -->
+        <Output name="Require1_PhyRs1_done" type="signal" description="Reply to queue 1 whether PhyRs1 is ready."/>
+        <Output name="Require1_PhyRs2_done" type="signal" description="Reply to queue 1 whether PhyRs2 is ready."/>
+        <Output name="Require2_PhyRs1_done" type="signal" description="Reply to queue 2 whether PhyRs1 is ready."/>
+        <Output name="Require2_PhyRs2_done" type="signal" description="Reply to queue 2 whether PhyRs2 is ready."/>
+        <Output name="Require3_PhyRs1_done" type="signal" description="Reply to queue 3 whether PhyRs1 is ready."/>
+        <Output name="Require3_PhyRs2_done" type="signal" description="Reply to queue 3 whether PhyRs2 is ready."/>
+    </Interface>
+    <Function description="1. Records the usage status of each physical register with a depth of Busylist_size and a width of 3 bits; each entry stores three signals: allocated, done, and forwarding, each of which is 1 bit. Handles updates for up to two entries simultaneously.&#xA;2. When reset=0, initializes all data stored in the entries of the list to 0.&#xA;3. On the rising edge of the clock, updates stored values based on RA_IntBusylist and RA_PhyRd signals, indicating allocation without completion of data computation or forwarding.&#xA;4. Handles update requests from two Forwarding modules simultaneously on the rising edge of the clock, updating forwarding and done signals of the corresponding entry based on Forward_PhyRd, Forward_forwarding, and Forward_done, keeping the allocated value unchanged.&#xA;5. Handles update requests from two WriteBack modules simultaneously on the rising edge of the clock, updating forwarding and done signals of the corresponding entry based on WB_PhyRd, WB_forwarding, and WB_done, keeping the allocated value unchanged.&#xA;6. On the rising edge of the clock, releases entries based on the input RR_valid and the value of phyRd, setting entries to 000.&#xA;7. Handles releases based on the input Commit_valid and the value of Commit_LphyRd, setting entries to 000.&#xA;8. Handles three queue inquiry requests simultaneously, returning whether the corresponding data is ready, querying the done signal of the corresponding entry by ID, and outputting the result to Require_PhyRs1 and Require_PhyRs2. This function is combinational logic and is independent of timing."/>
+    <ReferenceModel code="C++ code not provided in the input."/>
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

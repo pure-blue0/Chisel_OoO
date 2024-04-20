@@ -1,0 +1,65 @@
+<Module type="RollBack">
+	<Parameters>
+		<!-- No parameters specified in input -->
+	</Parameters>
+	<Interface>
+	    <!-- Input Interfaces -->
+	    <Input name="Rob_header" type="[3:0]" description="The head pointer of the ROB."/>
+	    <Input name="Rob_tail" type="[3:0]" description="The tail pointer of the ROB."/>
+	    <Input name="Rob_Tail_valid" type="bit" description="The valid signal for the entry pointed to by the ROB tail pointer."/>
+	    <Input name="Rob_Tail_isExcp" type="bit" description="The isExcp signal for the entry pointed to by the ROB tail pointer."/>
+	    <Input name="Rob_Tail_phyRd" type="[5:0]" description="The phyRd for the entry pointed to by the ROB tail pointer."/>
+	    <Input name="Rob_Tail_LphyRd" type="[5:0]" description="The LphyRd for the entry pointed to by the ROB tail pointer."/>
+	    <Input name="Rob_Tail_isaRd" type="[4:0]" description="The isaRd for the entry pointed to by the ROB tail pointer."/>
+	    <Input name="Rob_Tail_Function" type="[2:0]" description="The Function for the entry pointed to by the ROB tail pointer."/>
+	    <Input name="Rob_Tail_LSQTag" type="[3:0]" description="The LSQTag for the entry pointed to by the ROB tail pointer."/>
+	    <Input name="Rob_before_tail" type="[3:0]" description="The pointer to the entry before the ROB tail."/>
+	    <Input name="Rob_beforeTail_valid" type="bit" description="The valid signal for the entry pointed to by the pointer before the ROB tail."/>
+	    <Input name="Rob_beforeTail_isExcp" type="bit" description="The isExcp signal for the entry pointed to by the pointer before the ROB tail."/>
+	    <Input name="Rob_beforeTail_phyRd" type="[5:0]" description="The phyRd for the entry pointed to by the pointer before the ROB tail."/>
+	    <Input name="Rob_beforeTail_LphyRd" type="[5:0]" description="The LphyRd for the entry pointed to by the pointer before the ROB tail."/>
+	    <Input name="Rob_beforeTail_isaRd" type="[4:0]" description="The isaRd for the entry pointed to by the pointer before the ROB tail."/>
+	    <Input name="Rob_beforeTail_Function" type="[2:0]" description="The Function for the entry pointed to by the pointer before the ROB tail."/>
+	    <Input name="Rob_beforeTail_LSQTag" type="[3:0]" description="The LSQTag for the entry pointed to by the pointer before the ROB tail."/>
+	    <Input name="m_RollBackTag" type="[3:0]" description="The saved rollback tag."/>
+	    <Input name="m_RobState" type="[2:0]" description="The state of the ROB."/>
+	    
+	    <!-- Output Interfaces -->
+	    <Output name="m_RobState_new" type="[2:0]" description="The new state of the ROB."/>
+	    <Output name="Data_valid1" type="bit" description="Indicates the output is valid."/>
+	    <Output name="Rob_Tail_phyRd_out" type="[5:0]" description="The phyRd for the entry pointed to by the ROB tail pointer."/>
+	    <Output name="Rob_Tail_LphyRd_out" type="[5:0]" description="The LphyRd for the entry pointed to by the ROB tail pointer."/>
+	    <Output name="Rob_Tail_isaRd_out" type="[4:0]" description="The isaRd for the entry pointed to by the ROB tail pointer."/>
+	    <Output name="Rob_Tail_Function_out" type="[2:0]" description="The Function for the entry pointed to by the ROB tail pointer."/>
+	    <Output name="Rob_Tail_LSQTag_out" type="[3:0]" description="The LSQTag for the entry pointed to by the ROB tail pointer."/>
+	    <Output name="Data_valid2" type="bit" description="Indicates the output is valid."/>
+	    <Output name="Rob_beforeTail_phyRd_out" type="[5:0]" description="The phyRd for the entry pointed to by the pointer before the ROB tail."/>
+	    <Output name="Rob_beforeTail_LphyRd_out" type="[5:0]" description="The LphyRd for the entry pointed to by the pointer before the ROB tail."/>
+	    <Output name="Rob_beforeTail_isaRd_out" type="[4:0]" description="The isaRd for the entry pointed to by the pointer before the ROB tail."/>
+	    <Output name="Rob_beforeTail_Function_out" type="[2:0]" description="The Function for the entry pointed to by the pointer before the ROB tail."/>
+	    <Output name="Rob_beforeTail_LSQTag_out" type="[3:0]" description="The LSQTag for the entry pointed to by the pointer before the ROB tail."/>
+	    <Output name="Rob_Tail_update" type="bit" description="The update signal for the data at the ROB tail."/>
+	    <Output name="Rob_beforeTail_update" type="bit" description="The update signal for the data at the penultimate position of the ROB."/>
+	</Interface>
+	<Function description="Adjustments for HDL compatibility:
+1. Since the ROB is not built into the module, it is not possible to read one piece of data, make a determination, and then read the next one as the module would allow. Given that the maximum value for m_AllocWidth is 2, the two pieces of data at the tail of the ROB that need to be used are directly input into this module, to be used according to the actual situation.
+2. The for loop has been removed, and an equivalent judgment method is used to assess the two pieces of input data separately.
+3. Output flags are used to inform the ROB and ReleaseResource module whether data needs to be updated.
+4. The functionality of this-&gt;m_Rob.RollBack() in C++ is implemented in the ROB, which will determine how many instructions the RollBack module has processed based on the returned Rob_Tail_update and Rob_beforeTail_update, and then proceed with the rollback.
+
+Function:
+1. This module is used to roll back the ROB and release the corresponding resources. Inside the module is a submodule isolder, which requires three input parameters: tag1, tag2, and header, returning a value older.
+2. By default, m_RobState_new is set to m_RobState, and all other outputs are set to 0, indicating no rollback operation.
+3. The isolder submodule is called to determine which is older between m_RollBackTag and Rob_tail, requiring input data m_RollBackTag, Rob_tail, and Rob_header, and returning a 1-bit older value. If older=1 or m_RollBackTag=Rob_tail, the following actions are taken:
+(1) Check if Rob_Tail_valid is 1; if so, continue to check if m_RollBackTag equals Rob_tail.
+(2) If m_RollBackTag=Rob_tail, set m_RobState_new to Rob_WaitForResume and determine if Rob_Tail_isExcp is 1.
+(3) If Rob_Tail_isExcp=1, assign Rob_Tail_phyRd, Rob_Tail_LphyRd, Rob_Tail_isaRd, Rob_Tail_Function, Rob_Tail_LSQTag to the corresponding outputs Rob_Tail_phyRd_out, Rob_Tail_LphyRd_out, Rob_Tail_isaRd_out, Rob_Tail_Function_out, Rob_Tail_LSQTag_out, and set data_valid1 to 1. Subsequently, set all other unassigned outputs to 0, with no further actions taken.
+(4) If Rob_Tail_isExcp is not 1, set Rob_Tail_update to 1, indicating that the data at the tail of the rob is invalidated. Also, assign Rob_Tail_phyRd, Rob_Tail_LphyRd, Rob_Tail_isaRd, Rob_Tail_Function, Rob_Tail_LSQTag to the corresponding outputs, and set data_valid1 to 1.
+4. The isolder submodule is called to determine which is older between m_RollBackTag and Rob_before_tail, requiring input data m_RollBackTag, Rob_before_tail, and Rob_header, and returning a 1-bit older value. If older=1 or m_RollBackTag=Rob_before_tail, the following actions are taken:
+(1) Check if Rob_beforeTail_valid is 1; if so, continue to check if m_RollBackTag equals Rob_before_tail.
+(2) If m_RollBackTag=Rob_before_tail, set m_RobState_new to Rob_WaitForResume and determine if Rob_beforeTail_isExcp is 1.
+(3) If Rob_beforeTail_isExcp=1, assign Rob_beforeTail_phyRd, Rob_beforeTail_LphyRd, Rob_beforeTail_isaRd, Rob_beforeTail_Function, Rob_beforeTail_LSQTag to the corresponding outputs Rob_beforeTail_phyRd_out, Rob_beforeTail_LphyRd_out, Rob_beforeTail_isaRd_out, Rob_beforeTail_Function_out, Rob_beforeTail_LSQTag_out, and set data_valid2 to 1. Subsequently, set all other unassigned outputs to 0, with no further actions taken.
+(4) If Rob_beforeTail_isExcp is not 1, set Rob_beforeTail_update to 1, indicating that the data at the penultimate position of the rob is invalidated. Also, assign Rob_beforeTail_phyRd, Rob_beforeTail_LphyRd, Rob_beforeTail_isaRd, Rob_beforeTail_Function, Rob_beforeTail_LSQTag to the corresponding outputs, and set data_valid2 to 1."/>
+	<ReferenceModel code="void Rcu::RollBack(){ uint16_t RobPtr = this->m_Rob.getLastest(); for(size_t i = 0 ; i &lt; this->m_AllocWidth &amp;&amp; this->m_Rob.isOlder(this->m_RollBackTag,RobPtr) || RobPtr == this->m_RollBackTag;i++){ Rob_entry_t entry = this->m_Rob[RobPtr]; if(entry.valid){ if(RobPtr == this->m_RollBackTag){ this->m_RobState = rob_state_t::Rob_WaitForResume; if(entry.isExcp){ this->ReleaseResource(RobPtr); } break; } else{ entry.valid = false; this->ReleaseResource(RobPtr); } } this->m_Rob.RollBack(); RobPtr = this->m_Rob.getLastest(); } }"/>
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

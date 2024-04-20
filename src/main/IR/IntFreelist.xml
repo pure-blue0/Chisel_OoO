@@ -1,0 +1,27 @@
+<Module type="IntFreelist">
+	<Parameters>
+		<Parameter name="Freelist_size" type="integer" value="40" description="Size of the freelist which indicates the depth of the circular freelist and the total number of available entries."/>	
+	</Parameters>
+	<Interface>
+	    <!-- Inputs from ReleaseResource module -->
+	    <Input name="RR_valid1" type="boolean" description="Update request signal 1 coming from the ReleaseResource module."/>
+	    <Input name="phyRd1" type="[5:0]" description="The physical register ID phyRd1 to be placed into the freelist, coming from ReleaseResource."/>
+	    <Input name="RR_valid2" type="boolean" description="Update request signal 2 coming from the ReleaseResource module."/>
+	    <Input name="phyRd2" type="[5:0]" description="The physical register ID phyRd2 to be placed into the freelist, coming from ReleaseResource."/>
+	    <!-- Inputs from CommitInsn module -->
+	    <Input name="Commit_valid1" type="boolean" description="Update request coming from the CommitInsn module."/>
+	    <Input name="Commit_LphyRd1" type="[5:0]" description="The logical physical register ID LphyRd1 to be placed into the freelist, coming from CommitInsn."/>
+	    <Input name="Commit_valid2" type="boolean" description="Update request coming from the CommitInsn module."/>
+	    <Input name="Commit_LphyRd2" type="[5:0]" description="The logical physical register ID LphyRd2 to be placed into the freelist, coming from CommitInsn."/>
+	    <!-- Inputs from RCU_Allocate module -->
+	    <Input name="pop_num" type="[1:0]" description="The number of entries that IntFreelist needs to pop."/>
+	    <!-- Outputs to RCU_Allocate module -->
+	    <Output name="PhyRd1" type="[5:0]" description="ID of the free physical register."/>
+	    <Output name="PhyRd2" type="[5:0]" description="ID of the free physical register."/>
+	    <Output name="AvailEntryCount" type="[3:0]" description="The number of available free entries in the IntFreelist."/>
+	</Interface>
+	<Function description="This is a circular Freelist with a depth of Freelist_size and a width of 6. It can record the current head and tail of the queue. When the value of the head or tail is greater than Freelist_size-1, it will wrap around to 0; when the value of the head or tail is less than 0, it will wrap around to Freelist_size-1. When reset=0, the data stored in the registers are initialized. The data stored in each register, starting from the front to the back, are sequentially from 0 to Freelist_size. The head pointer header and the tail pointer tail are both initialized to 0. AvailEntryCount is initialized to Freelist_size. At the rising edge of the clock, the head pointer's position is updated based on the value of pop_num, with header=header+pop_num, and AvailEntryCount is decremented by pop_num. Each cycle, if RR_valid1 and RR_valid2 inputs indicate that a free phyRd is available, it is stored in the stack. First, it checks if RR_valid1=1; if so, phyRd1 is stored in the entry pointed to by the tail pointer, AvailEntryCount is decremented by 1, and the tail pointer tail is incremented by 1. Then it checks if RR_valid2=1; if so, phyRd2 is stored in the entry pointed to by the tail pointer, AvailEntryCount is decremented by 1, and the tail pointer tail is incremented by 1. Each cycle, if Commit_valid1 and Commit_valid2 inputs indicate that a free LphyRd is available, it is stored in the stack. First, it checks if Commit_valid1=1; if so, Commit_LphyRd1 is stored in the entry pointed to by the tail pointer, AvailEntryCount is decremented by 1, and the tail pointer tail is incremented by 1. Then, it checks if Commit_valid2=1; if so, Commit_LphyRd2 is stored in the entry pointed to by the tail pointer, AvailEntryCount is decremented by 1, and the tail pointer tail is incremented by 1. The PhyRegId1 stored in the head pointer and the PhyRegId2 stored in the subsequent head pointer are output to the PhyRd1 and PhyRd2 output ports, respectively. Additionally, the current number of available entries is output to AvailEntryCount (implemented as combinational logic)."/>
+	<ReferenceModel code=""/>
+</Module>
+<!-- There are no Instances in the user's input to generate Instance tags -->
+<!-- Definitions for Request and Result types for each Functional Unit are not provided in the user's input -->

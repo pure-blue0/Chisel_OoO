@@ -1,0 +1,87 @@
+<Module type="Rob">
+	<Parameters>
+		<Parameter name="ROB_Size" type="int" value="12" description="The size of the ROB queue"/>	
+	</Parameters>
+	<Interface>
+		<Input name="Clk" type="signal" description="A clock signal"/>
+		<Input name="reset" type="signal" description="Reset signal, used to initialize or reset the FIFO state"/>
+		<Input name="Entry_data1" type="[60:0]" description="The first input data port, used to write data for the first instruction"/>
+		<Input name="Entry_data2" type="[60:0]" description="The second input data port is used to write the data of the second instruction"/>
+		<Input name="ROB_EN1" type="signal" description="The first write enable signal controls whether Entry_data1 is written to the FIFO"/>
+		<Input name="ROB_EN2" type="signal" description="A second write enable signal controls whether Entry_data2 is written to the FIFO"/>
+		<Input name="WB1_valid" type="signal" description="Request update valid signal from WriteBack1"/>
+		<Input name="WB1_ROBTag" type="[3:0]" description="PhyRd from WriteBack1 to be updated"/>
+		<Input name="WB1_done" type="signal" description="the data that request to update from WriteBack1"/>
+		<Input name="WB1_isStable" type="signal" description="the data that request to update from WriteBack1"/>
+		<Input name="WB1_isexcp" type="signal" description="the data that request to update from WriteBack1"/>
+		<Input name="WB1_isMisPred" type="signal" description="the data that request to update from WriteBack1"/>
+		<Input name="WB2_valid" type="signal" description="Request update valid signal from WriteBack2"/>
+		<Input name="WB2_ROBTag" type="[3:0]" description="PhyRd from WriteBack2 to be updated"/>
+		<Input name="WB2_done" type="signal" description="the data that request to update from WriteBack2"/>
+		<Input name="WB2_isStable" type="signal" description="the data that request to update from WriteBack2"/>
+		<Input name="WB2_isexcp" type="signal" description="the data that request to update from WriteBack2"/>
+		<Input name="WB2_isMisPred" type="signal" description="the data that request to update from WriteBack2"/>
+		<Input name="rob_pop_num" type="[1:0]" description="The number of entries that need to Pop out of the ROB"/>
+		<Input name="AGU_valid" type="signal" description="ROB update signal"/>
+		<Input name="AGU_isStable" type="signal" description="Whether the current instruction is stable"/>
+		<Input name="AGU_Done" type="signal" description="Whether the address and data of the current STU instruction are ready"/>
+		<Input name="AGU_isExcp" type="signal" description="Whether an exception occurred for the current store instruction"/>
+		<Input name="AGU_RobTag" type="[3:0]" description="The position of the current instruction in the ROB"/>
+		<Input name="RB_valid1" type="signal" description="Rob tail data update signal"/>
+		<Input name="RB_valid2" type="signal" description="Rob secondary tail data update signal"/>
+		
+		<Output name="AvailEntryCount" type="[3:0]" description="The number of free entries available to ROB"/>
+		<Output name="Empty" type="signal" description="Whether the current ROB queue is empty"/>
+		<Output name="Rob_Header" type="[3:0]" description="Rob's head pointer"/>
+		<Output name="Header_valid" type="signal" description="Whether the Front entry is valid"/>
+		<Output name="Header_isExcp" type="signal" description="Whether Front entry is an exception"/>
+		<Output name="Header_done" type="signal" description="Whether the Front entry is complete"/>
+		<Output name="Header_LphyRd" type="[5:0]" description="LphyRd ID stored by Front entry"/>
+		<Output name="Header_isaRd" type="[4:0]" description="isaRd ID stored by Front entry"/>
+		<Output name="Header_phyRd" type="[63:0]" description="phyRd ID stored by Front entry"/>
+		<Output name="Header_Function_type" type="[2:0]" description="The unit of execution that the instruction stored in Front entry needs to invoke"/>
+		<Output name="Header_LSQtag" type="[3:0]" description="The position of the instruction stored in Front entry in loadqueue or storequeue"/>
+		
+		<Output name="Rob_NextHeader" type="[3:0]" description="Rob's next header pointer"/>
+		<Output name="NextHeader_valid" type="signal" description="Whether the NextFront entry is valid"/>
+		<Output name="NextHeader_isExcp" type="signal" description="Whether NextFront entry is an exception"/>
+		<Output name="NextHeader_done" type="signal" description="Whether the NextFront entry is complete"/>
+		<Output name="NextHeader_LphyRd" type="[5:0]" description="LphyRd ID stored by NextFront entry"/>
+		<Output name="NextHeader_isaRd" type="[4:0]" description="isaRd ID stored by NextFront entry"/>
+		<Output name="NextHeader_phyRd" type="[63:0]" description="phyRd ID stored by NextFront entry"/>
+		<Output name="NextHeader_Function_type" type="[2:0]" description="The unit of execution that the instruction stored in NextFront entry needs to invoke"/>
+		<Output name="NextHeader_LSQtag" type="[3:0]" description="The position of the instruction stored in NextFront entry in loadqueue or storequeue"/>
+		
+		<Output name="RobTail" type="[3:0]" description="Tail pointer to the current queue"/>
+		<Output name="RobNextTail" type="[3:0]" description="A pointer to the next entry after the current queue tail entry"/>
+		<Output name="RobBeforeTaill" type="[3:0]" description="A pointer to the previous entry at the end of entry in the current queue"/>
+		<Output name="Rob_Tail_valid" type="signal" description="The vaild signal of entry pointed to by the Rob tail pointer"/>
+		<Output name="Rob_Tail_isExcp" type="signal" description="The isExcp signal of entry pointed to by the Rob tail pointer"/>
+		<Output name="Rob_Tail_phyRd" type="[5:0]" description="The phyRd of entry pointed to by the Rob tail pointer"/>
+		<Output name="Rob_Tail_LphyRd" type="[5:0]" description="The LphyRd of entry pointed to by the Rob tail pointer"/>
+		<Output name="Rob_Tail_isaRd" type="[4:0]" description="The isaRd of entry pointed to by the Rob tail pointer"/>
+		<Output name="Rob_Tail_Function" type="[2:0]" description="The Function of entry pointed to by the Rob tail pointer"/>
+		<Output name="Rob_Tail_LSQTag" type="[3:0]" description="The LSQTag of entry pointed to by the Rob tail pointer"/>
+		<Output name="Rob_beforeTail_valid" type="signal" description="The vaild signal of the entry pointed to by the pointer of the previous entry of the Rob tail"/>
+		<Output name="Rob_beforeTail_isExcp" type="signal" description="The isExcp signal of the entry pointed to by the pointer of the previous entry of the Rob tail"/>
+		<Output name="Rob_beforeTail_phyRd" type="[5:0]" description="The phyRd signal of the entry pointed to by the pointer of the previous entry of the Rob tail"/>
+		<Output name="Rob_beforeTail_LphyRd" type="[5:0]" description="The LphyRd signal of the entry pointed to by the pointer of the previous entry of the Rob tail"/>
+		<Output name="Rob_beforeTail_isaRd" type="[4:0]" description="The isaRd signal of the entry pointed to by the pointer of the previous entry of the Rob tail"/>
+		<Output name="Rob_beforeTail_Function" type="[2:0]" description="The Function signal of the entry pointed to by the pointer of the previous entry of the Rob tail"/>
+		<Output name="Rob_beforeTail_LSQTag" type="[3:0]" description="The LSQTag signal of the entry pointed to by the pointer of the previous entry of the Rob tail"/>
+	</Interface>
+    <Function description="This is a circular queue with a depth of Rob_Size and a width of 61. At most two data can be entered at the same time, and at most two instructions can be fetched at the same time. It Can update data on the rising edge of the clock based on the input signal, can record whether the current queue is empty, Record the current head of queue pointer Header, the next head of queue pointer NextHeader, the previous tail of queue pointer RobBeforeTail, the tail of queue pointer RobTail, and the next tail of queue pointer RobNextTail. When the value of Header, NextHeader, RobBeforeTail, RobTail, or RobNextTail is greater than Rob_Size-1, it goes back to 0; When the Header, NextHeader, RobBeforeTail, RobTail, or RobNextTail value is less than 0, it is returned to Rob_Size − 1. The format of the data stored in an entry is as follows:
+|60:29|28:26|25:22 |21:17|16:12|11:6  |5      |4    |3   |2       |1        |0     |
+|pc   |Fu   |LSQtag|isaRd|phyRd|LphyRd|ROB_EN1|vaild|done|isStable|isMisPred|isExcp|
+1. When reset=0, the data stored in the entry in the queue are initialized to 0, the queue head pointer Header, the queue end RobTail and the next queue end RobNextTail, the number of used entries usage, Empty are initialized to 0, and the next queue head pointer NextHeader, The next tail RobNextTail, are set to 1, and the previous queue tail pointer RobBeforeTail is initialized to Rob_Size-1.
+2. If ROB_EN1 and ROB_EN2 are both valid, write Entry_data1 data into header and Entry_data2 data into NextHeader. Add 2 to RobBeforeTail, RobTail, and RobNextTail. And set usage=usage-2;If only ROB_EN1 is valid, write the Entry_data1 data to the header, add 1 to RobBeforeTail, RobTail and RobNextTail, and set usage= use-1 to achieve the writing of ROB and the update of usage.
+3. On the rising edge of the clock, if AGU_valid=1, the isStable, Done, and isExcp variables stored in the entry pointed to by AGU_RobTag will be updated to AGU_isStable, AGU_Done, and AGU_isExcp.
+4. On the rising edge of the clock, if RB_valid1 and RB_valid2 are both 1, then set the valid stored in the entry pointed to by RobTail and RobBeforeTail to 0, and other data remain unchanged, indicating that the entry is invalid, and set robBeforeTail-2, RobTail-2, RobNextTail-2 to implement the rollback of ROB.If RB_valid1=1 and RB_valid2=0, set the valid value in the entry pointed to by RobTail and RobBeforeTail to 0 and leave all other data unchanged, indicating that the entry is invalid and set RobBeforeTail-1, RB_valid2 to 0. RobTail-1, RobNextTail-1 to implement the rollback of ROB.
+5. On the rising edge of the clock, the module can handle update requests from two WriteBack modules at the same time. When WB_valid=1 is received, the data stored in the entry pointed to by WB_ROBTag is updated according to the values of WB_done, WB_isStable, WB_isexcp, WB_isMisPred.
+6. The module will continuously output the valid, isExcp, LphyRd, isaRd, phyRd, Function_type, LSQtag variables in the entry pointed by the Header and NextHeader to the corresponding port.
+7. When the rising edge of the clock arrives, the specified number of entries is eject from the top of the stack based on the value of rob_pop_num. At the same time, rob_pop_num is added to both Header and NextHeader, and usage is updated to usage+rob_pop_num.
+8. It can output the current queue tail pointer RobTail, the previous tail pointer RobBeforeTail, the next tail pointer RobNextTail, calculate ROB_Size-usage and output through AvailEntryCount.
+9. It can output valid, isExcp, phyRd, LphyRd, isaRd, Function, LSQTag,done stored in entry pointed by RobTail and RobBeforeTail to the corresponding output port."/>
+<ReferenceModel code="C++ code representing the functionality is not provided. Please provide the reference model written in C++ to include here."/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

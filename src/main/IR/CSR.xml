@@ -1,0 +1,41 @@
+<Module type="IntFreelist">
+    <Parameters>
+        <Parameter name="MISA" type="hex" value="0x301" description="MISA register address"/>
+        <Parameter name="Mvendorid" type="hex" value="0xf11" description="Mvendorid register address"/>
+        <Parameter name="Marchid" type="hex" value="0xf12" description="Marchid register address"/>
+        <Parameter name="Mimpid" type="hex" value="0xf13" description="Mimpid register address"/>
+        <Parameter name="Mhartid" type="hex" value="0xf14" description="Mhartid register address"/>
+        <Parameter name="Medeleg" type="hex" value="0x302" description="Medeleg register address"/>
+        <Parameter name="Mideleg" type="hex" value="0x303" description="Mideleg register address"/>
+        <Parameter name="Mie" type="hex" value="0x304" description="Mie register address"/>
+        <Parameter name="Mtvec" type="hex" value="0x305" description="Mtvec register address"/>
+        <Parameter name="Mcounteren" type="hex" value="0x306" description="Mcounteren register address"/>
+        <Parameter name="Mstatus" type="hex" value="0x300" description="Mstatus register address"/>
+        <Parameter name="Mepc" type="hex" value="0x341" description="Mepc register address"/>
+        <Parameter name="Mcause" type="hex" value="0x342" description="Mcause register address"/>
+        <Parameter name="Mtval" type="hex" value="0x343" description="Mtval register address"/>
+        <Parameter name="Mip" type="hex" value="0x344" description="Mip register address"/>
+        <Parameter name="Mscratch" type="hex" value="0x340" description="Mscratch register address"/>
+        <Parameter name="Mtime" type="hex" value="0x701" description="Mtime register address"/>
+        <Parameter name="Mtimecmp" type="hex" value="0x741" description="Mtimecmp register address"/>
+        <Parameter name="Mcycle" type="hex" value="0xb00" description="Mcycle register address"/>
+        <Parameter name="Minstret" type="hex" value="0xb02" description="Minstret register address"/>
+        <Parameter name="Mcountinhibit" type="hex" value="0x320" description="Mcountinhibit register address"/>
+    </Parameters>
+    <Interface>
+        <!-- Interfaces for each Functional Unit -->
+        <Input name="CSR_Read_Address" type="[31:0]" description="The address of the CSR register from which data needs to be read"/>
+        <Input name="CSR_Write_Address" type="[31:0]" description="The address of the CSR register where data needs to be written"/>
+        <Input name="CSR_Write_Data" type="[63:0]" description="The data to be written into the CSR register"/>
+        <Input name="CommitInsn_valid" type="signal" description="Indicates whether data needs to be written to the CSR"/>
+        <Input name="CSR_MEPC_data" type="[63:0]" description="The data to be written into the CSR_MEPC register"/>
+        <Input name="CSR_MCAUSE_data" type="[63:0]" description="The data to be written into the CSR_MCAUSE register"/>
+        <Input name="CSR_MTVAL_data" type="[63:0]" description="The data to be written into the CSR_MTVAL register"/>
+        <Input name="InstretUp" type="[1:0]" description="Signal to increment the CSR_MINSTRET counter by 1"/>
+        <!-- Outputs from each Functional Unit  -->
+        <Output name="CSR_Data" type="[63:0]" description="The data read from the CSR_Read_Address"/>
+    </Interface>
+    <Function description="The module implements updates and reads to the CSR (Control and Status Register) registers, capable of outputting the read result to the CSR_Data output port based on the CSR_Read_Address. Internally, there is a set of registers that store the data for MISA, Mvendorid, Marchid, Mimpid, Mhartid, Medeleg, Mideleg, Mie, Mtvec, Mcounteren, Mstatus, Mepc, Mcause, Mtval, Mip, Mscratch, Mtime, Mtimecmp, Mcycle, Minstret, and Mcountinhibit.&#xD;&#xA;1. When reset=0, all inputs are set to 0.&#xD;&#xA;2. At the rising edge of the clock, the value stored in Mcycle is incremented by 1.&#xD;&#xA;3. At the rising edge of the clock, if CommitInsn_valid=1, indicating the data is valid, CSR_MEPC_data, CSR_MCAUSE_data, and CSR_MTVAL_data are written to their corresponding registers. At the same time, the value stored in Minstret is incremented by InstretUp.&#xD;&#xA;4. At the rising edge of the clock, the value of CSR_Write_Data can be written into the register at CSR_Write_Address.&#xD;&#xA;5. Based on CSR_Read_Address, the data from the corresponding register can be output to the CSR_Data port.combinational logic."/>
+    <ReferenceModel code=""/>
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

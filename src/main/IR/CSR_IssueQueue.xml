@@ -1,0 +1,28 @@
+<Module type="CSR_IssueQueue">
+	<Parameters>
+		<Parameter name="Queue_ID" type="Integer" value="0" description="Identification number for the queue"/>
+		<Parameter name="Queue_Size" type="Integer" value="4" description="Size of the queue, defining its depth"/>
+	</Parameters>
+	<Interface>
+	        <!-- Interfaces for each Functional Unit -->
+	        <Input name="Clk" type="Signal" description="Clock signal"/>
+	        <Input name="Reset" type="Signal" description="Reset signal, used to initialize or reset the FIFO state"/>
+	        <Input name="Entry_data1" type="[159:0]" description="The first input data port, used to write data for the first instruction"/>
+	        <Input name="Entry_data2" type="[159:0]" description="The second input data port, used to write data for the second instruction"/>
+	        <Input name="Issue_num1" type="Signal" description="The first matching signal, if it matches Queue_ID, writes Entry_data1 to the FIFO"/>
+	        <Input name="Issue_num2" type="Signal" description="The second matching signal, if it matches Queue_ID, writes Entry_data2 to the FIFO"/>
+	        <Input name="Pop_valid1" type="Signal" description="Front entry pop-up signal"/>
+	        <Input name="Pop_valid2" type="Signal" description="Next front entry pop-up signal"/>
+	        <!-- Outputs from each Functional Unit  -->
+	        <Output name="AvailEntryCount" type="[3:0]" description="Number of free entries available to IntFreelist"/>
+	        <Output name="front_data1_out" type="[163:0]" description="The first output data port, showing the first entry data"/>
+	        <Output name="front_data2_out" type="[163:0]" description="The second output data port, showing the second entry data"/>
+	</Interface>
+    <Function description="1. This is a circular queue with a depth of Queue_Size and a width of 160. At most two data can be entered at the same time, and at most two instructions can be fetched at the same time. Record the current queue header and tail. When the value of the queue header or tail is greater than Queue_Size-1, it will returned to 0. When the value of the queue header or tail is less than 0, it will returned to Queue_Size-1.
+2. When reset=0, the data stored in each entry of the queue is initialized to 0, and the header pointer and tail pointer are initialized to 0. AvailEntryCount is initialized to Queue_Size.
+3. When the rising edge of the clock arrives, if Issue_num1=Queue_ID, then the input data Entry_data1 is stored in the entry pointed by tail, and tail+1, AvailEntryCount-1; Then it determines whether Issue_num2 is equal to Queue_ID, and if it is, it stores the input data Entry_data2 into the queue, and it also sets tail+1, AvailEntryCount-1.
+4. When the rising edge of the clock arrives, if Pop_valid1=1 and Pop_valid2 is also 1, set header+2,indicating that the first two entries in the queue are ejected at the same time. Otherwise, if only Pop_valid1=1, header+1, indicating that the first entry in the queue is ejected from the queue.
+5. Use the combination logic to output the number of available entries (i.e., AvailEntryCount) in real time, and the first two entries in the current queue to front_data1_out and front_data2_out respectively."/>
+<ReferenceModel code="The reference model written in C++, containing the functions of the module, is not provided here."/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

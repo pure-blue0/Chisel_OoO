@@ -1,0 +1,49 @@
+<Module type="IntRegFile">
+	<Parameters>
+		<Parameter name="Reg_Size" type="integer" value="40" description="The depth of the two-dimensional integer register"/>	
+	</Parameters>
+	<Interface>
+		<!-- Inputs from the IssueSelect module -->
+		<Input name="RF_Issue1_PhyRs1" type="[5:0]" description="PhyRs1 register ID issued by Issue1 to be read"/>
+		<Input name="RF_Issue1_PhyRs2" type="[5:0]" description="PhyRs2 register ID issued by Issue1 to be read"/>
+		<Input name="RF_Issue2_PhyRs1" type="[5:0]" description="PhyRs1 register ID issued by Issue2 to be read"/>
+		<Input name="RF_Issue2_PhyRs2" type="[5:0]" description="PhyRs2 register ID issued by Issue2 to be read"/>
+		<Input name="RF_Issue3_PhyRs1" type="[5:0]" description="PhyRs1 register ID issued by Issue3 to be read"/>
+		<Input name="RF_Issue3_PhyRs2" type="[5:0]" description="PhyRs2 register ID issued by Issue3 to be read"/>
+		
+		<!-- Inputs from the Forwarding module -->
+		<Input name="Forward1_valid" type="boolean" description="Request update valid signal from Forwarding1"/>
+		<Input name="Forward1_PhyRd" type="[5:0]" description="PhyRd from Forwarding1 to be updated"/>
+		<Input name="Forward1_data" type="[63:0]" description="Request update data from Forwarding1"/>
+		<Input name="Forward2_valid" type="boolean" description="Request update valid signal from Forwarding2"/>
+		<Input name="Forward2_PhyRd" type="[5:0]" description="PhyRd from Forwarding2 to be updated"/>
+		<Input name="Forward2_data" type="[63:0]" description="Request update data from Forwarding2"/>
+		
+		<!-- Inputs from the RCU WriteBack -->
+		<Input name="WB1_valid" type="boolean" description="Request update valid signal from WriteBack1"/>
+		<Input name="WB1_PhyRd" type="[5:0]" description="PhyRd from WriteBack1 to be updated"/>
+		<Input name="WB1_RdResult" type="[63:0]" description="Request update data from WriteBack1"/>
+		<Input name="WB2_valid" type="boolean" description="Request update valid signal from WriteBack2"/>
+		<Input name="WB2_PhyRd" type="[5:0]" description="PhyRd from WriteBack2 to be updated"/>
+		<Input name="WB2_RdResult" type="[63:0]" description="Request update data from WriteBack2"/>
+		
+		<!-- Inputs from ROB -->
+		<Input name="ROB_PhyRd1" type="[5:0]" description="PhyRd from ROB that needs to be queried"/>
+		<Input name="ROB_PhyRd2" type="[5:0]" description="PhyRd from ROB that needs to be queried"/>
+		
+		<!-- Outputs to RfReadPort -->
+		<Output name="RF_Issue1_PhyRs1_data" type="[63:0]" description="The data read from phyRs1 register returned to the RFPort of Issue1"/>
+		<Output name="RF_Issue1_PhyRs2_data" type="[63:0]" description="The data read from phyRs2 register returned to the RFPort of Issue1"/>
+		<Output name="RF_Issue2_PhyRs1_data" type="[63:0]" description="The data read from phyRs1 register returned to the RFPort of Issue2"/>
+		<Output name="RF_Issue2_PhyRs2_data" type="[63:0]" description="The data read from phyRs2 register returned to the RFPort of Issue2"/>
+		<Output name="RF_Issue3_PhyRs1_data" type="[63:0]" description="The data read from phyRs1 register returned to the RFPort of Issue3"/>
+		<Output name="RF_Issue3_PhyRs2_data" type="[63:0]" description="The data read from phyRs2 register returned to the RFPort of Issue3"/>
+		
+		<!-- Outputs to CommitInsn -->
+		<Output name="CommitInsn_PhyRd1_data" type="[63:0]" description="Output the data stored in ROB_PhyRd1 that is queried"/>
+		<Output name="CommitInsn_PhyRd2_data" type="[63:0]" description="Output the data stored in ROB_PhyRd2 that is queried"/>
+	</Interface>
+	<Function description="This is a two-dimensional integer register. The depth is Reg_Size and the width is 64 to store the data needed while the processor is running. 1. When reset=0, the data stored in the register is initialized to 0. 2. When the clock is on the rising edge, the module can handle the update requests of two Forwarding modules at the same time. When Forward1_valid=1 is received, data stored in the entry pointed by Forward1_PhyRd is updated according to the value of Forward1_data. When Forward2_valid=1 is received, the data stored in the entry pointed by Forward2_PhyRd is updated based on the value of Forward2_data. 3. When the clock is on the rising edge, the module can handle the update request of two WriteBack modules at the same time. When WB1_valid=1 is received, the data stored in the entry pointing to WB1_PhyRd is updated based on the value of WB1_RdResult. When WB1_valid=2 is received, the data stored in the entry pointed to by WB2_RdResult is updated based on the value of WB2_rdresult. 4. It can accept read PhyRs1 and PhyRs2 data request sent by three queues at the same time, and return the read data to the corresponding output port PhyRs1_data and PhyRs2_data. 5. Output the query data according to ROB_PhyRd1 and ROB_PhyRd2 to the output ports CommitInsn_PhyRd1_data and CommitInsn_PhyRd2_data."/>
+	<ReferenceModel code="the reference model written in C++, Contains the functions of the module"/>
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

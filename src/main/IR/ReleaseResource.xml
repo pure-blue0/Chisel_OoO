@@ -1,0 +1,39 @@
+<Module type="ReleaseResource">
+	<Parameters>
+		<!-- No parameters provided in the user input -->
+	</Parameters>
+	<Interface>
+	        <!-- Input Interface -->
+	        <Input name="Data_valid1" type="signal" description="Release request signal for the robTag1 entry."/>
+	        <Input name="phyRd1" type="[5:0]" description="The physical register destination to be released for robTag1 entry."/>
+	        <Input name="LphyRd1" type="[5:0]" description="The last physical register destination stored in robTag1 entry."/>
+	        <Input name="isaRd1" type="[4:0]" description="The ISA register destination to be released for robTag1 entry."/>
+	        <Input name="Function_type1" type="[2:0]" description="The function type stored in robTag1 entry."/>
+	        <Input name="LSQTag1" type="[3:0]" description="The Load/Store Queue Tag stored in robTag1 entry."/>
+	        <Input name="Data_valid2" type="signal" description="Release request signal for the robTag2 entry."/>
+	        <Input name="phyRd2" type="[5:0]" description="The physical register destination to be released for robTag2 entry."/>
+	        <Input name="LphyRd2" type="[5:0]" description="The last physical register destination stored in robTag2 entry."/>
+	        <Input name="isaRd2" type="[4:0]" description="The ISA register destination to be released for robTag2 entry."/>
+	        <Input name="Function_type2" type="[2:0]" description="The function type stored in robTag2 entry."/>
+	        <Input name="LSQTag2" type="[3:0]" description="The Load/Store Queue Tag stored in robTag2 entry."/>
+	        
+	        <!-- Output Interface -->
+	        <Output name="List_valid1" type="signal" description="Indicates whether resources in the IntBusylist, IntRenameTable, and IntFreelist need to be released."/>
+	        <Output name="Load_kill_valid1" type="signal" description="Indicates whether resources in the Load Queue need to be released."/>
+	        <Output name="Store_kill_valid1" type="signal" description="Indicates whether resources in the Store Queue need to be released."/>
+	        <Output name="phyRd1_out" type="[5:0]" description="The physical register destination to be released for robTag1 entry."/>
+	        <Output name="LphyRd1_out" type="[5:0]" description="The last physical register destination stored in robTag1 entry."/>
+	        <Output name="isaRd1_out" type="[4:0]" description="The ISA register destination to be released for robTag1 entry."/>
+	        <Output name="LSQTag1_out" type="[3:0]" description="The Load/Store Queue Tag stored in robTag1 entry."/>
+	        <Output name="List_valid2" type="signal" description="Indicates whether resources in the IntBusylist, IntRenameTable, and IntFreelist need to be released."/>
+	        <Output name="Load_kill_valid2" type="signal" description="Indicates whether resources in the Load Queue need to be released."/>
+	        <Output name="Store_kill_valid2" type="signal" description="Indicates whether resources in the Store Queue need to be released."/>
+	        <Output name="phyRd2_out" type="[5:0]" description="The physical register destination to be released for robTag2 entry."/>
+	        <Output name="LphyRd2_out" type="[5:0]" description="The last physical register destination stored in robTag2 entry."/>
+	        <Output name="isaRd2_out" type="[4:0]" description="The ISA register destination to be released for robTag2 entry."/>
+	        <Output name="LSQTag2_out" type="[3:0]" description="The Load/Store Queue Tag stored in robTag2 entry."/>
+	</Interface>
+	<Function description="with adjustments made to accommodate HDL: 1. Since the queues and lists involved in resource release are not within this module, the data read from m_Rob is accomplished directly through input data (provided by the Rollback module). The updates to the various lists are achieved by emitting valid signals along with the necessary data for updates. Upon receiving this data, the respective lists will process it accordingly. 2. As C++ can roll back and release the resources of one instruction at a time, whereas HDL cannot implement this, HDL considers rolling back up to two instructions and outputs Data_valid1 and Data_valid2 signals. These two signals indicate how many instructions have actually been rolled back. Consequently, in the ReleaseResource module, releasing resources for up to two instructions is also considered, but the actual resources to be released are determined based on the values of Data_valid1 and Data_valid2 signals. Function: 1. This module is used to issue signals for releasing resources from the IntBusylist, Load Queue, and Store Queue, and for updating the IntRenameTable and IntFreelist. 2. By default, all outputs are set to 0. 3. If Data_valid1=1, it indicates that the resources occupied by the instruction stored in robTag1 need to be released. The following actions are then performed: (1) Set List_valid1=1 to indicate that resources in the IntBusylist, IntRenameTable, and IntFreelist need to be released, and set phyRd1_out=phyRd1, LphyRd1_out=LphyRd1, isaRd1_out=isaRd1 to output the necessary data for list updates. (2) Determine if the instruction type Function_type1 is LDU; if so, set Load_kill_valid1=1 and LSQTag1_out=LSQTag1 to output the necessary data for list updates. If not LDU, then determine if the instruction type is STU; if so, set Store_kill_valid1=1 and LSQTag1_out=LSQTag1 to output the necessary data for list updates. 4. If Data_valid2=1, it indicates that the resources occupied by the instruction stored in robTag2 need to be released. The following actions are then performed: (1) Set List_valid2=1 to indicate that resources in the IntBusylist, IntRenameTable, and IntFreelist need to be released, and set phyRd2_out=phyRd2, LphyRd2_out=LphyRd2, isaRd2_out=isaRd2 to output the necessary data for list updates. (2) Determine if the instruction type Function_type2 is LDU; if so, set Load_kill_valid2=1 and LSQTag2_out=LSQTag2 to output the necessary data for list updates. If not LDU, then determine if the instruction type is STU; if so, set Store_kill_valid2=1 and LSQTag2_out=LSQTag2 to output the necessary data for list updates."/>
+	<ReferenceModel code="void Rcu::ReleaseResource(uint16_t robTag){auto&amp; entry = this-&gt;m_Rob[robTag];if(entry.phyRd != 0){this-&gt;m_IntFreelist.push(entry.phyRd);this-&gt;m_IntBusylist[entry.phyRd].forwarding = false;this-&gt;m_IntBusylist[entry.phyRd].done = false;this-&gt;m_IntBusylist[entry.phyRd].allocated = false;this-&gt;m_IntRenameTable[entry.isaRd] = entry.LphyRd;}if(entry.Fu == funcType_t::LDU){this-&gt;m_Processor-&gt;getLsqPtr()-&gt;KillLoadEntry(entry.LSQtag);}else if(entry.Fu == funcType_t::STU){this-&gt;m_Processor-&gt;getLsqPtr()-&gt;KillStoreEntry(entry.LSQtag);}}"/>
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->
