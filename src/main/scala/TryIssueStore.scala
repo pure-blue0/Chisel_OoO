@@ -64,10 +64,6 @@ class TryIssueStore extends Module {
     is("b0011".U) { // STU_SD
       io.mem_ByteMask := ("b1111_1111".U(8.W) << offset)(63, 0)
     }
-    // Default or error case
-    default {
-      io.mem_ByteMask := 0.U
-    }
   }
   }
 }

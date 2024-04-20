@@ -54,8 +54,8 @@ class AGUFastDetect extends Module {
   when(io.excp_valid_in) {
     io.Done := true.B
     io.isExcp := true.B
-    when(io.m_RobState =/= RobIdle) {
-      io.m_RobState_new := RobUndo
+    when(io.m_RobState =/= RobState.RobIdle) {
+      io.m_RobState_new := RobState.RobUndo
       io.m_RollBackTag_new := io.RobTag_in
       io.m_ExcpCause_new := io.excp_cause_in
       io.m_ExcpTval_new := io.excpt_tval_in

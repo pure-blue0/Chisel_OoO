@@ -1,7 +1,7 @@
 import chisel3._
 import chisel3.util._
 
-class IntFreelist extends Module {
+class CSR extends Module {
   val io = IO(new Bundle {
     val CSR_Read_Address = Input(UInt(32.W))
     val CSR_Write_Address = Input(UInt(32.W))
@@ -47,7 +47,7 @@ class IntFreelist extends Module {
       is(mcause) { mcause := io.CSR_MCAUSE_data }
       is(mtval) { mtval := io.CSR_MTVAL_data }
       is(mcycle) { mcycle := io.CSR_Write_Data }
-      is(minstret) { minstret := io.CSR_Write_Data + io.InstrtUp }
+      is(minstret) { minstret := io.CSR_Write_Data + io.InstretUp }
       // Add cases for other CSRs
     }
   }
