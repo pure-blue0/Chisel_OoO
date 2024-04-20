@@ -1,0 +1,41 @@
+<Module type="RfReadPort">
+    <Parameters>
+        <!-- No parameters provided in the input -->
+    </Parameters>
+    <Interface>
+        <!-- Inputs to the RfReadPort module -->
+        <Input name="Vaild" type="boolean" description="Indicates that the input data of each port of the current module is valid"/>
+        <Input name="Insn_Operand1Ready" type="boolean" description="Whether Operand 1 is ready"/>
+        <Input name="Insn_PhyRs1_data" type="[63:0]" description="The data stored in physical register 1"/>
+        <Input name="Insn_Operand2Ready" type="boolean" description="Whether Operand 2 is ready"/>
+        <Input name="Insn_PhyRs2_data" type="[63:0]" description="The data stored in physical register 2"/>
+        <Input name="desIndex_in" type="[2:0]" description="The ID of the functional unit to which insn is assigned"/>
+        <Input name="Sub_OP_in" type="[3:0]" description="The specific action that the instruction needs to perform in the execution unit"/>
+        <Input name="imm_in" type="[63:0]" description="Operands of the current instruction"/>
+        <Input name="pc_in" type="[63:0]" description="PC of the current instruction"/>
+        <Input name="Pred_taken_in" type="boolean" description="Whether the current instruction has jumped"/>
+        <Input name="pred_target_in" type="[63:0]" description="Branch prediction address for the current instruction"/>
+        <Input name="Function_type_in" type="[2:0]" description="The execution unit that the instruction needs to invoke"/>
+        <Input name="Insn_operand1_in" type="[63:0]" description="Operand 1 of the instruction"/>
+        <Input name="Insn_operand2_in" type="[63:0]" description="Operand 2 of the instruction"/>
+        <Input name="RobTag_in" type="[3:0]" description="Position of the instruction in the ROB"/>
+        <Input name="LSQTag_in" type="[3:0]" description="Instruction pointer in LoadQueue or StoreQueue"/>
+        <!-- Outputs from the RfReadPort module -->
+        <Output name="desIndex" type="[2:0]" description="The ID of the functional unit to which insn is assigned"/>
+        <Output name="Insn_operand1" type="[63:0]" description="Operand 1"/>
+        <Output name="Insn_operand2" type="[63:0]" description="Operand 2"/>
+        <Output name="Sub_OP_out" type="[3:0]" description="The specific action that the instruction needs to perform in the execution unit"/>
+        <Output name="desIndex_out" type="[2:0]" description="The ID of the functional unit to which insn is assigned"/>
+        <Output name="imm_out" type="[63:0]" description="Operands of the current instruction"/>
+        <Output name="pc_out" type="[63:0]" description="PC for the current instruction"/>
+        <Output name="Pred_taken_out" type="boolean" description="Whether the current instruction has jumped"/>
+        <Output name="pred_target_out" type="[63:0]" description="Branch prediction address for the current instruction"/>
+        <Output name="Function_type_out" type="[2:0]" description="The execution unit that the instruction needs to invoke"/>
+        <Output name="RobTag_out" type="[3:0]" description="Position of the instruction in the ROB"/>
+        <Output name="LSQTag_out" type="[3:0]" description="Instruction pointer in LoadQueue or StoreQueue"/>
+    </Interface>
+    <!-- No instances provided in the input -->
+    <Function description="Compatible with HDL changes: 1. The way the data is sent has been changed to be compatible with hdl, which outputs a desIndex_out, which is then matched by each execute unit, and if a match is found, the passed data is processed. 2. Input data is no longer based on the value of PhyRs read from IntRegfile as in the module. Instead, data is read from IntRegfile based on the value of PhyRs in the issue, and whether it is assigned to Operand depends on whether operand is ready. When the input data vaild is valid, execute the following operation: 1. If Insn_Operand1Ready=0, indicating the operand is not ready, then Insn_operand1_in is assigned directly to Operand1; if Insn_Operand1Ready=1, Insn_PhyRs1_data is assigned to Operand1. 2. If Insn_Operand2Ready=0, indicating the operand is not ready, then Insn_operand2_in is assigned directly to Operand2; if Insn_Operand2Ready=1, Insn_PhyRs2_data is assigned to Operand2. 3. Assign the signal with the suffix in such as desIndex_in to the corresponding port signal with the suffix out."/>
+    <ReferenceModel code="void RfReadPort::Evaluate(){ if(this-&gt;m_CalcuPipe.OutPort-&gt;valid){ IssueInfo&amp; t = this-&gt;m_CalcuPipe.OutPort-&gt;data; InsnPtr_t&amp; insn = t.insn; if(!insn-&gt;Operand1Ready){ insn-&gt;Operand1 = this-&gt;m_Processor-&gt;getRcuPtr()-&gt;m_IntRegfile[insn-&gt;PhyRs1]; } if(!insn-&gt;Operand2Ready){ insn-&gt;Operand2 = this-&gt;m_Processor-&gt;getRcuPtr()-&gt;m_IntRegfile[insn-&gt;PhyRs2]; } this-&gt;m_Processor-&gt;m_FuncUnitVec[t.desIndex]-&gt;Issue(insn); }}" />    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

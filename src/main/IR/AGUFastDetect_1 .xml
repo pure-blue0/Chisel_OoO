@@ -1,0 +1,49 @@
+<Module type="AGUFastDetect">
+	<Parameters>
+	</Parameters>
+	<Interface>
+	    <!-- Inputs for the AGUFastDetect Unit -->
+	    <Input name="RobTag_in" type="[3:0]" description="The current instruction's position in the ROB."/>
+	    <Input name="Function_type" type="[2:0]" description="The execution unit required by the instruction."/>
+	    <Input name="Agu_addr_ready" type="Boolean" description="Whether the address for the instruction's memory access is ready."/>
+	    <Input name="Agu_data_ready" type="Boolean" description="Whether the data for the instruction's memory storage is ready."/>
+	    <Input name="excp_valid_in" type="Boolean" description="Stores the exception status of the current instruction."/>
+	    <Input name="excp_cause_in" type="[5:0]" description="Stores the type of the current exception instruction."/>
+	    <Input name="excpt_tval_in" type="[31:0]" description="Stores the address of the current exception instruction."/>
+	    <Input name="m_RollBackTag" type="[3:0]" description="Rollback tag."/>
+	    <Input name="m_RobState" type="[2:0]" description="ROB state."/>
+	    <Input name="m_ExcpCause" type="[5:0]" description="Exception cause."/>
+	    <Input name="m_ExcpTval" type="[31:0]" description="Exception address."/>
+	    <!-- Outputs from the AGUFastDetect Unit -->
+	    <Output name="ROB_update" type="Boolean" description="ROB update signal."/>
+	    <Output name="isStable" type="Boolean" description="Whether the current instruction is stable."/>
+	    <Output name="Done" type="Boolean" description="Whether the address and data for the current STU instruction are ready."/>
+	    <Output name="isExcp" type="Boolean" description="Whether the current store instruction has encountered an exception."/>
+	    <Output name="RobTag" type="[3:0]" description="The current instruction's position in the ROB."/>
+	    <Output name="m_RollBackTag_new" type="[3:0]" description="New rollback tag."/>
+	    <Output name="m_RobState_new" type="[2:0]" description="New ROB state."/>
+	    <Output name="m_ExcpCause_new" type="[5:0]" description="New exception cause."/>
+	    <Output name="m_ExcpTval_new" type="[31:0]" description="New exception address."/>
+	</Interface>
+	<Function description="1. Set m_RollBackTag_new to m_RollBackTag, m_RobState_new to m_RobState, m_ExcpCause_new to m_ExcpCause, and m_ExcpTval_new to m_ExcpTval, with all other outputs set to 0. This indicates that no changes to any state are made, and the ROB is not updated.&#10;2. Assign RobTag to RobTag_in, outputting the current instruction's index in the ROB; set ROB_update to 1, indicating that ROB data needs to be updated, and set the isStable variable to 1, signifying that the instruction has stabilized.&#10;3. If the current instruction is a store instruction and both the data and address are ready, set the Done signal to 1; otherwise, it remains 0.&#10;4. If the current instruction has an exception, set both the done signal and the isExcp signal to 1, indicating that the instruction is completed but has encountered an exception. If the state of m_RobState is not idle (Rob_Idle), then set m_RobState_new to the undo state (Rob_Undo), record the tag of the instruction triggering the undo operation in m_RollBackTag_new (RobTag_in), record the exception cause in m_ExcpCause_new (excp_cause_in), and the exception value in m_ExcpTval_new (excpt_tval_in). This means that due to this exception, the reorder buffer needs to undo some operations or states."/>
+	<ReferenceModel code="void  Rcu::AGUFastDetect(InsnPtr_t&amp; insn){
+    this->m_Rob[insn->RobTag].isStable = true;
+    if(insn->Fu == funcType_t::STU &amp;&amp; insn->Agu_addr_ready &amp;&amp; insn->Agu_data_ready)
+    {
+        this->m_Rob[insn->RobTag].done = true;
+    }
+    else this->m_Rob[insn->RobTag].done = false;
+    if(insn->Excp.valid){
+        this->m_Rob[insn->RobTag].done   = true;
+        this->m_Rob[insn->RobTag].isExcp = true;
+        if(this->m_RobState != rob_state_t::Rob_Idle )
+        {
+            this->m_RobState = rob_state_t::Rob_Undo;
+            this->m_RollBackTag = insn->RobTag;
+            this->m_ExcpCause   = insn->Excp.Cause;
+            this->m_ExcpTval    = insn->Excp.Tval;
+        }
+    }
+}"/>    
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

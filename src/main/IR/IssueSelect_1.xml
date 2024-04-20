@@ -1,0 +1,72 @@
+<Module type="IssueSelect">
+	<Parameters>
+		<Parameter name="support_function1" type="binary" value="001" description="Support function code for the first function."/>
+		<Parameter name="support_function2" type="binary" value="000" description="Support function code for the second function."/>
+		<Parameter name="support_function3" type="binary" value="000" description="Support function code for the third function."/>
+		<Parameter name="Index_function1" type="binary" value="010" description="Index code for the first function."/>
+		<Parameter name="Index_function2" type="binary" value="011" description="Index code for the second function."/>
+		<Parameter name="Index_function3" type="binary" value="100" description="Index code for the third function."/>
+	</Parameters>
+	<Interface>
+		<Input name="PhyRs1_done" type="[5:0]" description="Whether physical register 1 of the instruction has received data"/>
+		<Input name="PhyRs2_done" type="[5:0]" description="Whether physical register 2 of the instruction has received data"/>
+		<Input name="Insn" type="[163:0]" description="An instruction packet sent from an issue"/>
+		<Input name="RF_port_valid" type="bit" description="Whether the currently connected RF port is valid"/>
+		<Input name="Execute_fun1_busy" type="bit" description="Whether the function1 execution unit is busy"/>
+		<Input name="Execute_fun2_busy" type="bit" description="Whether the function2 execution unit is busy"/>
+		<Input name="Execute_fun3_busy" type="bit" description="Whether the function3 execution unit is busy"/>
+		
+		<Output name="Allocate_fun1" type="bit" description="Whether the execution unit of function1 is occupied"/>
+		<Output name="Allocate_fun2" type="bit" description="Whether the execution unit of function2 is occupied"/>
+		<Output name="Allocate_fun3" type="bit" description="Whether the execution unit of function3 is occupied"/>
+		<Output name="desIndex" type="[2:0]" description="ID of the functional unit to which insn is assigned"/>
+		<Output name="Insn_out" type="[163:0]" description="The instruction packet sent to RF port"/>
+		<Output name="Success" type="bit" description="Whether the launch was successful"/>
+	</Interface>
+	<Function description="Modifications for HDL compatibility: 
+	1. Since the m_IntBusylist list is not within this module, when the Issue Queue sends out a packet, it will send the PhyRs1 and PhyRs2 stored in the packet to the m_IntBusylist list. The list will then check the corresponding done information based on these two signals and output it. The output from the list is then used as input to this module.
+	2. Since each Issue may be connected to multiple execute units, it is necessary to configure the values and quantities of support_function and Index_function to implement module reuse.
+	3. Insn[51:49] stores the current instruction's function_type, which is matched with support_function to replicate the functionality of the C++ fu-&gt;m_SupportFunc.count(insn-&gt;Fu) function.
+	Function:
+	1. By default, all outputs are set to 0, indicating that the output is invalid.
+	2. Determine whether the physical registers stored in the busylist have received data by checking PhyRs1_done and PhyRs2_done. Only when both are 1 is it indicated that the data is ready, and subsequent operations can continue. Otherwise, no further operations are performed.
+	3. Once the data is ready, determine if the current connected RF_port is valid through RF_port_valid. If it is not valid, no further operations are performed.
+	4. Based on the Insn[51:49] of the current issue queue, find the corresponding execute unit and check if its busy signal is busy. (Match the current instruction's function type with the support function in the parameter list in sequence; if the ith one is equal, then check if the ith fun_busy signal is busy) until a usable execute unit is found or all connected execution units have been traversed.
+	5. If a usable execution unit is found, set the ith Allocate_fun to 1 to indicate that the execution unit is occupied, and output the corresponding desIndex. Then, set success to 1, and finally, send the insn to the insn_out port.
+	Note:
+	1. The outputs of the IssueSelect module are connected to registers in the actual HDL code, but for cross-verification purposes, the generated code treats the outputs as combinational logic. This module can be configured based on the connected functional units by modifying the parameters in the 'parameter' list, as well as the number of parameters, and by removing the corresponding busy and allocate ports. Therefore, it only needs to be generated once. The current module is configured as ALU_BRU_IssueSelect.
+	2. For the CSR_IssueSelect, set support_function1=010 and Index_function1=000 and remove the two extra sets of support_function, Index_function, busy, and allocate. Additionally, add a readyforcommit signal (1 bit). The judgment condition in this function 2 changes from 'data is ready for subsequent operations only when both are 1' to 'data is ready for subsequent operations only when both are 1 and readyforcommit is also 1'.
+	3. For the LSU_IssueSelect, set support_function1=011, support_function2=100, and Index_function1=001, and remove the extra support_function, Index_function, busy, and allocate. This module is somewhat special because there is only one LSU execution unit, but it can process two types of instructions simultaneously."/>"/>
+	<ReferenceModel code="enum InsnState_t{
+	State_Fetch1, State_Fetch2, State_Decode, State_Dispatch,
+	State_Issue,State_ReadOperand,State_Execute,State_WriteBack, State_Commit, State_Done
+	};
+	void IssueSelect(uint64_t&amp; index, InsnPtr_t&amp; insn, bool&amp; Success){
+	        IssueInfo info;
+	        Success = false;
+	        insn = this-&gt;m_issueQueue.front();
+	        info.insn = insn;
+	        if(((!this-&gt;m_Rcu-&gt;m_IntBusylist[insn-&gt;PhyRs1].done) ||
+	            (!this-&gt;m_Rcu-&gt;m_IntBusylist[insn-&gt;PhyRs2].done)
+	        )){
+	            return;                
+	        }else{
+	            for(auto rfport : this-&gt;m_RFReadPortVec){
+	                if(!rfport-&gt;valid){
+	                    for(auto fu : this-&gt;m_FuncUnitVec){
+	                        if(fu-&gt;m_SupportFunc.count(insn-&gt;Fu) &amp;&amp; !fu-&gt;Busy()){
+	                            fu-&gt;Allocate();  
+	                            info.desIndex  = fu-&gt;m_FuncUnitId;
+	                            info.isToFu    = true;
+	                            Success        = true;
+	                            rfport-&gt;set(info);
+	                            insn-&gt;State = InsnState_t::State_ReadOperand;
+	                            return;    
+	                        }
+	                    }
+	                }
+	            }
+	        }
+	    }"/>
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->

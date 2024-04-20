@@ -1,0 +1,101 @@
+<Module type="WriteBack">
+    <Parameters />
+    <Interface>
+        <!-- Inputs to the WriteBack module -->
+        <Input name="rob_empty" type="Boolean" description="Describes whether the current ROB is empty"/>
+        <Input name="insn_ROBTag_in" type="[3:0]" description="The position of the current instruction in the ROB"/>
+        <Input name="rob_header" type="[3:0]" description="Line head pointer for the current ROB"/>
+        <Input name="rob_lastest" type="[3:0]" description="The pointer to the latest entry of the current ROB"/>
+        <Input name="excp_vaild" type="Boolean" description="Stores exceptions of the current instruction"/>
+        <Input name="excp_cause" type="[5:0]" description="Stores the type of the current exception instruction"/>
+        <Input name="excp_tval" type="[31:0]" description="Store the address of the current exception instruction"/>
+        <Input name="Function_type" type="[2:0]" description="The execution unit that the instruction needs to call"/>
+        <Input name="BruMisPred" type="Boolean" description="Whether the instruction predicts an error"/>
+        <Input name="BruTarget" type="[31:0]" description="Branch prediction correction address"/>
+        <Input name="m_RollBackTag" type="[3:0]" description="Rolling back labels"/>
+        <Input name="m_RobState" type="[2:0]" description="ROB status"/>
+        <Input name="m_ExcpCause" type="[5:0]" description="Cause of exception"/>
+        <Input name="m_ExcpTval" type="[31:0]" description="Exception address"/>
+        <Input name="isa_rd" type="[4:0]" description="Describes the isa rd register id of the current instruction"/>
+        <Input name="PhyRd_in" type="[5:0]" description="Describes the Rd physical register id of the current instruction"/>
+        <Input name="RdResult_in" type="[63:0]" description="Data calculated by execute"/>
+        
+        <!-- Outputs from the WriteBack module -->
+        <Output name="needRedirect" type="Boolean" description="Indicates whether a redirect is required"/>
+        <Output name="Redirect_ID" type="[3:0]" description="Represents a redirect request sent from the decode"/>
+        <Output name="Redirect_Target" type="[31:0]" description="The destination address for the redirect"/>
+        <Output name="ROB_vaild" type="Boolean" description="Indicates whether the data of the ROB needs to be modified"/>
+        <Output name="ROB_done" type="Boolean" description="Indicates whether the instruction in ROB is completed or not"/>
+        <Output name="ROB_isstable" type="Boolean" description="Indicates whether the instructions in ROB are stable"/>
+        <Output name="ROB_isexcp" type="Boolean" description="Indicates whether an exception occurs for an instruction in the ROB"/>
+        <Output name="insn_ROBTag_out" type="[3:0]" description="The position of the current instruction in the ROB"/>
+        <Output name="isMisPred" type="Boolean" description="Indicates whether the instruction in ROB predicted incorrectly"/>
+        <Output name="fetch_flush" type="Boolean" description="fetch stage flush signal"/>
+        <Output name="decode_flush" type="Boolean" description="decode stage flush signal"/>
+        <Output name="dispatch_flush" type="Boolean" description="dispatch stage flush signal"/>
+        <Output name="Reg_busy_vaild" type="Boolean" description="Indicates whether IntRegfile and IntBusylist data are required"/>
+        <Output name="PhyRd_out" type="[5:0]" description="Describes the Rd physical register id of the current instruction"/>
+        <Output name="RdResult_out" type="[63:0]" description="Data calculated by execute"/>
+        <Output name="Reg_busy_forwarding" type="Boolean" description="Indicates whether the calculation result of the instruction is forwarded"/>
+        <Output name="Reg_busy_done" type="Boolean" description="Indicates whether the data in the PhyRd register is ready"/>
+        <Output name="m_RollBackTag_new" type="[3:0]" description="The updated rollback label"/>
+        <Output name="m_RobState_new" type="[2:0]" description="The updated rob state"/>
+        <Output name="m_ExcpCause_new" type="[5:0]" description="The updated ExcpCause"/>
+        <Output name="m_ExcpTval_new" type="[31:0]" description="The updated exception address"/>
+    </Interface>
+    <!-- Instances of Functional Units -->
+    <!-- No instances provided in user input -->
+    <Function description="Compatible with HDL changes: 1. Because rob and IntRegfile and IntBusylist are not built into WriteBack, they cannot read the data as written in C++. Instead, we need to send an update request signal to each of these three queues via the vaild signal, and then send the corresponding data to them. 2. A fifth requirement has been added to ensure functional correctness. 3. In order to realize the function of refreshing pipeline in hdl, the method of FlushBackWard(InsnState_t::State_Issue) in c++ is not used to flush the pipeline. Instead, fetch_flush,decode_flush, and dispatch_flush are all set to 1 to clean up any subsequent execution state that may be incorrect. Function: 1. This module handles the write back logic of instructions, including updating the state of the reorder buffer, handling branch prediction errors and exception cases, and triggering the redirection flow to roll back to the correct program execution state when necessary. There is a sub-module isolder in this module, which requires three parameters tag1, tag2 and header. The return value is older 2. When ROB is not empty and checks whether the current instruction isolder than or is the latest instruction in ROB, it calls isolder submodule with insn_ROBTag_in, rob_lastest and rob_header. This step ensures that a subsequent operation is performed only if there is an instruction in the ROB and the current instruction is valid. 3. If the above conditions are met, ROB_vaild is set to 1, indicating that the specified entry in rob needs to be modified. Set ROB_done and ROB_isstable to 1 and insn_ROBTag_out=insn_ROBTag_in. This indicates that the instruction has been successfully executed and the result is available, and the corresponding ROB entry data needs to be modified. 4. If there is no exception for the current instruction, do the following: (1) For a branch instruction, if the prediction is wrong, set ROB_vaild=1, the isMisPred flag to true, and insn_ROBTag_out=insn_ROBTag_in to update the corresponding rob entry. Based on the ROB status and instruction order, it decides whether a rollback (i.e., redirection) is necessary. If necessary, update m_RobState_new to the undo mode (Rob_Undo), set m_RollBackTag_new to the current insn_ROBTag_in, fetch_flush,decode_flush,dispatch_flush are set to 1 to clear the subsequent execution state that may be wrong. needRedirect is set to true, so Redirect_Target=BruTarget. Redirect_ID=Issue. The order of instructions is determined using the isolder submodule, which takes insn_ROBTag_in, m_RollBackTag, and rob_header inputs. If the prediction is correct, m_RobState is determined to be Rob_WaitForResume and insn_ROBTag_in=m_RollBackTag, so m_RobState_new=Rob_Idle. (2) If the target register index (IsaRd) of the instruction is not 0 (that is, a valid target register exists), the following is done to send an update to IntBusylist and IntRegfile: Set Reg_busy_vaild to 1 to indicate that you want to write data to the IntBusylist and IntRegfile. The forwarding flag (Reg_busy_forwarding) of the instruction target register is set to false to indicate that the value in the register was not generated by forwarding. The completion flag (Reg_busy_done) of the instruction target register is set to true to indicate that the result of the computation in the register is ready for use by subsequent instructions. Write RdResult_in to RdResult_out and PhyRd_in to PhyRd_out. If there is an exception in the current instruction, set ROB_vaild to 1, indicating that the data in ROB needs to be modified, set ROB_isexcp to 1, and set insn_ROBTag_out=insn_ROBTag_in. If m_RobState=Rob_Idle, or insn_ROBTag_in isolder than m_RollBackTag (this requires calling isolder submodule with insn_ROBTag_in, m_RollBackTag and rob_header), m_RollBackTag_new is set to Rob_Undo, m_RobState_new is set to insn_ROBTag_in, m_ExcpCause is set to excp_cause, m_ExcpTval is set to excp_tval. 5. If the above conditions are not satisfied, m_RollBackTag_new is set to m_RollBackTag, m_RobState_new is set to m_RobState, m_ExcpCause_new is set to m_ExcpCause, and M_ROLLbackTAG is set to M_ROBstate. m_ExcpTval_new is set to m_ExcpTval; All the remaining signals are set to 0."/>
+
+    <ReferenceModel code="enumeration types:
+enum rob_state_t{Rob_Idle, Rob_Undo, Rob_Redo, Rob_WaitForResume, Rob_FlushBackend};
+enum funcType_t { ALU , BRU, CSR, LDU, STU};
+enum InsnState_t{
+State_Fetch1,State_Fetch2,_Decode,State_Dispatch,State_Issue,State_ReadOperand,State_Execute,State_WriteBack, State_Commit,State_Done};
+
+void Rcu::WriteBack(InsnPtr_t&amp; insn, bool&amp; needRedirect){
+    needRedirect = false;
+    if(!this-&gt;m_Rob.empty() &amp;&amp; (this-&gt;m_Rob.isOlder(insn-&gt;RobTag,this-&gt;m_Rob.getLastest()) || insn-&gt;RobTag == this-&gt;m_Rob.getLastest())){
+        this-&gt;m_Rob[insn-&gt;RobTag].done = true;
+        this-&gt;m_Rob[insn-&gt;RobTag].isStable = true;
+        if(!insn-&gt;Excp.valid){
+            if(insn-&gt;Fu == funcType_t::BRU){
+                if(insn-&gt;BruMisPred){
+                    this-&gt;m_Rob[insn-&gt;RobTag].isMisPred = true;  
+                    if(this-&gt;m_RobState == rob_state_t::Rob_Idle || 
+                        (this-&gt;m_Rob.isOlder(insn-&gt;RobTag,this-&gt;m_RollBackTag) ||
+                        insn-&gt;RobTag == this-&gt;m_RollBackTag)
+                    ){
+                        this-&gt;m_RobState = rob_state_t::Rob_Undo;
+                        this-&gt;m_RollBackTag = insn-&gt;RobTag;
+                        this-&gt;m_Processor-&gt;FlushBackWard(InsnState_t::State_Issue);//Refresh fetch1, decode, dispatch
+                        needRedirect = true;
+                        RedirectReq.StageId = InsnState_t::State_Issue;
+                        RedirectReq.target  = insn-&gt;BruTarget;
+                    }
+                }else{
+                    if(this-&gt;m_RobState == rob_state_t::Rob_WaitForResume &amp;&amp; insn-&gt;RobTag == this-&gt;m_RollBackTag)//Having rolled back, the wbstage is then restored to a normal state for the next cycle and can continue to handle other exceptions
+                    {
+                        this-&gt;m_RobState = rob_state_t::Rob_Idle;
+                    }
+                }
+            }
+            if(insn-&gt;IsaRd != 0){
+                this-&gt;m_IntRegfile[insn-&gt;PhyRd] = insn-&gt;RdResult;
+                this-&gt;m_IntBusylist[insn-&gt;PhyRd].done = true;
+                this-&gt;m_IntBusylist[insn-&gt;PhyRd].forwarding = false;
+            }
+        }else{
+            this-&gt;m_Rob[insn-&gt;RobTag].isExcp = true;
+            if(this-&gt;m_RobState == rob_state_t::Rob_Idle || this-&gt;m_Rob.isOlder(insn-&gt;RobTag,this-&gt;m_RollBackTag))
+            {
+                this-&gt;m_RobState = rob_state_t::Rob_Undo;
+                this-&gt;m_RollBackTag = insn-&gt;RobTag;
+                this-&gt;m_ExcpCause   = insn-&gt;Excp.Cause;
+                this-&gt;m_ExcpTval    = insn-&gt;Excp.Tval;
+            }
+        }
+    }
+}" />
+</Module>
+<!-- Definitions for Request and Result types for each Functional Unit -->
