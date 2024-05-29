@@ -43,8 +43,18 @@ public:
     };
 
     PhyRegId_t front(){
+        //freelist为空时，此时返回0，表示无用数据。
+        if(this->m_Freelist.size()==0) return 0;
         return this->m_Freelist.front();
     };
+    PhyRegId_t next_front(){
+        //freelist少于一个元素时，此时返回0，表示无用数据。
+        if(this->m_Freelist.size()<=1)return 0;
+        else return this->m_Freelist.at(1);
+    };
+    void pop_front(){
+        this->m_Freelist.pop_front();
+    }
     
     PhyRegId_t pop(){
         DASSERT(!this->m_Freelist.empty(),"Pop When empty!")

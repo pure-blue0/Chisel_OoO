@@ -59,15 +59,20 @@ public:
         Success = false;
         insn = this->m_issueQueue.front();//数据都在这里面，连接的时候输入信号从这里面取
         info.insn = insn;
+
         if(((!this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
             (!this->m_Rcu->m_IntBusylist[insn->PhyRs2].done)
         )){//判断busylist中对应的物理寄存器是否储存了完成的数据
             return;                
         }else{
+            // if(insn->Pc==0x80002cc4)DPRINTF(temptest,"RobTag[{}],Pc[{:#x}] -> 11111111111111",insn->RobTag,insn->Pc);
             for(auto rfport : this->m_RFReadPortVec){
+               // if(insn->Pc==0x80002cc4)DPRINTF(temptest,"RobTag[{}],Pc[{:#x}] -> 222222222222222",insn->RobTag,insn->Pc);
                 if(!rfport->valid){
+                   // if(insn->Pc==0x80002cc4)DPRINTF(temptest,"RobTag[{}],Pc[{:#x}] -> 3333333333333333",insn->RobTag,insn->Pc);
                     for(auto fu : this->m_FuncUnitVec){
                         if(fu->m_SupportFunc.count(insn->Fu) && !fu->Busy()){
+                            //if(insn->Pc==0x80002cc4)DPRINTF(temptest,"RobTag[{}],Pc[{:#x}] -> 44444444444444444",insn->RobTag,insn->Pc);
                             fu->Allocate();  //将function unit设为忙
                             info.desIndex  = fu->m_FuncUnitId;//执行单元的ID
                             info.isToFu    = true;//交叉验证中，需要把success的结果也连到这个变量上，然后最后通过rfport发送数据

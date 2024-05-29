@@ -35,9 +35,27 @@ public:
     uint64_t getTail(){
         return this->m_tail;
     };
-
+    uint64_t getNextTail(){
+        uint64_t        nexttail;
+        if(this->m_tail == this->m_dataVec.size() - 1){
+            nexttail = 0;
+        }else{
+           nexttail= this->m_tail +1;
+        }
+        return nexttail;
+    };
     uint64_t getLastest(){
         return this->getLastPtr(this->m_tail);
+    };
+    uint64_t getBeforeLastest(){
+        uint64_t        beforetail;
+        if(this->m_tail == 0){
+            return this->m_dataVec.size() - 2;
+        }else if(this->m_tail == 1){
+            return this->m_dataVec.size() - 1;
+        }else{
+            return this->m_tail-2;
+        }
     };
 
     uint64_t getSize(){

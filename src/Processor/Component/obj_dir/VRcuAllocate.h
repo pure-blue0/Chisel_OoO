@@ -5,19 +5,19 @@
 // The class here is then constructed to instantiate the design.
 // See the Verilator manual for examples.
 
-#ifndef VERILATED_VREADYFORCOMMIT_H_
-#define VERILATED_VREADYFORCOMMIT_H_  // guard
+#ifndef VERILATED_VRCUALLOCATE_H_
+#define VERILATED_VRCUALLOCATE_H_  // guard
 
 #include "verilated_heavy.h"
 
-class VReadyForCommit__Syms;
-class VReadyForCommit___024root;
+class VRcuAllocate__Syms;
+class VRcuAllocate___024root;
 
 // This class is the main interface to the Verilated model
-class VReadyForCommit VL_NOT_FINAL {
+class VRcuAllocate VL_NOT_FINAL {
   private:
     // Symbol table holding complete model state (owned by this class)
-    VReadyForCommit__Syms* const vlSymsp;
+    VRcuAllocate__Syms* const vlSymsp;
 
   public:
 
@@ -26,15 +26,29 @@ class VReadyForCommit VL_NOT_FINAL {
     // propagate new values into/out from the Verilated model.
     VL_IN8(&clock,0,0);
     VL_IN8(&reset,0,0);
-    VL_IN8(&io_Rob_Tag,3,0);
-    VL_IN8(&io_Rob_Header,3,0);
-    VL_IN8(&io_Rob_NextHeader,3,0);
-    VL_IN8(&io_m_RobState,2,0);
-    VL_IN8(&io_m_RollBackTag,3,0);
-    VL_IN8(&io_Rob_Usage,3,0);
-    VL_IN8(&io_Header_isStable,0,0);
-    VL_IN8(&io_Header_Function_type,2,0);
-    VL_OUT8(&io_Ready,0,0);
+    VL_IN8(&io_allocCount,1,0);
+    VL_IN8(&io_EN_Update,0,0);
+    VL_IN8(&io_IsaRd_Update,4,0);
+    VL_IN8(&io_Data_Update,5,0);
+    VL_IN8(&io_IntFreelist_phyrd1,5,0);
+    VL_IN8(&io_IntFreelist_phyrd2,5,0);
+    VL_IN8(&io_insn1_IsaRs1,4,0);
+    VL_IN8(&io_insn1_IsaRs2,4,0);
+    VL_IN8(&io_insn1_IsaRd,4,0);
+    VL_IN8(&io_insn2_IsaRs1,4,0);
+    VL_IN8(&io_insn2_IsaRs2,4,0);
+    VL_IN8(&io_insn2_IsaRd,4,0);
+    VL_OUT8(&io_WEN1_IntBusylist,0,0);
+    VL_OUT8(&io_WEN2_IntBusylist,0,0);
+    VL_OUT8(&io_insn1_PhyRs1,5,0);
+    VL_OUT8(&io_insn1_PhyRs2,5,0);
+    VL_OUT8(&io_insn1_PhyRd,5,0);
+    VL_OUT8(&io_insn1_LPhyRd,5,0);
+    VL_OUT8(&io_insn2_PhyRs1,5,0);
+    VL_OUT8(&io_insn2_PhyRs2,5,0);
+    VL_OUT8(&io_insn2_PhyRd,5,0);
+    VL_OUT8(&io_insn2_LPhyRd,5,0);
+    VL_OUT8(&io_Freelist_pop_num,1,0);
 
     // CELLS
     // Public to allow access to /* verilator public */ items.
@@ -42,19 +56,19 @@ class VReadyForCommit VL_NOT_FINAL {
 
     // Root instance pointer to allow access to model internals,
     // including inlined /* verilator public_flat_* */ items.
-    VReadyForCommit___024root* const rootp;
+    VRcuAllocate___024root* const rootp;
 
     // CONSTRUCTORS
     /// Construct the model; called by application code
     /// If contextp is null, then the model will use the default global context
     /// If name is "", then makes a wrapper with a
     /// single model invisible with respect to DPI scope names.
-    explicit VReadyForCommit(VerilatedContext* contextp, const char* name = "TOP");
-    explicit VReadyForCommit(const char* name = "TOP");
+    explicit VRcuAllocate(VerilatedContext* contextp, const char* name = "TOP");
+    explicit VRcuAllocate(const char* name = "TOP");
     /// Destroy the model; called (often implicitly) by application code
-    virtual ~VReadyForCommit();
+    virtual ~VRcuAllocate();
   private:
-    VL_UNCOPYABLE(VReadyForCommit);  ///< Copying not allowed
+    VL_UNCOPYABLE(VRcuAllocate);  ///< Copying not allowed
 
   public:
     // API METHODS

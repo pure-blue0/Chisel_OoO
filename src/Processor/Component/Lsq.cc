@@ -1,6 +1,6 @@
 #include "Lsq.hh"
 #include "../Processor.hh"
-
+//#include "./obj_dir/VLsq_Allocate.h"
 namespace Emulator
 {
     
@@ -56,6 +56,184 @@ Lsq::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
         SuccessCount=this->m_StoreQueue.getAvailEntryCount();
     else SuccessCount = insnPkg.size();
 }
+// void Lsq::Allocate(InsnPkg_t& insnPkg,uint64_t allocCount){
+//     VLsq_Allocate *Lsq_Allocate=new VLsq_Allocate;//创建对象
+//     //连接输入
+//     Lsq_Allocate->io_allocCount=allocCount;
+//     Lsq_Allocate->io_insn1_Function_type=insnPkg[0]->Fu;
+//     Lsq_Allocate->io_insn2_Function_type=insnPkg[1]->Fu;
+//     Lsq_Allocate->io_insn1_subop=insnPkg[0]->SubOp;
+//     Lsq_Allocate->io_insn2_subop=insnPkg[1]->SubOp;
+
+//     Lsq_Allocate->io_load_queue_tail=this->m_LoadQueue.getTail();
+//     Lsq_Allocate->io_store_queue_tail=this->m_StoreQueue.getTail();
+//     Lsq_Allocate->io_load_queue_nextTail=this->m_LoadQueue.getNextTail();
+//     Lsq_Allocate->io_store_queue_nextTail=this->m_StoreQueue.getNextTail();
+
+//     //连接输出
+//     Lsq_Allocate->eval();
+   
+//     LDQ_entry_t ldq_entry1; 
+//     ldq_entry1.state=loadState_t(Lsq_Allocate->io_load_insn1_state);
+//     ldq_entry1.commited=Lsq_Allocate->io_load_committed1;
+//     ldq_entry1.killed=Lsq_Allocate->io_load_killed1;
+//     ldq_entry1.addressReady=Lsq_Allocate->io_load_addressReady1;
+//     ldq_entry1.address=Lsq_Allocate->io_load_address1;
+//     ldq_entry1.insnPtr = insnPkg[0];
+    
+//     LDQ_entry_t ldq_entry2; 
+//     ldq_entry2.state=loadState_t(Lsq_Allocate->io_load_insn2_state);
+//     ldq_entry2.commited=Lsq_Allocate->io_load_committed2;
+//     ldq_entry2.killed=Lsq_Allocate->io_load_killed2;
+//     ldq_entry2.addressReady=Lsq_Allocate->io_load_addressReady2;
+//     ldq_entry2.address=Lsq_Allocate->io_load_address2;
+//     ldq_entry2.insnPtr = insnPkg[1];
+
+//     STQ_entry_t stq_entry1;
+//     stq_entry1.state=storeState_t(Lsq_Allocate->io_store_insn1_state);
+//     stq_entry1.commited=Lsq_Allocate->io_store_committed1;
+//     stq_entry1.killed=Lsq_Allocate->io_store_killed1;
+//     stq_entry1.addressReady=Lsq_Allocate->io_store_addressReady1;
+//     stq_entry1.address=Lsq_Allocate->io_store_address1;
+//     stq_entry1.dataReady=Lsq_Allocate->io_store_dataReady1;
+//     stq_entry1.data=Lsq_Allocate->io_store_data1;
+//     stq_entry1.SubOp=Lsq_Allocate->io_store_subop1;
+    
+    
+//     STQ_entry_t stq_entry2;
+//     stq_entry2.state=storeState_t(Lsq_Allocate->io_store_insn2_state);
+//     stq_entry2.commited=Lsq_Allocate->io_store_committed2;
+//     stq_entry2.killed=Lsq_Allocate->io_store_killed2;
+//     stq_entry2.addressReady=Lsq_Allocate->io_store_addressReady2;
+//     stq_entry2.address=Lsq_Allocate->io_store_address2;
+//     stq_entry2.dataReady=Lsq_Allocate->io_store_dataReady2;
+//     stq_entry2.data=Lsq_Allocate->io_store_data2;
+//     stq_entry2.SubOp=Lsq_Allocate->io_store_subop2;
+//     //以下代码模拟load/store queue 收到en信号后的操作
+//     if(Lsq_Allocate->io_wEn1_load_queue){
+//         insnPkg[0]->LSQTag=Lsq_Allocate->io_insn1_LSQTag;
+//         this->m_LoadQueue[Lsq_Allocate->io_insn1_LSQTag]=ldq_entry1;
+//         this->m_LoadQueue.TailInc();
+//     }
+//     if(Lsq_Allocate->io_wEn2_load_queue){
+//         insnPkg[1]->LSQTag=Lsq_Allocate->io_insn2_LSQTag;
+//         this->m_LoadQueue[Lsq_Allocate->io_insn2_LSQTag]=ldq_entry2;
+//         this->m_LoadQueue.TailInc();
+//     }
+//     if(Lsq_Allocate->io_wEn1_store_queue){
+//         insnPkg[0]->LSQTag=Lsq_Allocate->io_insn1_LSQTag;
+//         this->m_StoreQueue[Lsq_Allocate->io_insn1_LSQTag]=stq_entry1;
+//         this->m_StoreQueue.TailInc();
+//     }
+//     if(Lsq_Allocate->io_wEn2_store_queue){
+//         insnPkg[1]->LSQTag=Lsq_Allocate->io_insn2_LSQTag;
+//         this->m_StoreQueue[Lsq_Allocate->io_insn2_LSQTag]=stq_entry2;
+//         this->m_StoreQueue.TailInc();
+//     }
+//     delete Lsq_Allocate;//删除创建的对象
+//     //debug code
+//     /*
+//     bool a=false;
+//     bool b=false;
+//     bool c=false;
+//     bool d=false;
+//     for(size_t i = 0 ; i < allocCount; i++){
+//         auto& insn = insnPkg[i];
+        
+//         if(insn->Fu == funcType_t::LDU){
+//             LDQ_entry_t t; 
+//             t.state = loadState_t::load_WaitSend;
+//             t.commited = false;
+//             t.killed = false;
+//             t.addressReady = false;
+//             t.address      = 0;
+//             t.insnPtr = insn;
+//             // insn->LSQTag = this->m_LoadQueue.Allocate();//获取load queue的尾指针，并将尾指针+1
+//             //this->m_LoadQueue[insn->LSQTag] = t;//将数据存入load queue的尾部
+//             //DPRINTF(temptest,"write in load");
+//             if(i){
+//                 b=1;
+//                 if(ldq_entry2.state!=t.state||ldq_entry2.killed!=t.killed||ldq_entry2.addressReady!=t.address||
+//                    ldq_entry2.insnPtr!=t.insnPtr||ldq_entry2.state!=t.state)
+//                 {
+//                     DPRINTF(temptest,"error load2");
+//                     DPRINTF(temptest,"V: {:} {:} {:} {:}",
+//                     ldq_entry2.state,ldq_entry2.killed,ldq_entry2.addressReady,ldq_entry2.address);
+//                     DPRINTF(temptest,"O: {:} {:} {:} {:} ",
+//                     t.state,t.killed,t.addressReady,t.address);
+//                     exit(1);
+//                 }
+//             }
+//             else{
+//                 if(ldq_entry1.state!=t.state||ldq_entry1.killed!=t.killed||ldq_entry1.addressReady!=t.address||
+//                    ldq_entry1.insnPtr!=t.insnPtr||ldq_entry1.state!=t.state)
+//                 {
+//                     DPRINTF(temptest,"error load1");
+//                     DPRINTF(temptest,"V: {:} {:} {:} {:} ",
+//                     ldq_entry1.state,ldq_entry1.killed,ldq_entry1.addressReady,ldq_entry1.address);
+//                     DPRINTF(temptest,"O: {:} {:} {:} {:} ",
+//                     t.state,t.killed,t.addressReady,t.address);
+//                     exit(1);
+//                 }
+//                 a=1;
+                
+//             }
+//         }else if (insn->Fu == funcType_t::STU){
+//             STQ_entry_t t;
+//             t.state = storeState_t::store_WaitSend;
+//             t.commited = false;
+//             t.addressReady = false;
+//             t.address = 0;
+//             t.killed = false;
+//             t.dataReady = false;;
+//             t.data = 0 ;
+//             t.SubOp = insn->SubOp;
+//             //insn->LSQTag = this->m_StoreQueue.Allocate();//获取store queue的尾指针，并将尾指针+1
+//             //this->m_StoreQueue[insn->LSQTag] = t;  //将数据存入store queue的尾部
+//             //DPRINTF(temptest,"write in store");
+//             if(i){
+//                 d=1;
+//             }
+//             else{
+//                 c=1;
+//             }
+//         }
+//     }
+//     if(allocCount==1){
+//         if(a!=Lsq_Allocate->io_wEn1_load_queue||b!=Lsq_Allocate->io_wEn2_load_queue||c!=Lsq_Allocate->io_wEn1_store_queue
+//         ||d!=Lsq_Allocate->io_wEn2_store_queue||insnPkg[0]->LSQTag!=Lsq_Allocate->io_insn1_LSQTag){
+//             DPRINTF(temptest,"Input: {:} O: {:} {:} V: {:} {:}",
+//             allocCount,insnPkg[0]->Fu,insnPkg[1]->Fu,Lsq_Allocate->io_insn1_Function_type,Lsq_Allocate->io_insn2_Function_type);
+//             DPRINTF(temptest,"Input: LOAD: {:} {:} STORE: {:} {:}",
+//             Lsq_Allocate->io_load_queue_tail,Lsq_Allocate->io_load_queue_nextTail,Lsq_Allocate->io_store_queue_tail,Lsq_Allocate->io_store_queue_nextTail);
+//             DPRINTF(temptest,"O: LOAD1 {:#x} {:} LOAD2 {:#x} {:} STORE1 {:#x} {:} STORE2 {:#x} {:}",
+//             a,insnPkg[0]->LSQTag,b,insnPkg[1]->LSQTag,
+//             c,insnPkg[0]->LSQTag,d,insnPkg[1]->LSQTag);
+//             DPRINTF(temptest,"V: LOAD1 {:#x} {:} LOAD2 {:#x} {:} STORE1 {:#x} {:} STORE2 {:#x} {:}",
+//             Lsq_Allocate->io_wEn1_load_queue,Lsq_Allocate->io_insn1_LSQTag,Lsq_Allocate->io_wEn2_load_queue,Lsq_Allocate->io_insn2_LSQTag,
+//             Lsq_Allocate->io_wEn1_store_queue,Lsq_Allocate->io_insn1_LSQTag,Lsq_Allocate->io_wEn2_store_queue,Lsq_Allocate->io_insn2_LSQTag);
+//             exit(1);
+//         }
+//     }
+//     else if(allocCount==2){
+//         if(a!=Lsq_Allocate->io_wEn1_load_queue||b!=Lsq_Allocate->io_wEn2_load_queue||c!=Lsq_Allocate->io_wEn1_store_queue
+//         ||d!=Lsq_Allocate->io_wEn2_store_queue||insnPkg[0]->LSQTag!=Lsq_Allocate->io_insn1_LSQTag||insnPkg[1]->LSQTag!=Lsq_Allocate->io_insn2_LSQTag){
+//             DPRINTF(temptest,"Input: {:} O: {:} {:} V: {:} {:}",
+//             allocCount,insnPkg[0]->Fu,insnPkg[1]->Fu,Lsq_Allocate->io_insn1_Function_type,Lsq_Allocate->io_insn2_Function_type);
+//             DPRINTF(temptest,"Input: LOAD: {:} {:} STORE: {:} {:}",
+//             Lsq_Allocate->io_load_queue_tail,Lsq_Allocate->io_load_queue_nextTail,Lsq_Allocate->io_store_queue_tail,Lsq_Allocate->io_store_queue_nextTail);
+//             DPRINTF(temptest,"O: LOAD1 {:#x} {:} LOAD2 {:#x} {:} STORE1 {:#x} {:} STORE2 {:#x} {:}",
+//             a,insnPkg[0]->LSQTag,b,insnPkg[1]->LSQTag,
+//             c,insnPkg[0]->LSQTag,d,insnPkg[1]->LSQTag);
+//             DPRINTF(temptest,"V: LOAD1 {:#x} {:} LOAD2 {:#x} {:} STORE1 {:#x} {:} STORE2 {:#x} {:}",
+//             Lsq_Allocate->io_wEn1_load_queue,Lsq_Allocate->io_insn1_LSQTag,Lsq_Allocate->io_wEn2_load_queue,Lsq_Allocate->io_insn2_LSQTag,
+//             Lsq_Allocate->io_wEn1_store_queue,Lsq_Allocate->io_insn1_LSQTag,Lsq_Allocate->io_wEn2_store_queue,Lsq_Allocate->io_insn2_LSQTag);
+//             exit(1);
+//         }
+//     }
+//     */
+    
+// }
 
 void 
 Lsq::Allocate(InsnPkg_t& insnPkg,uint64_t allocCount){

@@ -136,6 +136,7 @@ public:
                 InsnPtr_t   insn;
                 bool        Success;
                 this->IssueSelect(index,insn,Success);
+               // if(insn->Pc==0x80002cc4)DPRINTF(temptest,"RobTag[{}],Pc[{:#x}] {:#x}-> 555555555",insn->RobTag,insn->Pc,Success);
                 if(Success){
                     this->Deallocate(index);
                     DPRINTF(Issue,"RobTag[{}],Pc[{:#x}] -> Leaving Queue",insn->RobTag,insn->Pc);

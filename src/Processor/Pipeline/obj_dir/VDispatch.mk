@@ -2,9 +2,9 @@
 # DESCRIPTION: Verilator output: Makefile for building Verilated archive or executable
 #
 # Execute this makefile from the object directory:
-#    make -f VReadyForCommit.mk
+#    make -f VDispatch.mk
 
-default: VReadyForCommit__ALL.a
+default: VDispatch__ALL.a
 
 ### Constants...
 # Perl executable (from $PERL)
@@ -30,9 +30,9 @@ VM_SC_TARGET_ARCH = linux
 
 ### Vars...
 # Design prefix (from --prefix)
-VM_PREFIX = VReadyForCommit
+VM_PREFIX = VDispatch
 # Module prefix (from --prefix)
-VM_MODPREFIX = VReadyForCommit
+VM_MODPREFIX = VDispatch
 # User CFLAGS (from -CFLAGS on Verilator command line)
 VM_USER_CFLAGS = \
 
@@ -48,7 +48,7 @@ VM_USER_DIR = \
 
 ### Default rules...
 # Include list of all generated classes
-include VReadyForCommit_classes.mk
+include VDispatch_classes.mk
 # Include global rules
 include $(VERILATOR_ROOT)/include/verilated.mk
 
