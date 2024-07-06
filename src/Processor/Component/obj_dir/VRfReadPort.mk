@@ -2,9 +2,9 @@
 # DESCRIPTION: Verilator output: Makefile for building Verilated archive or executable
 #
 # Execute this makefile from the object directory:
-#    make -f VRcuAllocate.mk
+#    make -f VRfReadPort.mk
 
-default: VRcuAllocate__ALL.a
+default: VRfReadPort__ALL.a
 
 ### Constants...
 # Perl executable (from $PERL)
@@ -30,9 +30,9 @@ VM_SC_TARGET_ARCH = linux
 
 ### Vars...
 # Design prefix (from --prefix)
-VM_PREFIX = VRcuAllocate
+VM_PREFIX = VRfReadPort
 # Module prefix (from --prefix)
-VM_MODPREFIX = VRcuAllocate
+VM_MODPREFIX = VRfReadPort
 # User CFLAGS (from -CFLAGS on Verilator command line)
 VM_USER_CFLAGS = \
 
@@ -48,7 +48,7 @@ VM_USER_DIR = \
 
 ### Default rules...
 # Include list of all generated classes
-include VRcuAllocate_classes.mk
+include VRfReadPort_classes.mk
 # Include global rules
 include $(VERILATOR_ROOT)/include/verilated.mk
 

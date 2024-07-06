@@ -5,19 +5,19 @@
 // The class here is then constructed to instantiate the design.
 // See the Verilator manual for examples.
 
-#ifndef VERILATED_VRCUALLOCATE_H_
-#define VERILATED_VRCUALLOCATE_H_  // guard
+#ifndef VERILATED_VRFREADPORT_H_
+#define VERILATED_VRFREADPORT_H_  // guard
 
 #include "verilated_heavy.h"
 
-class VRcuAllocate__Syms;
-class VRcuAllocate___024root;
+class VRfReadPort__Syms;
+class VRfReadPort___024root;
 
 // This class is the main interface to the Verilated model
-class VRcuAllocate VL_NOT_FINAL {
+class VRfReadPort VL_NOT_FINAL {
   private:
     // Symbol table holding complete model state (owned by this class)
-    VRcuAllocate__Syms* const vlSymsp;
+    VRfReadPort__Syms* const vlSymsp;
 
   public:
 
@@ -26,29 +26,35 @@ class VRcuAllocate VL_NOT_FINAL {
     // propagate new values into/out from the Verilated model.
     VL_IN8(&clock,0,0);
     VL_IN8(&reset,0,0);
-    VL_IN8(&io_allocCount,1,0);
-    VL_IN8(&io_EN_Update,0,0);
-    VL_IN8(&io_IsaRd_Update,4,0);
-    VL_IN8(&io_Data_Update,5,0);
-    VL_IN8(&io_IntFreelist_phyrd1,5,0);
-    VL_IN8(&io_IntFreelist_phyrd2,5,0);
-    VL_IN8(&io_insn1_IsaRs1,4,0);
-    VL_IN8(&io_insn1_IsaRs2,4,0);
-    VL_IN8(&io_insn1_IsaRd,4,0);
-    VL_IN8(&io_insn2_IsaRs1,4,0);
-    VL_IN8(&io_insn2_IsaRs2,4,0);
-    VL_IN8(&io_insn2_IsaRd,4,0);
-    VL_OUT8(&io_WEN1_IntBusylist,0,0);
-    VL_OUT8(&io_WEN2_IntBusylist,0,0);
-    VL_OUT8(&io_insn1_PhyRs1,5,0);
-    VL_OUT8(&io_insn1_PhyRs2,5,0);
-    VL_OUT8(&io_insn1_PhyRd,5,0);
-    VL_OUT8(&io_insn1_LPhyRd,5,0);
-    VL_OUT8(&io_insn2_PhyRs1,5,0);
-    VL_OUT8(&io_insn2_PhyRs2,5,0);
-    VL_OUT8(&io_insn2_PhyRd,5,0);
-    VL_OUT8(&io_insn2_LPhyRd,5,0);
-    VL_OUT8(&io_Freelist_pop_num,1,0);
+    VL_IN8(&io_Valid,0,0);
+    VL_IN8(&io_Insn_Operand1Ready,0,0);
+    VL_IN64(&io_Insn_PhyRs1_data,63,0);
+    VL_IN8(&io_Insn_Operand2Ready,0,0);
+    VL_IN64(&io_Insn_PhyRs2_data,63,0);
+    VL_IN8(&io_desIndex_in,2,0);
+    VL_IN8(&io_Sub_OP_in,3,0);
+    VL_IN64(&io_imm_in,63,0);
+    VL_IN64(&io_pc_in,63,0);
+    VL_IN8(&io_Pred_taken_in,0,0);
+    VL_IN64(&io_pred_target_in,63,0);
+    VL_IN8(&io_Function_type_in,2,0);
+    VL_IN64(&io_Insn_operand1_in,63,0);
+    VL_IN64(&io_Insn_operand2_in,63,0);
+    VL_IN8(&io_RobTag_in,3,0);
+    VL_IN8(&io_LSQTag_in,3,0);
+    VL_OUT8(&io_Out_valid,0,0);
+    VL_OUT8(&io_desIndex,2,0);
+    VL_OUT64(&io_Insn_operand1,63,0);
+    VL_OUT64(&io_Insn_operand2,63,0);
+    VL_OUT8(&io_Sub_OP_out,3,0);
+    VL_OUT8(&io_desIndex_out,2,0);
+    VL_OUT64(&io_imm_out,63,0);
+    VL_OUT64(&io_pc_out,63,0);
+    VL_OUT8(&io_Pred_taken_out,0,0);
+    VL_OUT64(&io_pred_target_out,63,0);
+    VL_OUT8(&io_Function_type_out,2,0);
+    VL_OUT8(&io_RobTag_out,3,0);
+    VL_OUT8(&io_LSQTag_out,3,0);
 
     // CELLS
     // Public to allow access to /* verilator public */ items.
@@ -56,19 +62,19 @@ class VRcuAllocate VL_NOT_FINAL {
 
     // Root instance pointer to allow access to model internals,
     // including inlined /* verilator public_flat_* */ items.
-    VRcuAllocate___024root* const rootp;
+    VRfReadPort___024root* const rootp;
 
     // CONSTRUCTORS
     /// Construct the model; called by application code
     /// If contextp is null, then the model will use the default global context
     /// If name is "", then makes a wrapper with a
     /// single model invisible with respect to DPI scope names.
-    explicit VRcuAllocate(VerilatedContext* contextp, const char* name = "TOP");
-    explicit VRcuAllocate(const char* name = "TOP");
+    explicit VRfReadPort(VerilatedContext* contextp, const char* name = "TOP");
+    explicit VRfReadPort(const char* name = "TOP");
     /// Destroy the model; called (often implicitly) by application code
-    virtual ~VRcuAllocate();
+    virtual ~VRfReadPort();
   private:
-    VL_UNCOPYABLE(VRcuAllocate);  ///< Copying not allowed
+    VL_UNCOPYABLE(VRfReadPort);  ///< Copying not allowed
 
   public:
     // API METHODS

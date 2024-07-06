@@ -4,31 +4,31 @@
 // Internal details; most calling programs do not need this header,
 // unless using verilator public meta comments.
 
-#ifndef VERILATED_VRCUALLOCATE__SYMS_H_
-#define VERILATED_VRCUALLOCATE__SYMS_H_  // guard
+#ifndef VERILATED_VRFREADPORT__SYMS_H_
+#define VERILATED_VRFREADPORT__SYMS_H_  // guard
 
 #include "verilated_heavy.h"
 
 // INCLUDE MODEL CLASS
 
-#include "VRcuAllocate.h"
+#include "VRfReadPort.h"
 
 // INCLUDE MODULE CLASSES
-#include "VRcuAllocate___024root.h"
+#include "VRfReadPort___024root.h"
 
 // SYMS CLASS (contains all model state)
-class VRcuAllocate__Syms final : public VerilatedSyms {
+class VRfReadPort__Syms final : public VerilatedSyms {
   public:
     // INTERNAL STATE
-    VRcuAllocate* const __Vm_modelp;
+    VRfReadPort* const __Vm_modelp;
     bool __Vm_didInit = false;
 
     // MODULE INSTANCE STATE
-    VRcuAllocate___024root         TOP;
+    VRfReadPort___024root          TOP;
 
     // CONSTRUCTORS
-    VRcuAllocate__Syms(VerilatedContext* contextp, const char* namep, VRcuAllocate* modelp);
-    ~VRcuAllocate__Syms();
+    VRfReadPort__Syms(VerilatedContext* contextp, const char* namep, VRfReadPort* modelp);
+    ~VRfReadPort__Syms();
 
     // METHODS
     const char* name() { return TOP.name(); }

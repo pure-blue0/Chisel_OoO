@@ -2,7 +2,7 @@
 #include "../Processor.hh"
 #include "../../RISCV/encoding.out.h"
 //#include "./obj_dir/VCreateRobEntry.h"
-#include "./obj_dir/VRcuAllocate.h"
+//#include "./obj_dir/VRcuAllocate.h"
 namespace Emulator
 {
     
@@ -28,11 +28,11 @@ Rcu::Rcu(
     m_AllocWidth(AllocWidth),
     m_DeallocWidth(DeallocWidth)
 {
-    RcuAllocate=new VRcuAllocate;//创建对象
+   // RcuAllocate=new VRcuAllocate;//创建对象
 }
 
 Rcu::~Rcu(){
-    delete this->RcuAllocate;
+    //delete this->RcuAllocate;
 }
 
 void
@@ -217,168 +217,168 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
         //     this->m_Rob[this->m_Rob.getLastest()].pc,this->m_Rob[this->m_Rob.getLastest()].phyRd,this->m_Rob[this->m_Rob.getLastest()].valid);
     }   
 }
-void
-Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
-   
-
-    //连接输入
-    RcuAllocate->io_allocCount=allocCount;
-    RcuAllocate->io_EN_Update=this->m_RN_EN_Update;
-    RcuAllocate->io_IsaRd_Update=this->m_RN_IsaRd_Update;
-    RcuAllocate->io_Data_Update=this->m_RN_Data_Update;
-    RcuAllocate->io_IntFreelist_phyrd1=this->m_IntFreelist.front();
-    RcuAllocate->io_IntFreelist_phyrd2=this->m_IntFreelist.next_front();
-    RcuAllocate->io_insn1_IsaRs1=insnPkg[0]->IsaRs1;
-    RcuAllocate->io_insn1_IsaRs2=insnPkg[0]->IsaRs2;
-    RcuAllocate->io_insn1_IsaRd=insnPkg[0]->IsaRd;
-    RcuAllocate->io_insn2_IsaRs1=insnPkg[1]->IsaRs1;
-    RcuAllocate->io_insn2_IsaRs2=insnPkg[1]->IsaRs2;
-    RcuAllocate->io_insn2_IsaRd=insnPkg[1]->IsaRd;
-    //模拟时钟上升沿
-    RcuAllocate->clock=0;
-    RcuAllocate->eval();
-     
-    //连接输出
-    if(allocCount>0){
-        insnPkg[0]->PhyRs1=RcuAllocate->io_insn1_PhyRs1;
-        insnPkg[0]->PhyRs2=RcuAllocate->io_insn1_PhyRs2;
-        insnPkg[0]->PhyRd=RcuAllocate->io_insn1_PhyRd;
-        insnPkg[0]->LPhyRd=RcuAllocate->io_insn1_LPhyRd;
-    }
-    if(allocCount==2){
-        insnPkg[1]->PhyRs1=RcuAllocate->io_insn2_PhyRs1;
-        insnPkg[1]->PhyRs2=RcuAllocate->io_insn2_PhyRs2;
-        insnPkg[1]->PhyRd=RcuAllocate->io_insn2_PhyRd;
-        insnPkg[1]->LPhyRd=RcuAllocate->io_insn2_LPhyRd;
-    }
-    
-
-    if(RcuAllocate->io_WEN1_IntBusylist){
-        this->m_IntBusylist[insnPkg[0]->PhyRd].allocated = true;
-        this->m_IntBusylist[insnPkg[0]->PhyRd].done      = false;
-        this->m_IntBusylist[insnPkg[0]->PhyRd].forwarding = false;
-    }
-    if(RcuAllocate->io_WEN2_IntBusylist){
-        this->m_IntBusylist[insnPkg[1]->PhyRd].allocated = true;
-        this->m_IntBusylist[insnPkg[1]->PhyRd].done      = false;
-        this->m_IntBusylist[insnPkg[1]->PhyRd].forwarding = false;
-    }
-    if(RcuAllocate->io_Freelist_pop_num==1){
-        this->m_IntFreelist.pop_front();
-    }else if(RcuAllocate->io_Freelist_pop_num==2){
-        this->m_IntFreelist.pop_front();
-        this->m_IntFreelist.pop_front();
-    }
-
-    // for(size_t i = 0; i < allocCount; i++){
-    //     InsnPtr_t insn = insnPkg[i];
-    //     insn->PhyRs1 = this->m_IntRenameTable[insn->IsaRs1];
-    //     insn->PhyRs2 = this->m_IntRenameTable[insn->IsaRs2];
-    //     insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
-    //     if(insn->IsaRd != 0){
-    //         this->m_IntFreelist.pop();//取出空闲的reg id
-    //         this->m_IntBusylist[insn->PhyRd].allocated = true;//根据reg id 将busylist中对应的entry进行更新
-    //         this->m_IntBusylist[insn->PhyRd].done      = false;
-    //         this->m_IntBusylist[insn->PhyRd].forwarding = false;
-    //         this->m_IntRenameTable[insn->IsaRd]        = insn->PhyRd;//保存rd对应的reg id
-    //     }
-    // }
-
-    // if(allocCount==2){//处理指令2与指令1之间可能存在的依赖
-    //         InsnPtr_t& insn1 = insnPkg[0];
-    //         InsnPtr_t& Insn2 = insnPkg[1];
-    //         if(insn1->IsaRd != 0){
-    //             if(insn1->IsaRd == Insn2->IsaRs1)Insn2->PhyRs1 = insn1->PhyRd;
-    //             if(insn1->IsaRd == Insn2->IsaRs2)Insn2->PhyRs2 = insn1->PhyRd;
-    //             if(insn1->IsaRd == Insn2->IsaRd) Insn2->LPhyRd = insn1->PhyRd;
-    //         }
-    // }
-    // if(allocCount==1)
-    // {
-    //     if(insnPkg[0]->PhyRs1!=RcuAllocate->io_insn1_PhyRs1||insnPkg[0]->PhyRs2!=RcuAllocate->io_insn1_PhyRs2||
-    //         insnPkg[0]->PhyRd!=RcuAllocate->io_insn1_PhyRd||insnPkg[0]->LPhyRd!=RcuAllocate->io_insn1_LPhyRd)
-    //     {   
-    //         DPRINTF(temptest,"Input:I1 {:} {:} {:} {:} {:}",
-    //         RcuAllocate->io_EN_Update,RcuAllocate->io_IsaRd_Update=this->m_RN_IsaRd_Update,RcuAllocate->io_Data_Update,
-    //         RcuAllocate->io_IntFreelist_phyrd1,RcuAllocate->io_IntFreelist_phyrd2);
-    //         DPRINTF(temptest,"Input:I1 {:} {:} {:} | {:} {:} {:} I2 {:} {:} {:} | {:} {:} {:}",
-    //         insnPkg[0]->IsaRs1,insnPkg[0]->IsaRs2,insnPkg[0]->IsaRd,
-    //         RcuAllocate->io_insn1_IsaRs1,RcuAllocate->io_insn1_IsaRs2,RcuAllocate->io_insn1_IsaRd,
-    //         insnPkg[1]->IsaRs1,insnPkg[1]->IsaRs2,insnPkg[1]->IsaRd,
-    //         RcuAllocate->io_insn2_IsaRs1,RcuAllocate->io_insn2_IsaRs2,RcuAllocate->io_insn2_IsaRd);
-    //         DPRINTF(temptest,"V:n {:} I1 {:} {:} {:} {:} I2 {:} {:} {:} {:}",
-    //         allocCount,RcuAllocate->io_insn1_PhyRs1,RcuAllocate->io_insn1_PhyRs2,RcuAllocate->io_insn1_PhyRd,
-    //         RcuAllocate->io_insn1_LPhyRd,RcuAllocate->io_insn2_PhyRs1,RcuAllocate->io_insn2_PhyRs2,
-    //         RcuAllocate->io_insn2_PhyRd,RcuAllocate->io_insn2_LPhyRd);
-    //         DPRINTF(temptest,"O:n {:} I1 {:} {:} {:} {:} I2 {:} {:} {:} {:}",
-    //         allocCount,insnPkg[0]->PhyRs1,insnPkg[0]->PhyRs2,insnPkg[0]->PhyRd,insnPkg[0]->LPhyRd,
-    //         insnPkg[1]->PhyRs1,insnPkg[1]->PhyRs2,insnPkg[1]->PhyRd,insnPkg[1]->LPhyRd);
-    //         exit(1);
-    //     }
-    // }
-    // if(allocCount==2)
-    // {
-    //     if(insnPkg[0]->PhyRs1!=RcuAllocate->io_insn1_PhyRs1||insnPkg[0]->PhyRs2!=RcuAllocate->io_insn1_PhyRs2||
-    //         insnPkg[0]->PhyRd!=RcuAllocate->io_insn1_PhyRd||insnPkg[0]->LPhyRd!=RcuAllocate->io_insn1_LPhyRd||
-    //         insnPkg[1]->PhyRs1!=RcuAllocate->io_insn2_PhyRs1||insnPkg[1]->PhyRs2!=RcuAllocate->io_insn2_PhyRs2||
-    //         insnPkg[1]->PhyRd!=RcuAllocate->io_insn2_PhyRd||insnPkg[1]->LPhyRd!=RcuAllocate->io_insn2_LPhyRd)
-    //     {   
-    //         DPRINTF(temptest,"Input:I1 {:} {:} {:} {:} {:}",
-    //         RcuAllocate->io_EN_Update,RcuAllocate->io_IsaRd_Update=this->m_RN_IsaRd_Update,RcuAllocate->io_Data_Update,
-    //         RcuAllocate->io_IntFreelist_phyrd1,RcuAllocate->io_IntFreelist_phyrd2);
-    //         DPRINTF(temptest,"Input:I1 {:} {:} {:} | {:} {:} {:} I2 {:} {:} {:} | {:} {:} {:}",
-    //         insnPkg[0]->IsaRs1,insnPkg[0]->IsaRs2,insnPkg[0]->IsaRd,
-    //         RcuAllocate->io_insn1_IsaRs1,RcuAllocate->io_insn1_IsaRs2,RcuAllocate->io_insn1_IsaRd,
-    //         insnPkg[1]->IsaRs1,insnPkg[1]->IsaRs2,insnPkg[1]->IsaRd,
-    //         RcuAllocate->io_insn2_IsaRs1,RcuAllocate->io_insn2_IsaRs2,RcuAllocate->io_insn2_IsaRd);
-    //         DPRINTF(temptest,"V:n {:} I1 {:} {:} {:} {:} I2 {:} {:} {:} {:}",
-    //         allocCount,RcuAllocate->io_insn1_PhyRs1,RcuAllocate->io_insn1_PhyRs2,RcuAllocate->io_insn1_PhyRd,
-    //         RcuAllocate->io_insn1_LPhyRd,RcuAllocate->io_insn2_PhyRs1,RcuAllocate->io_insn2_PhyRs2,
-    //         RcuAllocate->io_insn2_PhyRd,RcuAllocate->io_insn2_LPhyRd);
-    //         DPRINTF(temptest,"O:n {:} I1 {:} {:} {:} {:} I2 {:} {:} {:} {:}",
-    //         allocCount,insnPkg[0]->PhyRs1,insnPkg[0]->PhyRs2,insnPkg[0]->PhyRd,insnPkg[0]->LPhyRd,
-    //         insnPkg[1]->PhyRs1,insnPkg[1]->PhyRs2,insnPkg[1]->PhyRd,insnPkg[1]->LPhyRd);
-    //         exit(1);
-    //     }
-    // }
-    
-    RcuAllocate->clock=1;
-    RcuAllocate->eval();
-
-    this->m_RN_EN_Update=0;//wait next updata
-    
-    this->CreateRobEntry(insnPkg,allocCount);//发送创建rob请求
-    
-}
-
 // void
 // Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
-//     for(size_t i = 0; i < allocCount; i++){
-//         InsnPtr_t insn = insnPkg[i];
-//         insn->PhyRs1 = this->m_IntRenameTable[insn->IsaRs1];
-//         insn->PhyRs2 = this->m_IntRenameTable[insn->IsaRs2];
-//         insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
-//         if(insn->IsaRd != 0){
-//             insn->PhyRd = this->m_IntFreelist.pop();//取出空闲的reg id
-//             this->m_IntBusylist[insn->PhyRd].allocated = true;//根据reg id 将busylist中对应的entry进行更新
-//             this->m_IntBusylist[insn->PhyRd].done      = false;
-//             this->m_IntBusylist[insn->PhyRd].forwarding = false;
-//             this->m_IntRenameTable[insn->IsaRd]        = insn->PhyRd;//保存rd对应的reg id
-//         }
+   
+
+//     //连接输入
+//     RcuAllocate->io_allocCount=allocCount;
+//     RcuAllocate->io_EN_Update=this->m_RN_EN_Update;
+//     RcuAllocate->io_IsaRd_Update=this->m_RN_IsaRd_Update;
+//     RcuAllocate->io_Data_Update=this->m_RN_Data_Update;
+//     RcuAllocate->io_IntFreelist_phyrd1=this->m_IntFreelist.front();
+//     RcuAllocate->io_IntFreelist_phyrd2=this->m_IntFreelist.next_front();
+//     RcuAllocate->io_insn1_IsaRs1=insnPkg[0]->IsaRs1;
+//     RcuAllocate->io_insn1_IsaRs2=insnPkg[0]->IsaRs2;
+//     RcuAllocate->io_insn1_IsaRd=insnPkg[0]->IsaRd;
+//     RcuAllocate->io_insn2_IsaRs1=insnPkg[1]->IsaRs1;
+//     RcuAllocate->io_insn2_IsaRs2=insnPkg[1]->IsaRs2;
+//     RcuAllocate->io_insn2_IsaRd=insnPkg[1]->IsaRd;
+//     //模拟时钟上升沿
+//     RcuAllocate->clock=0;
+//     RcuAllocate->eval();
+     
+//     //连接输出
+//     if(allocCount>0){
+//         insnPkg[0]->PhyRs1=RcuAllocate->io_insn1_PhyRs1;
+//         insnPkg[0]->PhyRs2=RcuAllocate->io_insn1_PhyRs2;
+//         insnPkg[0]->PhyRd=RcuAllocate->io_insn1_PhyRd;
+//         insnPkg[0]->LPhyRd=RcuAllocate->io_insn1_LPhyRd;
 //     }
-//     if(allocCount==2){//处理指令2与指令1之间可能存在的依赖
-//             InsnPtr_t& insn1 = insnPkg[0];
-//             InsnPtr_t& Insn2 = insnPkg[1];
-//             if(insn1->IsaRd != 0){
-//                 if(insn1->IsaRd == Insn2->IsaRs1)Insn2->PhyRs1 = insn1->PhyRd;
-//                 if(insn1->IsaRd == Insn2->IsaRs2)Insn2->PhyRs2 = insn1->PhyRd;
-//                 if(insn1->IsaRd == Insn2->IsaRd) Insn2->LPhyRd = insn1->PhyRd;
-//             }
+//     if(allocCount==2){
+//         insnPkg[1]->PhyRs1=RcuAllocate->io_insn2_PhyRs1;
+//         insnPkg[1]->PhyRs2=RcuAllocate->io_insn2_PhyRs2;
+//         insnPkg[1]->PhyRd=RcuAllocate->io_insn2_PhyRd;
+//         insnPkg[1]->LPhyRd=RcuAllocate->io_insn2_LPhyRd;
 //     }
+    
+
+//     if(RcuAllocate->io_WEN1_IntBusylist){
+//         this->m_IntBusylist[insnPkg[0]->PhyRd].allocated = true;
+//         this->m_IntBusylist[insnPkg[0]->PhyRd].done      = false;
+//         this->m_IntBusylist[insnPkg[0]->PhyRd].forwarding = false;
+//     }
+//     if(RcuAllocate->io_WEN2_IntBusylist){
+//         this->m_IntBusylist[insnPkg[1]->PhyRd].allocated = true;
+//         this->m_IntBusylist[insnPkg[1]->PhyRd].done      = false;
+//         this->m_IntBusylist[insnPkg[1]->PhyRd].forwarding = false;
+//     }
+//     if(RcuAllocate->io_Freelist_pop_num==1){
+//         this->m_IntFreelist.pop_front();
+//     }else if(RcuAllocate->io_Freelist_pop_num==2){
+//         this->m_IntFreelist.pop_front();
+//         this->m_IntFreelist.pop_front();
+//     }
+
+//     // for(size_t i = 0; i < allocCount; i++){
+//     //     InsnPtr_t insn = insnPkg[i];
+//     //     insn->PhyRs1 = this->m_IntRenameTable[insn->IsaRs1];
+//     //     insn->PhyRs2 = this->m_IntRenameTable[insn->IsaRs2];
+//     //     insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
+//     //     if(insn->IsaRd != 0){
+//     //         this->m_IntFreelist.pop();//取出空闲的reg id
+//     //         this->m_IntBusylist[insn->PhyRd].allocated = true;//根据reg id 将busylist中对应的entry进行更新
+//     //         this->m_IntBusylist[insn->PhyRd].done      = false;
+//     //         this->m_IntBusylist[insn->PhyRd].forwarding = false;
+//     //         this->m_IntRenameTable[insn->IsaRd]        = insn->PhyRd;//保存rd对应的reg id
+//     //     }
+//     // }
+
+//     // if(allocCount==2){//处理指令2与指令1之间可能存在的依赖
+//     //         InsnPtr_t& insn1 = insnPkg[0];
+//     //         InsnPtr_t& Insn2 = insnPkg[1];
+//     //         if(insn1->IsaRd != 0){
+//     //             if(insn1->IsaRd == Insn2->IsaRs1)Insn2->PhyRs1 = insn1->PhyRd;
+//     //             if(insn1->IsaRd == Insn2->IsaRs2)Insn2->PhyRs2 = insn1->PhyRd;
+//     //             if(insn1->IsaRd == Insn2->IsaRd) Insn2->LPhyRd = insn1->PhyRd;
+//     //         }
+//     // }
+//     // if(allocCount==1)
+//     // {
+//     //     if(insnPkg[0]->PhyRs1!=RcuAllocate->io_insn1_PhyRs1||insnPkg[0]->PhyRs2!=RcuAllocate->io_insn1_PhyRs2||
+//     //         insnPkg[0]->PhyRd!=RcuAllocate->io_insn1_PhyRd||insnPkg[0]->LPhyRd!=RcuAllocate->io_insn1_LPhyRd)
+//     //     {   
+//     //         DPRINTF(temptest,"Input:I1 {:} {:} {:} {:} {:}",
+//     //         RcuAllocate->io_EN_Update,RcuAllocate->io_IsaRd_Update=this->m_RN_IsaRd_Update,RcuAllocate->io_Data_Update,
+//     //         RcuAllocate->io_IntFreelist_phyrd1,RcuAllocate->io_IntFreelist_phyrd2);
+//     //         DPRINTF(temptest,"Input:I1 {:} {:} {:} | {:} {:} {:} I2 {:} {:} {:} | {:} {:} {:}",
+//     //         insnPkg[0]->IsaRs1,insnPkg[0]->IsaRs2,insnPkg[0]->IsaRd,
+//     //         RcuAllocate->io_insn1_IsaRs1,RcuAllocate->io_insn1_IsaRs2,RcuAllocate->io_insn1_IsaRd,
+//     //         insnPkg[1]->IsaRs1,insnPkg[1]->IsaRs2,insnPkg[1]->IsaRd,
+//     //         RcuAllocate->io_insn2_IsaRs1,RcuAllocate->io_insn2_IsaRs2,RcuAllocate->io_insn2_IsaRd);
+//     //         DPRINTF(temptest,"V:n {:} I1 {:} {:} {:} {:} I2 {:} {:} {:} {:}",
+//     //         allocCount,RcuAllocate->io_insn1_PhyRs1,RcuAllocate->io_insn1_PhyRs2,RcuAllocate->io_insn1_PhyRd,
+//     //         RcuAllocate->io_insn1_LPhyRd,RcuAllocate->io_insn2_PhyRs1,RcuAllocate->io_insn2_PhyRs2,
+//     //         RcuAllocate->io_insn2_PhyRd,RcuAllocate->io_insn2_LPhyRd);
+//     //         DPRINTF(temptest,"O:n {:} I1 {:} {:} {:} {:} I2 {:} {:} {:} {:}",
+//     //         allocCount,insnPkg[0]->PhyRs1,insnPkg[0]->PhyRs2,insnPkg[0]->PhyRd,insnPkg[0]->LPhyRd,
+//     //         insnPkg[1]->PhyRs1,insnPkg[1]->PhyRs2,insnPkg[1]->PhyRd,insnPkg[1]->LPhyRd);
+//     //         exit(1);
+//     //     }
+//     // }
+//     // if(allocCount==2)
+//     // {
+//     //     if(insnPkg[0]->PhyRs1!=RcuAllocate->io_insn1_PhyRs1||insnPkg[0]->PhyRs2!=RcuAllocate->io_insn1_PhyRs2||
+//     //         insnPkg[0]->PhyRd!=RcuAllocate->io_insn1_PhyRd||insnPkg[0]->LPhyRd!=RcuAllocate->io_insn1_LPhyRd||
+//     //         insnPkg[1]->PhyRs1!=RcuAllocate->io_insn2_PhyRs1||insnPkg[1]->PhyRs2!=RcuAllocate->io_insn2_PhyRs2||
+//     //         insnPkg[1]->PhyRd!=RcuAllocate->io_insn2_PhyRd||insnPkg[1]->LPhyRd!=RcuAllocate->io_insn2_LPhyRd)
+//     //     {   
+//     //         DPRINTF(temptest,"Input:I1 {:} {:} {:} {:} {:}",
+//     //         RcuAllocate->io_EN_Update,RcuAllocate->io_IsaRd_Update=this->m_RN_IsaRd_Update,RcuAllocate->io_Data_Update,
+//     //         RcuAllocate->io_IntFreelist_phyrd1,RcuAllocate->io_IntFreelist_phyrd2);
+//     //         DPRINTF(temptest,"Input:I1 {:} {:} {:} | {:} {:} {:} I2 {:} {:} {:} | {:} {:} {:}",
+//     //         insnPkg[0]->IsaRs1,insnPkg[0]->IsaRs2,insnPkg[0]->IsaRd,
+//     //         RcuAllocate->io_insn1_IsaRs1,RcuAllocate->io_insn1_IsaRs2,RcuAllocate->io_insn1_IsaRd,
+//     //         insnPkg[1]->IsaRs1,insnPkg[1]->IsaRs2,insnPkg[1]->IsaRd,
+//     //         RcuAllocate->io_insn2_IsaRs1,RcuAllocate->io_insn2_IsaRs2,RcuAllocate->io_insn2_IsaRd);
+//     //         DPRINTF(temptest,"V:n {:} I1 {:} {:} {:} {:} I2 {:} {:} {:} {:}",
+//     //         allocCount,RcuAllocate->io_insn1_PhyRs1,RcuAllocate->io_insn1_PhyRs2,RcuAllocate->io_insn1_PhyRd,
+//     //         RcuAllocate->io_insn1_LPhyRd,RcuAllocate->io_insn2_PhyRs1,RcuAllocate->io_insn2_PhyRs2,
+//     //         RcuAllocate->io_insn2_PhyRd,RcuAllocate->io_insn2_LPhyRd);
+//     //         DPRINTF(temptest,"O:n {:} I1 {:} {:} {:} {:} I2 {:} {:} {:} {:}",
+//     //         allocCount,insnPkg[0]->PhyRs1,insnPkg[0]->PhyRs2,insnPkg[0]->PhyRd,insnPkg[0]->LPhyRd,
+//     //         insnPkg[1]->PhyRs1,insnPkg[1]->PhyRs2,insnPkg[1]->PhyRd,insnPkg[1]->LPhyRd);
+//     //         exit(1);
+//     //     }
+//     // }
+    
+//     RcuAllocate->clock=1;
+//     RcuAllocate->eval();
+
+//     this->m_RN_EN_Update=0;//wait next updata
     
 //     this->CreateRobEntry(insnPkg,allocCount);//发送创建rob请求
     
 // }
+
+void
+Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
+    for(size_t i = 0; i < allocCount; i++){
+        InsnPtr_t insn = insnPkg[i];
+        insn->PhyRs1 = this->m_IntRenameTable[insn->IsaRs1];
+        insn->PhyRs2 = this->m_IntRenameTable[insn->IsaRs2];
+        insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
+        if(insn->IsaRd != 0){
+            insn->PhyRd = this->m_IntFreelist.pop();//取出空闲的reg id
+            this->m_IntBusylist[insn->PhyRd].allocated = true;//根据reg id 将busylist中对应的entry进行更新
+            this->m_IntBusylist[insn->PhyRd].done      = false;
+            this->m_IntBusylist[insn->PhyRd].forwarding = false;
+            this->m_IntRenameTable[insn->IsaRd]        = insn->PhyRd;//保存rd对应的reg id
+        }
+    }
+    if(allocCount==2){//处理指令2与指令1之间可能存在的依赖
+            InsnPtr_t& insn1 = insnPkg[0];
+            InsnPtr_t& Insn2 = insnPkg[1];
+            if(insn1->IsaRd != 0){
+                if(insn1->IsaRd == Insn2->IsaRs1)Insn2->PhyRs1 = insn1->PhyRd;
+                if(insn1->IsaRd == Insn2->IsaRs2)Insn2->PhyRs2 = insn1->PhyRd;
+                if(insn1->IsaRd == Insn2->IsaRd) Insn2->LPhyRd = insn1->PhyRd;
+            }
+    }
+    
+    this->CreateRobEntry(insnPkg,allocCount);//发送创建rob请求
+    
+}
 
 void Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){ 
     // VRcu_TryAllocate *Rcu_TryAllocate;

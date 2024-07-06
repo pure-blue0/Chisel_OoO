@@ -32,8 +32,12 @@ echo "已根据scala文件生成对应的v文件，并复制到当前目录中"
 
 #3.运行verilator生成C++文件，移动C++文件到目标目录中
 verilator --cc $input_name.v 
-rm -rf ./src/Processor/Pipeline/obj_dir
+
+directory=./src/Processor/Component
+rm -rf $directory/obj_dir
 #mv ./obj_dir ./src/Processor/Component #改成需要交叉测试的模块所在的目录
-mv ./obj_dir ./src/Processor/Pipeline #改成需要交叉测试的模块所在的目录
+#mv ./obj_dir ./src/Processor/Pipeline #改成需要交叉测试的模块所在的目录
+mv ./obj_dir $directory #改成需要交叉测试的模块所在的目录
+
 echo "已生成的C++文件，并复制到了目标路径"
 echo "请在需要交叉验证的模块的文件前添加#include \"./obj_dir/V${input_name}.h\""

@@ -8,7 +8,7 @@
 #include "RegisterFile.hh"
 #include "RenameTable.hh"
 #include "LoopQueue.hh"
-#include "./obj_dir/VRcuAllocate.h"
+//#include "./obj_dir/VRcuAllocate.h"
 namespace Emulator
 {
     
@@ -90,7 +90,7 @@ public:
     BusyList<true>              m_IntBusylist;
 
     FreeList<true>              m_IntFreelist;
-    VRcuAllocate                *RcuAllocate;
+    //VRcuAllocate                *RcuAllocate;
 
     /* SnapShot */
     LoopQueue<Snapshot_t>       m_Snapshot;
