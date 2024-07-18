@@ -93,11 +93,11 @@ public:
         if(this->m_CalcuPipe.OutPort->valid){
             this->m_Allcated = false;
             auto& insn = this->m_CalcuPipe.OutPort->data;
-            this->AddrGen(insn);
+            this->AddrGen(insn);//地址产生与异常判断
             this->m_Rcu->AGUFastDetect(insn);
-            this->m_Lsq->WriteBack(insn);
-            this->SendLoadReq();
+            this->m_Lsq->WriteBack(insn);//将取内存的地址等信息写入lsq队列中，并不是wb stage
         }
+        this->SendLoadReq();
         this->m_dCachePort.Evaluate();
     };
 
@@ -163,7 +163,7 @@ public:
     }
 
     void Advance(){
-        
+    
         this->m_CalcuPipe.advance();
         this->m_dCachePort.Advance();
         if((this->m_Pipelined && this->m_Allcated) || this->m_FlushLatch.OutPort->valid){

@@ -50,12 +50,14 @@ Decode::ReleaseAction(){
 
 void 
 Decode::ReceiveReq(){
+    Redirect_message redirect_message;
+    redirect_message.valid=0;
     if(this->m_StageInPort->valid){
         DASSERT((this->m_DecodeQueue.getSize() >= this->m_FromLastStageInsnCount), "Can Never Taken All Insn");
         if(this->m_DecodeQueue.getAvailEntryCount() >= this->m_FromLastStageInsnCount){
             InsnPkg_t insnPkg;       
             for(auto insn : this->m_StageInPort->data){
-                this->Predecode(*insn.get(),insnPkg); 
+                this->Predecode(*insn.get(),insnPkg,redirect_message); 
             }
             if(insnPkg.size()){
                 for(auto insn1 : insnPkg){
@@ -76,6 +78,7 @@ Decode::ReceiveReq(){
             #endif
         }
     }
+    this->m_Processor->getFetch1Ptr()->Decode_Redirect_Reg->InPort->set(redirect_message);
 }
 
 void 
@@ -99,9 +102,11 @@ Decode::DecodeInsn(InsnPtr_t& insn){
 }
 
 void 
-Decode::Predecode(Emulator::DynInsn& insnEntry,InsnPkg_t& insnPkg){
+Decode::Predecode(Emulator::DynInsn& insnEntry,InsnPkg_t& insnPkg,Redirect_message& redirect_message){
     bool needRedirect;
     Redirect_t RedirectReq;
+    redirect_message.valid=0;
+    redirect_message.target=0;
     uint64_t offset  = insnEntry.Address & (this->m_iCacheAlignByte-1); //看当前的地址是否对齐
     char* dataPtr = insnEntry.InsnByte.data() + offset;
     uint64_t numByte = m_FetchByteWidth - offset  ;
@@ -116,15 +121,22 @@ Decode::Predecode(Emulator::DynInsn& insnEntry,InsnPkg_t& insnPkg){
         insnPkg.emplace_back(insn);//将预解码的数据放入到insnpkg
         this->BranchRedirect(insn,needRedirect,RedirectReq);
         
+        redirect_message.valid=needRedirect;
+        redirect_message.target=RedirectReq.target;
+        
         if(needRedirect){//如果需要重定向，那么后面的数据也就没必要放进来了
             DPRINTF(Redirect,"Pc[{:#x}] -> Predict Mismatch, Redirect to {:#x}",insn->Pc,RedirectReq.target);
             this->m_RedirectPort->set(RedirectReq);//发送重定向请求
+            
+            
             this->m_Processor->FlushBackWard(InsnState_t::State_Decode);//冲刷fetch1_flush
         }   
+        
         numByte -= 4;
         dataPtr += 4;
         Npc     += 4;
-    }      
+    }    
+    
 }
 
 void

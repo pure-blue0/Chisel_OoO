@@ -74,6 +74,8 @@ private:
     
     std::shared_ptr<Lsq>                                m_Lsq;
 
+    std::shared_ptr<Fetch1>                             m_Fetch1;
+
 public:
 
 
@@ -95,6 +97,7 @@ public:
     std::shared_ptr<Rcu>      getRcuPtr();
 
     std::shared_ptr<Lsq>      getLsqPtr();
+    Fetch1* getFetch1Ptr();
 
     ThreadId&  getThreadId();
 

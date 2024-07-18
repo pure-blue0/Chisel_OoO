@@ -603,7 +603,7 @@ void Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedi
                     DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Commit a Load LSQTag[{}]", 
                     robPtr,robEntry.pc,robEntry.LSQtag);
                     this->m_Processor->getLsqPtr()->CommitLoadEntry(robEntry.LSQtag);
-
+                    
                 }else if(robEntry.Fu == funcType_t::STU){
                     DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Commit a Store LSQTag[{}]: Address[{:#x}] Data[{:#x}]",
                         robPtr,robEntry.pc,robEntry.LSQtag);

@@ -68,7 +68,7 @@ public:
     LoopQueue<LDQ_entry_t>      m_LoadQueue;
 
 public:
-    
+    int a;
     Lsq(
         Processor*          processor,
         const uint16_t      dCacheAlignByte,

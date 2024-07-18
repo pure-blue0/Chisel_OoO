@@ -96,6 +96,9 @@ std::shared_ptr<Rcu>
 Processor::getRcuPtr(){
     return this->m_Rcu;
 }
+Fetch1* Processor::getFetch1Ptr(){
+    return static_cast<Fetch1*>(this->m_StageMap["Fetch1"].get());
+}
 
 std::shared_ptr<Lsq>
 Processor::getLsqPtr(){

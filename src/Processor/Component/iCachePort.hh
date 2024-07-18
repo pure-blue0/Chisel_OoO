@@ -16,7 +16,7 @@ private:
     BaseDRAM*              m_baseDRAM;
 
     TimeBuffer<std::pair<std::function<void(MemResp_t)>,MemResp_t>>  m_iCacheRespLatch;
-    
+    TimeBuffer<MemResp_t>* m_resp = new TimeBuffer<MemResp_t>("m_resp", 1);
 public:
     
     iCachePort();
@@ -25,11 +25,11 @@ public:
     
     ~iCachePort();
 
-    void ReceiveFetchReq(MemReq_t mem_req, std::function<void(MemResp_t)> CallBackfunc);
+    void ReceiveFetchReq(MemReq_t mem_req,bool SendSuccess);
 
     void Reset();
 
-    void Evaluate();
+    void Evaluate(MemResp_t& resp,bool& valid);
 
     void Advance();
 

@@ -16,6 +16,7 @@ class Simulator;
 class Processor;
 class Fetch1 : public BaseStage
 {
+    friend class commit;
 private:
     enum   State_t{
         Idle, HandleExcp, WaitForResume
@@ -39,6 +40,7 @@ private:
             this->InsnByte.resize(ByteWidth);
         };
     };
+
 private:
     /* Param */
     const uint16_t                      m_FetchByteWidth;
@@ -65,8 +67,13 @@ private:
 
     /* Ptr Out of this Module */
     std::vector<std::shared_ptr<TimeBuffer<Redirect_t>::Port>> m_RedirectPortVec;
+    
 
 public:
+
+    TimeBuffer<Redirect_message>* Decode_Redirect_Reg = new TimeBuffer<Redirect_message>("Decode_Redirect_Reg", 1);
+    TimeBuffer<Redirect_message>* IEW_Redirect_Reg = new TimeBuffer<Redirect_message>("IEW_Redirect_Reg", 1);
+    TimeBuffer<Redirect_message>* Commit_Redirect_Reg = new TimeBuffer<Redirect_message>("Commit_Redirect_Reg", 1);
 
     Fetch1( 
         Processor*                       processor              ,
@@ -85,6 +92,7 @@ public:
     void InitBootPc(Addr_t boot_address);
 
     void Reset();
+    bool Send_Data_to_Fetch();
 
     void FlushAction();
 
@@ -105,6 +113,9 @@ public:
     void SendFetchData(bool& pop_flag);
 
     void AddRedirectPort(std::shared_ptr<TimeBuffer<Redirect_t>::Port> RedirectPort);
+
+    void InflightQueue_Evaluate(bool SendSuccess,bool resp_valid,uint16_t TransId,InflighQueueEntry_t NewEntry,MemResp_t resp);
+
 };
 
 std::shared_ptr<BaseStage> Create_Fetch1_Instance(

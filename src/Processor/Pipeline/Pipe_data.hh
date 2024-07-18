@@ -42,6 +42,11 @@ struct Redirect_t
     InsnState_t  StageId;
     Addr_t       target;
 };
+struct Redirect_message
+{
+    bool valid;
+    Addr_t target;
+};
 
 struct StageAck_t
 {

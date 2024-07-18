@@ -49,7 +49,7 @@ public:
 
     void DecodeInsn(InsnPtr_t& insn);
 
-    void  Predecode(Emulator::DynInsn& insnEntry,InsnPkg_t& insnPkg);
+    void Predecode(Emulator::DynInsn& insnEntry,InsnPkg_t& insnPkg,Redirect_message& redirect_message);
 
     void BranchRedirect(InsnPtr_t& insn,bool& needRedirect,Redirect_t& RedirectReq);
 };

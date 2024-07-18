@@ -1,6 +1,6 @@
 #include "Commit.hh"
 #include "../Processor.hh"
-
+#include "typeinfo"
 namespace Emulator
 {
 
@@ -39,6 +39,8 @@ Commit::SendCommitReq(){
 
 void 
 Commit::CommitInsnPkg(){
+    Redirect_message redirect_message;
+    redirect_message.valid=0;
     auto rcu = this->m_Processor->getRcuPtr();
     if(this->m_StageInPort->valid){
         InsnPkg_t& insnPkg = this->m_StageOutPort->data;
@@ -67,10 +69,14 @@ Commit::CommitInsnPkg(){
             }
         }
         rcu->CommitInsn(insnPkg,RedirectReq,needRedirect);//进行实际的提交操作
+        redirect_message.valid=needRedirect;
+        redirect_message.target=RedirectReq.target;
         if(needRedirect){
             this->m_RedirectPort->set(RedirectReq);
+            
         }
     }
+    this->m_Processor->getFetch1Ptr()->Commit_Redirect_Reg->InPort->set(redirect_message);
 }
 
 
