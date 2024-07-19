@@ -51,6 +51,8 @@ private:
 
     uint16_t                            m_MisalignHalf;
 
+    uint8_t                             m_InflightQueue_tail;
+
     /* Var */
     State_t                             m_State;
 
@@ -92,29 +94,18 @@ public:
     void InitBootPc(Addr_t boot_address);
 
     void Reset();
-    bool Send_Data_to_Fetch();
 
     void FlushAction();
 
     void KillNewer(uint64_t InflightQueueTag);
 
-    void GenNextFetchAddress(bool& SendSuccess);
-
-    void SendFetchReq(bool& SendSuccess,MemReq_t& fetchReq,InflighQueueEntry_t& NewEntry);
-
-    void ReceiveReq(MemResp_t mem_resp);
-
-    void Predecode(InflighQueueEntry_t& frontEntry ,InsnPkg_t& insnPkg);
-
-    void BranchRedirect(InsnPtr_t& insn, Pred_t& Pred, bool& needRedirect, Redirect_t& RedirectReq);
-
-    void Predict(Addr_t& Pc, std::vector<Pred_t>& insnPred);
-
-    void SendFetchData(bool& pop_flag);
-
     void AddRedirectPort(std::shared_ptr<TimeBuffer<Redirect_t>::Port> RedirectPort);
 
-    void InflightQueue_Evaluate(bool SendSuccess,bool resp_valid,uint16_t TransId,InflighQueueEntry_t NewEntry,MemResp_t resp);
+    void GenNextFetchAddress(bool SendSuccess);
+
+    void SendFetchReq(uint8_t InflightQueue_tail,bool& SendSuccess,MemReq_t& fetchReq,InflighQueueEntry_t& NewEntry);
+
+    void InflightQueue_Evaluate(bool SendSuccess,bool resp_valid,uint16_t TransId,InflighQueueEntry_t EntryData,MemResp_t resp,uint8_t& tail_ptr);
 
 };
 

@@ -47,35 +47,35 @@ Decode::ReleaseAction(){
         }
     }
 }
-
 void 
 Decode::ReceiveReq(){
     Redirect_message redirect_message;
     redirect_message.valid=0;
     if(this->m_StageInPort->valid){
-        DASSERT((this->m_DecodeQueue.getSize() >= this->m_FromLastStageInsnCount), "Can Never Taken All Insn");
-        if(this->m_DecodeQueue.getAvailEntryCount() >= this->m_FromLastStageInsnCount){
-            InsnPkg_t insnPkg;       
-            for(auto insn : this->m_StageInPort->data){
-                this->Predecode(*insn.get(),insnPkg,redirect_message); 
-            }
-            if(insnPkg.size()){
-                for(auto insn1 : insnPkg){
-                    insn1->State = InsnState_t::State_Decode;
-                    if(!insn1->Excp.valid){
-                        this->DecodeInsn(insn1);
+        if((*this->m_StageInPort->data[0].get()).data_valid)
+        {
+            DASSERT((this->m_DecodeQueue.getSize() >= this->m_FromLastStageInsnCount), "Can Never Taken All Insn");
+            if(this->m_DecodeQueue.getAvailEntryCount() >= this->m_FromLastStageInsnCount){
+                InsnPkg_t insnPkg;       
+                this->Predecode(*this->m_StageInPort->data[0].get(),insnPkg,redirect_message); 
+                if(insnPkg.size()){
+                    for(auto insn1 : insnPkg){
+                        insn1->State = InsnState_t::State_Decode;
+                        if(!insn1->Excp.valid){
+                            this->DecodeInsn(insn1);
+                        }
+                        this->m_DecodeQueue.Push(insn1);
                     }
-                    this->m_DecodeQueue.Push(insn1);
                 }
+                #ifdef TRACE_ON
+                std::stringstream insnInfo;
+                
+                auto t = this->m_StageInPort->data[0];
+                insnInfo << fmt::format("\n\tInsn_{:02} -> Pc({:#x}) , Insn({:#>08x})",0, t->Pc, t->CompressedInsn);
+                DPRINTF(ReceiveReq,insnInfo.str());
+                
+                #endif
             }
-            #ifdef TRACE_ON
-            std::stringstream insnInfo;
-            
-            auto t = this->m_StageInPort->data[0];
-            insnInfo << fmt::format("\n\tInsn_{:02} -> Pc({:#x}) , Insn({:#>08x})",0, t->Pc, t->CompressedInsn);
-            DPRINTF(ReceiveReq,insnInfo.str());
-            
-            #endif
         }
     }
     this->m_Processor->getFetch1Ptr()->Decode_Redirect_Reg->InPort->set(redirect_message);
@@ -127,8 +127,6 @@ Decode::Predecode(Emulator::DynInsn& insnEntry,InsnPkg_t& insnPkg,Redirect_messa
         if(needRedirect){//如果需要重定向，那么后面的数据也就没必要放进来了
             DPRINTF(Redirect,"Pc[{:#x}] -> Predict Mismatch, Redirect to {:#x}",insn->Pc,RedirectReq.target);
             this->m_RedirectPort->set(RedirectReq);//发送重定向请求
-            
-            
             this->m_Processor->FlushBackWard(InsnState_t::State_Decode);//冲刷fetch1_flush
         }   
         

@@ -108,6 +108,7 @@ enum AguType_t{
 
 struct DynInsn
 {
+    bool data_valid;
     InsnState_t  State;
 
     Addr_t       Pc;
