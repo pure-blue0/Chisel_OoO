@@ -3,10 +3,16 @@ import chisel3.util._
 
 class Decode_Func extends Module {
   val io = IO(new Bundle {
+    val Pc = Input(UInt(32.W))
     val Insn = Input(UInt(32.W))
+    val predecode_excp_valid = Input(Bool())
+    val predecode_excp_cause = Input(UInt(6.W))
+    val predecode_excpt_tval = Input(UInt(32.W))
     val IsaRs1 = Output(UInt(5.W))
+    val Operand1 = Output(UInt(64.W))
     val Operand1Ready = Output(Bool())
     val IsaRs2 = Output(UInt(5.W))
+    val Operand2 = Output(UInt(64.W))
     val Operand2Ready = Output(Bool())
     val IsaRd = Output(UInt(5.W))
     val ControlFlowInsn = Output(Bool())
@@ -18,6 +24,14 @@ class Decode_Func extends Module {
     val excpt_tval = Output(UInt(32.W))
   })
 
+
+  // signal Extend to
+  def signExtend(value: UInt, targetWidth: Int): UInt = {
+    val originalWidth = value.getWidth
+    val signBit = value(originalWidth - 1)
+
+    Cat(Fill(targetWidth - originalWidth, signBit), value)
+  }
   // Extracting fields from the instruction
   val opcode = io.Insn(6, 0)
   val func3 = io.Insn(14, 12)
@@ -25,7 +39,13 @@ class Decode_Func extends Module {
   val rd = io.Insn(11, 7)
   val rs1 = io.Insn(19, 15)
   val rs2 = io.Insn(24, 20)
+  val shamt = io.Insn(25,20)
   val csr = io.Insn(31, 20)
+//  val i_imm = io.Insn(31, 20)//&&
+//  val s_imm = Cat(io.Insn(31, 25), io.Insn(11, 7))
+//  val b_imm = Cat(io.Insn(31), io.Insn(7), io.Insn(30, 25), io.Insn(11, 8),0.U(1.W))
+//  val u_imm = Cat(io.Insn(31, 12), 0.U(12.W))
+//  val j_imm = Cat(io.Insn(31), io.Insn(19, 12), io.Insn(20), io.Insn(30, 21),0.U(1.W))
   val i_imm = Cat(Fill(21,io.Insn(31)),io.Insn(30, 20))//&&
   val s_imm = Cat(Fill(21,io.Insn(31)), io.Insn(30, 25), io.Insn(11, 7))
   val b_imm = Cat(Fill(20,io.Insn(31)), io.Insn(7), io.Insn(30, 25), io.Insn(11, 8),0.U(1.W))
@@ -37,15 +57,18 @@ class Decode_Func extends Module {
   io.IsaRs1 := rs1
   io.IsaRs2 := rs2
   io.IsaRd := rd
+
+  io.Operand1 := 0.U
+  io.Operand2 := 0.U
   io.Operand1Ready := false.B
   io.Operand2Ready := false.B
   io.ControlFlowInsn := false.B
   io.imm := 0.U
   io.Function_type := 0.U // ALU
   io.Sub_OP := 0.U // ALU_ADD
-  io.excp_valid := false.B
-  io.excp_cause := 0.U
-  io.excpt_tval := 0.U
+  io.excp_valid := io.predecode_excp_valid
+  io.excp_cause := io.predecode_excp_cause
+  io.excpt_tval := io.predecode_excpt_tval
 
   // Illegal instruction flag
   val illegal_instr = Wire(Bool())
@@ -61,6 +84,7 @@ class Decode_Func extends Module {
   when(opcode === "b1110011".U) {
     io.Function_type := 2.U // CSR
     when(func3(2)) {
+      io.Operand1 := signExtend(rs1,64)
       io.Operand1Ready := true.B
     }
     io.imm := csr
@@ -101,7 +125,7 @@ class Decode_Func extends Module {
     }
   } .elsewhen(opcode === "b0001111".U) {
     io.Function_type := 2.U // CSR
-    io.imm := i_imm.asSInt.asUInt
+    io.imm := i_imm
     io.IsaRd := 0.U
     when(rs1 === 0.U && rd === 0.U) {
       when(func3 === "b000".U) {
@@ -153,7 +177,9 @@ class Decode_Func extends Module {
   } .elsewhen(opcode === "b1101111".U) {
     io.Function_type := 0.U // ALU
     io.Sub_OP := 0.U // ALU_ADD
-    io.Operand1Ready := true.B
+    io.Operand1 := io.Pc
+    io.Operand2 := 4.U
+      io.Operand1Ready := true.B
     io.Operand2Ready := true.B
   } .elsewhen(opcode === "b1100111".U) {
     io.Function_type := 1.U // BRU
@@ -195,15 +221,18 @@ class Decode_Func extends Module {
   } .elsewhen(opcode === "b0010011".U) {
     io.Function_type := 0.U // ALU
     io.imm := i_imm
+    io.Operand2 := signExtend(i_imm,64)
     io.Operand2Ready := true.B
     when(func3 === "b000".U) { io.Sub_OP := 0.U } // ALU_ADD
       .elsewhen(func3 === "b001".U) {
+        io.Operand2 := shamt
         io.Sub_OP := 2.U // ALU_SLL
         when(func7(5, 1) =/= 0.U) { illegal_instr := true.B }
       } .elsewhen(func3 === "b010".U) { io.Sub_OP := 3.U } // ALU_SLT
       .elsewhen(func3 === "b011".U) { io.Sub_OP := 4.U } // ALU_SLTU
       .elsewhen(func3 === "b100".U) { io.Sub_OP := 5.U } // ALU_XOR
       .elsewhen(func3 === "b101".U) {
+        io.Operand2 := shamt
         when(func7(5, 1) === 0.U) { io.Sub_OP := 6.U } // ALU_SRL
           .elsewhen(func7(5, 1) === "b010000".U) { io.Sub_OP := 7.U } // ALU_SRA
           .otherwise { illegal_instr := true.B }
@@ -213,12 +242,15 @@ class Decode_Func extends Module {
   } .elsewhen(opcode === "b0011011".U) {
     io.Function_type := 0.U // ALU
     io.imm := i_imm
+    io.Operand2 := signExtend(i_imm,64)
     io.Operand2Ready := true.B
     when(func3 === "b000".U) { io.Sub_OP := 10.U } // ALU_ADDW
       .elsewhen(func3 === "b001".U) {
+        io.Operand2 := shamt
         io.Sub_OP := 12.U // ALU_SLLW
         when(func7 =/= 0.U) { illegal_instr := true.B }
       } .elsewhen(func3 === "b101".U) {
+        io.Operand2 := shamt
         when(func7 === "b0000000".U) { io.Sub_OP := 13.U } // ALU_SRLW
           .elsewhen(func7 === "b0100000".U) { io.Sub_OP := 14.U } // ALU_SRAW
           .otherwise { illegal_instr := true.B }
@@ -226,12 +258,16 @@ class Decode_Func extends Module {
   } .elsewhen(opcode === "b0010111".U) {
     io.Function_type := 0.U // ALU
     io.Sub_OP := 0.U // ALU_ADD
+    io.Operand1 := signExtend(u_imm,64)
+    io.Operand2 := io.Pc
     io.Operand1Ready := true.B
     io.Operand2Ready := true.B
     io.imm := u_imm
   } .elsewhen(opcode === "b0110111".U) {
     io.Function_type := 0.U // ALU
     io.Sub_OP := 0.U // ALU_ADD
+    io.Operand1 := signExtend(u_imm,64)
+    io.Operand2 := 0.U
     io.Operand1Ready := true.B
     io.Operand2Ready := true.B
     io.imm := u_imm
