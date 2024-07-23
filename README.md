@@ -1,6 +1,8 @@
 # Chisel_OoO
 an out of order RISC-V processor in Chisel
-# pineline
+
+update architecture on `reference_model` branch
+<!-- # pineline
 ![](./docs/image/pipeline.drawio.png)
 ## Fetch
 - 更新PC,优先级为 backend redirect > predicted PC > PC + 4
@@ -31,4 +33,4 @@ an out of order RISC-V processor in Chisel
 - 同时结果还可能前递到reservation station中
 
 ## Commit
-- 当ROB中最早的指令执行完毕后，更新AR和register renaming table，删除该条目
+- 当ROB中最早的指令执行完毕后，更新AR和register renaming table，删除该条目 -->
