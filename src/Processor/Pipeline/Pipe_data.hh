@@ -57,6 +57,10 @@ typedef std::shared_ptr<DynInsn> InsnPtr_t;
 
 typedef std::vector<InsnPtr_t> InsnPkg_t;
 
+typedef std::shared_ptr<DecodeQueue_entry> DecodeInsn_t;
+
+typedef std::vector<DecodeInsn_t> DecodeInsnPkg_t;
+
 
 } // namespace Emulator
 

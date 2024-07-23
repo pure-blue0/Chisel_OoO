@@ -340,6 +340,7 @@ src/CMakeFiles/model.dir/Processor/Component/FuncUnit/FuncUnitFactory.cc.o: \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/FuncUnit/../../Pipeline/../Component/../../Memory/BaseDRAM.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/FuncUnit/../../Pipeline/../Component/LoopQueue.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/FuncUnit/../../Pipeline/../../Memory/BaseDRAM.hh \
+ /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/FuncUnit/../../Pipeline/Decode.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/FuncUnit/../../Component/Lsq.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/FuncUnit/../../Component/Rcu.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/FuncUnit/Func_ALU.hh \

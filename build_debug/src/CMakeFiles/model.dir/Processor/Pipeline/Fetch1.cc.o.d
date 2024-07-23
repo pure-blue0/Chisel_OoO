@@ -341,6 +341,10 @@ src/CMakeFiles/model.dir/Processor/Pipeline/Fetch1.cc.o: \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Component/Schedular/Commit/CMT_OutOfOrder.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../../Memory/BaseDRAM.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Pipeline/Fetch1.hh \
+ /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Pipeline/Decode.hh \
+ /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Pipeline/BaseStage.hh \
+ /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Pipeline/Pipe_data.hh \
+ /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Pipeline/../Component/LoopQueue.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Component/Lsq.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Component/Rcu.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../../Simulator.hh \

@@ -9,7 +9,7 @@
 namespace RISCV
 {
 
-void Decode_Func(Emulator::DynInsn& insn){
+void Decode_Func(Emulator::DecodeQueue_entry& insn){
     StaticInsn instr(insn.UncompressedInsn);
 
     insn.IsaRs1  = instr.rs1();//insn[19:15]

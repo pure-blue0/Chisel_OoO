@@ -36,15 +36,24 @@ Dispatch::Evaluate(){
     uint64_t TryAllocSuccessCount[3];
 
     StageAck_t  Ack = {0};
-
+    Ack.takenInsnCount=0;
     DASSERT((insnPkg.size()<=rcu->m_AllocWidth),
         "Dispatch[{}] & RCU Allocate[{}] Width MisMatch!",insnPkg.size(),rcu->m_AllocWidth
     );
 
     if(this->m_StageInPort->valid){
+        
+       
         if(rcu->m_RobState != rob_state_t::Rob_Idle){
             this->m_StageInPort->stall();
         }else{
+                if(!insnPkg[0]->data_valid&&!insnPkg[1]->data_valid){
+                    insnPkg.pop_back();
+                    insnPkg.pop_back();
+                }
+                else if(!insnPkg[1]->data_valid){
+                    insnPkg.pop_back();
+                }
                 rcu->TryAllocate(insnPkg,TryAllocSuccessCount[0]);
                 lsq->TryAllocate(insnPkg,TryAllocSuccessCount[1]);
                 this->TryDispatch(insnPkg,TryAllocSuccessCount[2],true);
@@ -53,7 +62,7 @@ Dispatch::Evaluate(){
                 rcu->Allocate(insnPkg,Ack.takenInsnCount);
                 this->DispatchInsn(insnPkg,Ack.takenInsnCount);
 
-                this->m_StageAckOutPort->set(Ack);
+                
             
             #ifdef TRACE_ON
             std::stringstream insnInfo;
@@ -67,6 +76,7 @@ Dispatch::Evaluate(){
             #endif
         }
     }
+    this->m_StageAckOutPort->set(Ack);
 }
 // void 
 // Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckControlFlow){

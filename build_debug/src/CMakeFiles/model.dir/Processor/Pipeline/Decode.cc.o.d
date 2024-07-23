@@ -352,6 +352,7 @@ src/CMakeFiles/model.dir/Processor/Pipeline/Decode.cc.o: \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Pipeline/../Component/../../Memory/BaseDRAM.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Pipeline/../Component/LoopQueue.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Pipeline/../../Memory/BaseDRAM.hh \
+ /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Pipeline/Decode.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Component/Lsq.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Component/Rcu.hh \
  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/../Component/Rcu.hh

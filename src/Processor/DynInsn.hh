@@ -159,6 +159,49 @@ struct DynInsn
     std::vector<char>           InsnByte;
 };
 
+struct DecodeQueue_entry
+{
+    bool data_valid;
+    Addr_t       Pc;
+    funcType_t   Fu;
+    uint8_t      SubOp;
+    Insn_t       UncompressedInsn;
+    bool         ControlFlowInsn;
+    //本身的ISA寄存器
+    IsaRegId_t   IsaRs1;
+    IsaRegId_t   IsaRs2;
+    IsaRegId_t   IsaRd;
+    bool         Operand1Ready;
+    bool         Operand2Ready;
+    xReg_t       Operand1;
+    xReg_t       Operand2;
+    Imm_t        imm;
+    Exception_t  Excp;
+    Prediction_t Pred;//保存了预测的分支地址以及是否采用分支预测
+    std::vector<char>           InsnByte;
+    void reset(){
+        data_valid=false;
+        Pc=0;
+        Fu=funcType_t::ALU;
+        SubOp=0;
+        UncompressedInsn=0;
+        ControlFlowInsn=false;
+        IsaRs1=0;
+        IsaRs2=0;
+        IsaRd=0;
+        Operand1Ready=false;
+        Operand2Ready=false;
+        Operand1=0;
+        Operand2=0;
+        imm=0;
+        Excp.valid=false;
+        Excp.Tval=0;
+        Excp.Cause=0;
+        Pred.Taken=false;
+        Pred.Target=0;
+    }
+};
+
 } // namespace Emulator
 
 

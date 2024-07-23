@@ -117,6 +117,12 @@ Processor::CreateInsn(){
     this->m_InsnPool.emplace_back(std::weak_ptr<DynInsn>(Insn));
     return Insn;
 }
+DecodeInsn_t
+Processor::CreateDecodeInsn(){
+    auto Insn = std::make_shared<DecodeQueue_entry>();
+    this->m_DecodeInsnPool.emplace_back(std::weak_ptr<DecodeQueue_entry>(Insn));
+    return Insn;
+}
 
 void
 Processor::ConstructResource(const YAML::Node& ResourceConfig){
@@ -336,6 +342,7 @@ Processor::Evaluate(){
     }
     this->m_Rcu->Evaulate();
     this->m_Lsq->Evaulate();
+    (static_cast<Decode*>(this->m_StageMap["Decode"].get()))->decodeQueue_flush=false;
 }
 
 void 
@@ -385,6 +392,7 @@ Processor::Reset(Addr_t boot_address){
 
 void 
 Processor::FlushBackWard(InsnState_t StageTag){
+    
     for(auto it : this->m_StageTickSeq){
         if(it.first < StageTag){
             it.second->Flush();

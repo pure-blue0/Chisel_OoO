@@ -11,6 +11,7 @@
 #include "Component/Schedular/SchedularFactory.hh"
 #include "../Memory/BaseDRAM.hh"
 #include "Pipeline/Fetch1.hh"
+#include "Pipeline/Decode.hh"
 #include "Component/Lsq.hh"
 
 #include <yaml-cpp/yaml.h>
@@ -57,6 +58,7 @@ private:
     
     /* Instruction Pool */
     std::deque<std::weak_ptr<DynInsn>>    m_InsnPool;
+    std::deque<std::weak_ptr<DecodeQueue_entry>>    m_DecodeInsnPool;
 
     /* PipeLine */
 
@@ -102,6 +104,7 @@ public:
     ThreadId&  getThreadId();
 
     InsnPtr_t   CreateInsn();
+    DecodeInsn_t CreateDecodeInsn();
 
     void ConstructStage(const YAML::Node& StageConfig);
 

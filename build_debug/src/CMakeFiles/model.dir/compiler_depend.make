@@ -661,6 +661,7 @@ src/CMakeFiles/model.dir/Processor/Component/FuncUnit/FuncUnitFactory.cc.o: /hom
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -1067,6 +1068,7 @@ src/CMakeFiles/model.dir/Processor/Component/Lsq.cc.o: /home/jmye/Desktop/MICRO/
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -1470,6 +1472,7 @@ src/CMakeFiles/model.dir/Processor/Component/Rcu.cc.o: /home/jmye/Desktop/MICRO/
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -1851,6 +1854,7 @@ src/CMakeFiles/model.dir/Processor/Component/RfReadPort.cc.o: /home/jmye/Desktop
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/iCachePort.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -4402,6 +4406,7 @@ src/CMakeFiles/model.dir/Processor/Component/WriteBackPort.cc.o: /home/jmye/Desk
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -6412,6 +6417,7 @@ src/CMakeFiles/model.dir/Processor/Pipeline/Commit.cc.o: /home/jmye/Desktop/MICR
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/iCachePort.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -6819,6 +6825,7 @@ src/CMakeFiles/model.dir/Processor/Pipeline/Decode.cc.o: /home/jmye/Desktop/MICR
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/iCachePort.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -7222,6 +7229,7 @@ src/CMakeFiles/model.dir/Processor/Pipeline/Dispatch.cc.o: /home/jmye/Desktop/MI
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/iCachePort.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -7636,8 +7644,10 @@ src/CMakeFiles/model.dir/Processor/Pipeline/Fetch1.cc.o: /home/jmye/Desktop/MICR
   /home/jmye/Desktop/MICRO/modelAchieve/src/RISCV/ExecContext.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/RISCV/StaticInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/RISCV/riscv.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/LoopQueue.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -8040,6 +8050,7 @@ src/CMakeFiles/model.dir/Processor/Pipeline/Fetch2.cc.o: /home/jmye/Desktop/MICR
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/iCachePort.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -8443,6 +8454,7 @@ src/CMakeFiles/model.dir/Processor/Pipeline/IEW.cc.o: /home/jmye/Desktop/MICRO/m
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/iCachePort.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -9794,6 +9806,7 @@ src/CMakeFiles/model.dir/Processor/Processor.cc.o: /home/jmye/Desktop/MICRO/mode
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -11172,6 +11185,7 @@ src/CMakeFiles/model.dir/Simulator.cc.o: /home/jmye/Desktop/MICRO/modelAchieve/s
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -12053,6 +12067,7 @@ src/CMakeFiles/model.dir/main.cc.o: /home/jmye/Desktop/MICRO/modelAchieve/src/ma
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/DynInsn.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh \
+  /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Pipe_data.hh \
   /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Processor.hh \
@@ -12543,10 +12558,6 @@ src/CMakeFiles/model.dir/main.cc.o: /home/jmye/Desktop/MICRO/modelAchieve/src/ma
 
 /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/FuncUnit/Func_LDU.hh:
 
-/home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh:
-
-/home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/FuncUnit/Func_CSR.hh:
-
 /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/FuncUnit/Func_ALU.hh:
 
 /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/dCachePort.hh:
@@ -12558,6 +12569,10 @@ src/CMakeFiles/model.dir/main.cc.o: /home/jmye/Desktop/MICRO/modelAchieve/src/ma
 /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Dispatch.hh:
 
 /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Fetch1.hh:
+
+/home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Component/FuncUnit/Func_CSR.hh:
+
+/home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/Decode.hh:
 
 /home/jmye/Desktop/MICRO/modelAchieve/src/Processor/Pipeline/BaseStage.hh:
 
