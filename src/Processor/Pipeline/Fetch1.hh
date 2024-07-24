@@ -9,7 +9,7 @@
 
 #include "../../Common/Common.hh"
 #include "../../Memory/BaseDRAM.hh"
-
+#define FetchQueue_Size 8
 namespace Emulator
 {
 class Simulator;
@@ -39,6 +39,15 @@ private:
         InflighQueueEntry_t(uint64_t ByteWidth){//结构体的构造函数（含参）
             this->InsnByte.resize(ByteWidth);
         };
+        void reset(uint64_t ByteWidth){
+            Busy=false;
+            Killed=true;
+            Address=0;
+            this->InsnByte.resize(ByteWidth);
+            Excp.valid=false;
+            Excp.Cause=0;
+            Excp.Tval=0;
+        }
     };
 
 private:
@@ -72,7 +81,7 @@ private:
     
 
 public:
-
+    bool fetchQueue_flush;
     TimeBuffer<Redirect_message>* Decode_Redirect_Reg = new TimeBuffer<Redirect_message>("Decode_Redirect_Reg", 1);
     TimeBuffer<Redirect_message>* IEW_Redirect_Reg = new TimeBuffer<Redirect_message>("IEW_Redirect_Reg", 1);
     TimeBuffer<Redirect_message>* Commit_Redirect_Reg = new TimeBuffer<Redirect_message>("Commit_Redirect_Reg", 1);
@@ -103,9 +112,9 @@ public:
 
     void GenNextFetchAddress(bool SendSuccess);
 
-    void SendFetchReq(uint8_t InflightQueue_tail,bool& SendSuccess,MemReq_t& fetchReq,InflighQueueEntry_t& NewEntry);
+    void SendFetchReq(bool full,uint8_t InflightQueue_tail,bool& SendSuccess,MemReq_t& fetchReq,InflighQueueEntry_t& NewEntry);
 
-    void InflightQueue_Evaluate(bool SendSuccess,bool resp_valid,uint16_t TransId,InflighQueueEntry_t EntryData,MemResp_t resp,uint8_t& tail_ptr);
+    void InflightQueue_Evaluate(bool reset_n,bool fetchQueue_flush,bool SendSuccess,bool mem_valid,InflighQueueEntry_t EntryData,MemResp_t mem,uint8_t& r_tail_ptr,bool& full);
 
 };
 

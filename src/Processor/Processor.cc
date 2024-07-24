@@ -343,6 +343,7 @@ Processor::Evaluate(){
     this->m_Rcu->Evaulate();
     this->m_Lsq->Evaulate();
     (static_cast<Decode*>(this->m_StageMap["Decode"].get()))->decodeQueue_flush=false;
+    (static_cast<Fetch1*>(this->m_StageMap["Fetch1"].get()))->fetchQueue_flush=false;
 }
 
 void 

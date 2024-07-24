@@ -24,13 +24,14 @@ Fetch1::~Fetch1(){}
 
 void 
 Fetch1::Evaluate(){
+    static bool full;
     //--------------------------------------------------------------//
     bool SendSuccess=false;
     MemReq_t fetchReq;
     InflighQueueEntry_t NewEntry(this->m_FetchByteWidth);
     NewEntry.Excp.valid=false;
     //module 1
-    this->SendFetchReq(this->m_InflightQueue_tail,SendSuccess,fetchReq,NewEntry);//处理pcregister的输出端口数据，并将其放入m_InflightQueue
+    this->SendFetchReq(full,this->m_InflightQueue_tail,SendSuccess,fetchReq,NewEntry);//处理pcregister的输出端口数据，并将其放入m_InflightQueue
     //module 2
     this->m_iCachePort.ReceiveFetchReq(fetchReq,SendSuccess);
     //-------------------------------------------------------------//
@@ -40,7 +41,7 @@ Fetch1::Evaluate(){
     this->m_iCachePort.Evaluate(resp,resp_valid);//输出icache中缓存的数据（通过调用fetch1的receivereq函数，参数是上一拍从内存中获取到的mem数据）
 
     //module 4 InflightQueue   
-    this->InflightQueue_Evaluate(SendSuccess,resp_valid,fetchReq.Id.TransId,NewEntry,resp,this->m_InflightQueue_tail);
+    this->InflightQueue_Evaluate(true,this->fetchQueue_flush,SendSuccess,resp_valid,NewEntry,resp,this->m_InflightQueue_tail,full);
     //-------------------------------------------------------------//
     //module 5 
     this->GenNextFetchAddress(SendSuccess);
@@ -50,45 +51,78 @@ Fetch1::Evaluate(){
         this->m_State       = State_t::HandleExcp;
     }
 }
-void Fetch1::InflightQueue_Evaluate(bool SendSuccess,bool resp_valid,uint16_t TransId,InflighQueueEntry_t EntryData,MemResp_t resp,uint8_t& tail_ptr ){
+void Fetch1::InflightQueue_Evaluate(bool reset_n,bool fetchQueue_flush,bool SendSuccess,bool mem_valid,InflighQueueEntry_t EntryData,MemResp_t mem,uint8_t& r_tail_ptr,bool& full){
+    static InflighQueueEntry_t FetchQueue[FetchQueue_Size];
+    static uint8_t header_ptr,tail_ptr;
+    static uint8_t usage_count;
+    bool empty;
     InsnPkg_t insnPkg;
-    if(SendSuccess||EntryData.Excp.valid){
-        this->m_InflightQueue[TransId] = EntryData;
-        this->m_InflightQueue.TailInc();
-    }
-    if(resp_valid){
-        this->m_InflightQueue[resp.Id.TransId].Busy = false;
-        this->m_InflightQueue[resp.Id.TransId].Excp = resp.Excp;
-        memcpy(this->m_InflightQueue[resp.Id.TransId].InsnByte.data(),resp.Data,this->m_FetchByteWidth);
-    }
-    InflighQueueEntry_t& frontEntry = this->m_InflightQueue.front();
-    if(!this->m_InflightQueue.empty() && !frontEntry.Busy&&!frontEntry.Killed){
-            auto insn = this->m_Processor->CreateInsn();
-            insn->data_valid=true;
-            insn->Address   = frontEntry.Address;
-            insn->Excp = frontEntry.Excp;
-            insn->InsnByte=frontEntry.InsnByte;
-            insnPkg.emplace_back(insn);
-            this->m_StageOutPort->set(insnPkg);   
+    auto insn = this->m_Processor->CreateInsn();
+
+    if(usage_count==0)empty=true;
+    else empty=false;
+
+    if(!reset_n||fetchQueue_flush)
+    {
+        FetchQueue->reset(this->m_FetchByteWidth);
+        usage_count=0;
+        header_ptr=0;
+        tail_ptr=0;
+        empty=true;
+        full=false;
+        insn->data_valid=false;
     }
     else{
-        auto insn = this->m_Processor->CreateInsn();
-        insn->data_valid=false;
-        insnPkg.emplace_back(insn);
-        this->m_StageOutPort->set(insnPkg);
+        if(!empty){
+            if(!FetchQueue[header_ptr].Busy&&!FetchQueue[header_ptr].Killed){
+                insn->data_valid=true;
+                insn->Address   = FetchQueue[header_ptr].Address;
+                insn->Excp = FetchQueue[header_ptr].Excp;
+                insn->InsnByte=FetchQueue[header_ptr].InsnByte;
+            }
+            else{
+                insn->data_valid=false;
+            }
+
+            if(!FetchQueue[header_ptr].Busy){
+                header_ptr++;
+                if(header_ptr==FetchQueue_Size)header_ptr=0;
+                usage_count--;
+            }
+        }
+        else{
+            insn->data_valid=false;
+        }
+
+        if(SendSuccess||EntryData.Excp.valid){
+            FetchQueue[tail_ptr] = EntryData;
+            usage_count++;
+            tail_ptr++;
+            if(tail_ptr==FetchQueue_Size)tail_ptr=0;
+        }
+        
+        if(mem_valid){
+            FetchQueue[mem.Id.TransId].Busy = false;
+            FetchQueue[mem.Id.TransId].Excp = mem.Excp;
+            memcpy(FetchQueue[mem.Id.TransId].InsnByte.data(),mem.Data,this->m_FetchByteWidth);
+        }
     }
-    if(!this->m_InflightQueue.empty() && !frontEntry.Busy)this->m_InflightQueue.Pop();
-    tail_ptr=this->m_InflightQueue.getTail();
+
+    insnPkg.emplace_back(insn);
+    this->m_StageOutPort->set(insnPkg);  
+    r_tail_ptr=tail_ptr;
+    if(usage_count==FetchQueue_Size)full=true;
+    else full=false;
 }
 void
-Fetch1::SendFetchReq(uint8_t InflightQueue_tail,bool& SendSuccess,MemReq_t& fetchReq,InflighQueueEntry_t& NewEntry){
+Fetch1::SendFetchReq(bool full,uint8_t InflightQueue_tail,bool& SendSuccess,MemReq_t& fetchReq,InflighQueueEntry_t& NewEntry){
     SendSuccess = false;
     NewEntry.Killed     = false;
     NewEntry.Address    = this->m_PcRegister.OutPort->data;
     fetchReq.Id.TransId = InflightQueue_tail;// 获取尾指针
     if(this->m_PcRegister.OutPort->valid ){    
         /* Check Alignment */
-        if(!this->m_InflightQueue.full() && this->m_State == State_t::Idle && 
+        if(!full && this->m_State == State_t::Idle && 
             !this->m_StageOutPort->isStalled() )//不满，空闲，不堵塞
         {
             if((this->m_PcRegister.OutPort->data & 0b1) == 0 ){//0b1:二进制的1，只是看最低位是否为0，如果不是则触发异常
@@ -130,7 +164,7 @@ Fetch1::Reset(){
     this->m_ExcpTag          = 0;
     this->m_State            = State_t::Idle;
     this->m_iCachePort.Reset();
-    this->m_InflightQueue.Reset();
+   
     this->m_FlushSyncLatch.reset();
     this->m_PcRegister.reset();
     this->Decode_Redirect_Reg->reset();
@@ -165,9 +199,8 @@ Fetch1::InitBootPc(Addr_t boot_address){
 }
 void 
 Fetch1::FlushAction(){
-    this->KillNewer(this->m_InflightQueue.getHeader());
+    this->fetchQueue_flush=true;
     // this->m_iCachePort.Reset();
-    // this->m_InflightQueue.Reset();
     this->m_PcRegister.OutPort->kill();
     this->m_MisalignValid    = false;
     this->m_MisalignHalf     = 0;
