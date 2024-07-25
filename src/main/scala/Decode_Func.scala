@@ -25,7 +25,7 @@ class Decode_Func extends Module {
   })
 
 
-  // signal Extend to
+  // signal Extend
   def signExtend(value: UInt, targetWidth: Int): UInt = {
     val originalWidth = value.getWidth
     val signBit = value(originalWidth - 1)
@@ -41,11 +41,7 @@ class Decode_Func extends Module {
   val rs2 = io.Insn(24, 20)
   val shamt = io.Insn(25,20)
   val csr = io.Insn(31, 20)
-//  val i_imm = io.Insn(31, 20)//&&
-//  val s_imm = Cat(io.Insn(31, 25), io.Insn(11, 7))
-//  val b_imm = Cat(io.Insn(31), io.Insn(7), io.Insn(30, 25), io.Insn(11, 8),0.U(1.W))
-//  val u_imm = Cat(io.Insn(31, 12), 0.U(12.W))
-//  val j_imm = Cat(io.Insn(31), io.Insn(19, 12), io.Insn(20), io.Insn(30, 21),0.U(1.W))
+
   val i_imm = Cat(Fill(21,io.Insn(31)),io.Insn(30, 20))//&&
   val s_imm = Cat(Fill(21,io.Insn(31)), io.Insn(30, 25), io.Insn(11, 7))
   val b_imm = Cat(Fill(20,io.Insn(31)), io.Insn(7), io.Insn(30, 25), io.Insn(11, 8),0.U(1.W))
