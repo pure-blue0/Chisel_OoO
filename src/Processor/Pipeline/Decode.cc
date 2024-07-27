@@ -85,7 +85,7 @@ void Decode::DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush,uint8_t po
     static uint8_t usage_count;
     static uint8_t avail_count;
 
-    bool empty,one_entry_flag,two_entry_flag,three_entry_flag;
+    bool empty,send_two_entry_flag,send_three_entry_flag,send_four_entry_flag;
     InsnPkg_t insnPkg;
     InsnPtr_t insn1          = this->m_Processor->CreateInsn();
     InsnPtr_t insn2          = this->m_Processor->CreateInsn();
@@ -127,9 +127,9 @@ void Decode::DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush,uint8_t po
     }
 
     empty=(usage_count==pop_count)?true:false;
-    one_entry_flag=(usage_count-pop_count==1)?true:false;
-    two_entry_flag=(usage_count-pop_count==2)?true:false;
-    three_entry_flag=(usage_count-pop_count==3)?true:false;
+    send_two_entry_flag=(usage_count-pop_count>1)?true:false;
+    send_three_entry_flag=(usage_count-pop_count>2)?true:false;
+    send_four_entry_flag=(usage_count-pop_count>3)?true:false;
 
 
     
@@ -164,7 +164,7 @@ void Decode::DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush,uint8_t po
             insn1->Excp = DecodeQueue[send_header_ptr].Excp;
             insn1->Pred = DecodeQueue[send_header_ptr].Pred;
             
-            if(!one_entry_flag){
+            if(send_two_entry_flag){
                 insn2->data_valid = DecodeQueue[next_send_header_ptr].data_valid;
                 insn2->Pc = DecodeQueue[next_send_header_ptr].Pc;
                 insn2->Fu = DecodeQueue[next_send_header_ptr].Fu;
@@ -186,7 +186,7 @@ void Decode::DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush,uint8_t po
                 insn2->data_valid =false;
             }
 
-            if(!two_entry_flag){
+            if(send_three_entry_flag){
                 insn3->data_valid = DecodeQueue[third_send_header_ptr].data_valid;
                 insn3->Pc = DecodeQueue[third_send_header_ptr].Pc;
                 insn3->Fu = DecodeQueue[third_send_header_ptr].Fu;
@@ -208,7 +208,7 @@ void Decode::DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush,uint8_t po
                 insn3->data_valid =false;
             }
 
-            if(!three_entry_flag){
+            if(send_four_entry_flag){
                 insn4->data_valid = DecodeQueue[forth_send_header_ptr].data_valid;
                 insn4->Pc = DecodeQueue[forth_send_header_ptr].Pc;
                 insn4->Fu = DecodeQueue[forth_send_header_ptr].Fu;
@@ -274,6 +274,8 @@ void Decode::DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush,uint8_t po
     r_avail_count=avail_count;
     insnPkg.emplace_back(insn1);
     insnPkg.emplace_back(insn2);
+    insnPkg.emplace_back(insn3);
+    insnPkg.emplace_back(insn4);
     this->m_StageOutPort->set(insnPkg);
 
 }

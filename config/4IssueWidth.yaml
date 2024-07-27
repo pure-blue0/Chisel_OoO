@@ -85,15 +85,11 @@ Simulator : {
             {Name : BRU0 , FuncType : BRU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
             {Name : ALU0 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
             {Name : ALU1 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
-            {Name : MUL0 , FuncType : MUL, Latency : 3, Pipelined : true  , WriteBackPort : [0,1] },
-            {Name : DIV0 , FuncType : DIV, Latency : 7, Pipelined : false , WriteBackPort : [0,1] },
 
             {Name : LSU1 , FuncType : LSU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
             {Name : BRU1 , FuncType : BRU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
             {Name : ALU2 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
             {Name : ALU3 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
-            {Name : MUL1 , FuncType : MUL, Latency : 3, Pipelined : true  , WriteBackPort : [2,3] },
-            {Name : DIV1 , FuncType : DIV, Latency : 7, Pipelined : false , WriteBackPort : [2,3] },
         ],
         Schedulers : [
             {
@@ -126,7 +122,7 @@ Simulator : {
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
               RFReadPort       : [1],
-              FunctionUnitPool : [2,3,4,5,6],
+              FunctionUnitPool : [2,3,4],
               SubScheduler     : []
             },
             {
@@ -137,7 +133,7 @@ Simulator : {
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady,
               RFReadPort       : [2],
-              FunctionUnitPool : [7],
+              FunctionUnitPool : [5],
               SubScheduler     : []
             },
             {
@@ -148,7 +144,7 @@ Simulator : {
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
               RFReadPort       : [3],
-              FunctionUnitPool : [8,9,10,11,12],
+              FunctionUnitPool : [6,7],
               SubScheduler     : []
             },
         ],

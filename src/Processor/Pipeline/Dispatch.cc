@@ -45,26 +45,14 @@ Dispatch::Evaluate(){
         
         if(rcu->m_RobState != rob_state_t::Rob_Idle){
             this->m_StageInPort->stall();
-        }else{
-                
-                if(!insnPkg[0]->data_valid&&!insnPkg[1]->data_valid){
-                    insnPkg.pop_back();
-                    insnPkg.pop_back();
-                }
-                else if(!insnPkg[1]->data_valid){
-                    insnPkg.pop_back();
-                }
-                
-                rcu->TryAllocate(insnPkg,TryAllocSuccessCount[0]);
-                lsq->TryAllocate(insnPkg,TryAllocSuccessCount[1]);
-                this->TryDispatch(insnPkg,TryAllocSuccessCount[2],true);
-                Ack.takenInsnCount = *std::min_element(TryAllocSuccessCount,TryAllocSuccessCount+3);
-                lsq->Allocate(insnPkg,Ack.takenInsnCount);
-                rcu->Allocate(insnPkg,Ack.takenInsnCount);
-                this->DispatchInsn(insnPkg,Ack.takenInsnCount);
-
-                
-            
+        }else{  
+            rcu->TryAllocate(insnPkg,TryAllocSuccessCount[0]);
+            lsq->TryAllocate(insnPkg,TryAllocSuccessCount[1]);
+            this->TryDispatch(insnPkg,TryAllocSuccessCount[2],true);
+            Ack.takenInsnCount = *std::min_element(TryAllocSuccessCount,TryAllocSuccessCount+3);
+            lsq->Allocate(insnPkg,Ack.takenInsnCount);
+            rcu->Allocate(insnPkg,Ack.takenInsnCount);
+            this->DispatchInsn(insnPkg,Ack.takenInsnCount);    
             #ifdef TRACE_ON
             std::stringstream insnInfo;
             if(Ack.takenInsnCount){
@@ -118,14 +106,14 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
     // //连接输出
     // TryAllocate->eval();
     // uint64_t a=TryAllocate->io_issue_success_count;
-
+    uint8_t avail_count=insnPkg[0]->data_valid+insnPkg[1]->data_valid+insnPkg[2]->data_valid+insnPkg[3]->data_valid;
     // Flush Status
     for(auto& scheduler : this->m_SchedularVec){//获取每个调度器的可用，EnqueWidth：表示的是一个周期内最大的允许指令入队的数量
         scheduler.AvailPort = std::min(scheduler.scheduler->GetAvailibleEntryCount(),scheduler.scheduler->m_EnqueWidth);
     }//获取每个队列可用entry数
     SuccessCount = 0;
     bool stop_flag=0;
-    for(int i=0;i<insnPkg.size()&&!stop_flag;i++){
+    for(int i=0;i<avail_count&&!stop_flag;i++){
         InsnPtr_t insn = insnPkg[i];
         if(insn->Excp.valid){//判断指令是否为异常指令
             SuccessCount++;
@@ -177,8 +165,7 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
 //     __int128 insn2=(__int128)insnPkg[1]->Excp.Tval<<96|(__int128)insnPkg[1]->Excp.Cause<<90|(__int128)insnPkg[1]->Excp.valid<<89|
 //                    (__int128)(uint32_t)insnPkg[1]->imm<<57|(__int128)insnPkg[1]->SubOp<<53|(__int128)insnPkg[1]->Fu<<50|(__int128)insnPkg[1]->ControlFlowInsn<<49|
 //                    (__int128)insnPkg[1]->IsaRd<<44|(__int128)insnPkg[1]->Operand2Ready<<43|(__int128)insnPkg[1]->IsaRs2<<38|(__int128)insnPkg[1]->Operand1Ready<<37|
-//                    (__int128)insnPkg[1]->IsaRs1<<32|(__int128)insnPkg[1]->Pc;
-                 
+//                    (__int128)insnPkg[1]->IsaRs1<<32|(__int128)insnPkg[1]->Pc;           
 //     VDispatch *Dispatch=new VDispatch;//创建对象
 //     //连接输入，由于insn1的位数超过32位，因此这里需要采用数组的方式进行赋值，每个元素是32位
 //     //在verilog中，LSQtag--LPhyRd这些数据都是在Rename Dispatch阶段被赋值的，其余的数据是在Decode阶段被赋值并放入Decode Queue的，因此像下面这样赋值
@@ -193,7 +180,7 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
 //     Dispatch->io_insn1_PhyRs2_in=insnPkg[0]->PhyRs2;
 //     Dispatch->io_insn1_PhyRd_in=insnPkg[0]->PhyRd;
 //     Dispatch->io_insn1_LPhyRd_in=insnPkg[0]->LPhyRd;
-
+//
 //     Dispatch->io_insn2[0]=(uint32_t)insn2;
 //     Dispatch->io_insn2[1]=(uint32_t)(insn2>>32);
 //     Dispatch->io_insn2[2]=(uint32_t)(insn2>>64);
@@ -204,7 +191,7 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
 //     Dispatch->io_insn2_PhyRs2_in=insnPkg[1]->PhyRs2;
 //     Dispatch->io_insn2_PhyRd_in=insnPkg[1]->PhyRd;
 //     Dispatch->io_insn2_LPhyRd_in=insnPkg[1]->LPhyRd;
-    
+//   
 //     Dispatch->eval();//计算需要分配到哪个队列，并将输入的数据传输到输出
 //     //连接输出
 //     uint16_t num1=Dispatch->io_Issue_num1;
@@ -261,11 +248,11 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
 //     if(num1==0) this->m_SchedularVec[0].scheduler->Schedule(insnPkg[0],this->m_SchedularVec[0].scheduler->Allocate());
 //     else if(num1==1) this->m_SchedularVec[1].scheduler->Schedule(insnPkg[0],this->m_SchedularVec[1].scheduler->Allocate());
 //     else if(num1==2) this->m_SchedularVec[2].scheduler->Schedule(insnPkg[0],this->m_SchedularVec[2].scheduler->Allocate());
-
+//
 //     if(num2==0) this->m_SchedularVec[0].scheduler->Schedule(insnPkg[1],this->m_SchedularVec[0].scheduler->Allocate());
 //     else if(num2==1) this->m_SchedularVec[1].scheduler->Schedule(insnPkg[1],this->m_SchedularVec[1].scheduler->Allocate());
 //     else if(num2==2) this->m_SchedularVec[2].scheduler->Schedule(insnPkg[1],this->m_SchedularVec[2].scheduler->Allocate());
-
+//
 // }
 void 
 Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
@@ -301,8 +288,7 @@ Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
 //     //         //insn->State = InsnState_t::State_Issue;
 //     //         for(auto scheduler : this->m_SchedularVec){
 //     //             if(scheduler.scheduler->m_SupportFunc.count(insn->Fu) )
-//     //             {
-                    
+//     //             {                   
 //     //                 scheduler.scheduler->Schedule(insn,scheduler.scheduler->Allocate());
 //     //                 break;
 //     //             }
@@ -322,7 +308,6 @@ std::shared_ptr<BaseStage> Create_Dispatch_Instance(
     }
     return t;
 }
-
 
 
 } // namespace Emualtor

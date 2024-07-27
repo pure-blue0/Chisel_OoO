@@ -94,6 +94,7 @@ public:
 
     /* SnapShot */
     LoopQueue<Snapshot_t>       m_Snapshot;
+    uint8_t lsq_count;
 
     bool                        m_RN_EN_Update;
     uint64_t                    m_RN_IsaRd_Update;
@@ -108,10 +109,10 @@ public:
     bool ROB_WB_Data_isExcp_Group[4];
     uint8_t ROB_WB_ROBTag_Group[4];
     
-    bool ROB_AGU_EN;
-    bool ROB_AGU_Data_done;
-    bool ROB_AGU_Data_isExcp;
-    uint8_t ROB_AGU_ROBTag;
+    bool ROB_AGU_EN_Group[2];
+    bool ROB_AGU_Data_done_Group[2];
+    bool ROB_AGU_Data_isExcp_Group[2];
+    uint8_t ROB_AGU_ROBTag_Group[2];
 
 public:
     Rcu(
@@ -144,7 +145,7 @@ public:
 
     void WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq);
 
-    void AGUFastDetect(InsnPtr_t& insn);
+    void AGUFastDetect(uint8_t index,InsnPtr_t& insn);
 
     void Forwarding(InsnPtr_t& insn);
 

@@ -418,8 +418,9 @@ void Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
     // SuccessCount=Rcu_TryAllocate->io_Rcu_success_count;
     // delete Rcu_TryAllocate;//删除创建的对象
     
+    uint8_t avail_count=insnPkg[0]->data_valid+insnPkg[1]->data_valid+insnPkg[2]->data_valid+insnPkg[3]->data_valid;
     SuccessCount = this->m_Rob.getAvailEntryCount()<this->m_IntFreelist.getAvailEntryCount()?this->m_Rob.getAvailEntryCount():this->m_IntFreelist.getAvailEntryCount();
-    SuccessCount =insnPkg.size()<SuccessCount?insnPkg.size():SuccessCount; 
+    SuccessCount =avail_count<SuccessCount?avail_count:SuccessCount; 
 };
 // bool Rcu::ReadyForCommit(uint64_t RobTag){
 //     VReadyForCommit *ReadyForCommit;
@@ -522,18 +523,18 @@ void Rcu::WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& Re
     }
 }
 
-void Rcu::AGUFastDetect(InsnPtr_t& insn){
-    this->m_Rob[insn->RobTag].isStable = true;
+void Rcu::AGUFastDetect(uint8_t index,InsnPtr_t& insn){
+   
     DPRINTF(WriteBack,"RobTag[{}],Pc[{:#x}] -> Scan AGU result, Exception [{}]",
                     insn->RobTag,insn->Pc,insn->Excp.valid);
+    bool a;
     if(insn->Fu == funcType_t::STU && insn->Agu_addr_ready && insn->Agu_data_ready)
     {
-                this->m_Rob[insn->RobTag].done = true;
+                this->ROB_AGU_Data_done_Group[index]= true;
     }
-    else this->m_Rob[insn->RobTag].done = false;
+    else this->ROB_AGU_Data_done_Group[index] = false;
     if(insn->Excp.valid){
-         this->m_Rob[insn->RobTag].done   = true;
-        this->m_Rob[insn->RobTag].isExcp = true;
+         this->ROB_AGU_Data_done_Group[index]   = true;
         if(this->m_RobState != rob_state_t::Rob_Idle )
         {
             this->m_RobState = rob_state_t::Rob_Undo;
@@ -542,6 +543,7 @@ void Rcu::AGUFastDetect(InsnPtr_t& insn){
             this->m_ExcpTval    = insn->Excp.Tval;
         }
     }
+    this->ROB_AGU_Data_isExcp_Group[index]=this->m_Rob[insn->RobTag].isExcp;
 }
 
 void 
@@ -616,6 +618,18 @@ Rcu::Evaulate(){
         }
         
     }
+    for(int i=0;i<2;i++){
+
+        
+        if(this->ROB_AGU_EN_Group[i]){
+        this->m_Rob[this->ROB_AGU_ROBTag_Group[i]].isStable=true;
+           this->m_Rob[this->ROB_AGU_ROBTag_Group[i]].done=this->ROB_AGU_Data_done_Group[i];
+           this->m_Rob[this->ROB_AGU_ROBTag_Group[i]].isExcp=this->ROB_AGU_Data_isExcp_Group[i];
+        }
+        this->ROB_AGU_EN_Group[i]=false;
+    }
+   
+
 
     if(this->m_RobState == rob_state_t::Rob_Undo){
         this->RollBack();

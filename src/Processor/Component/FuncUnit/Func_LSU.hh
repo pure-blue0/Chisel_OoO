@@ -21,6 +21,7 @@ private:
     std::shared_ptr<Rcu>    m_Rcu;
 
     dCachePort              m_dCachePort;
+    uint8_t lsq_count;
 
 public:
 
@@ -43,6 +44,7 @@ public:
         this->m_Allcated = false;
         this->m_CalcuPipe.reset();
         this->m_dCachePort.Reset();
+        lsq_count=0;
     };
     // void AddrGen(InsnPtr_t& insn){
     //     VAddrGen *AddrGen=new VAddrGen;//创建对象
@@ -139,6 +141,7 @@ public:
     }
 
     void Evaluate(){
+        
         if(this->m_CalcuPipe.OutPort->valid){
             this->m_Allcated = false;
             auto& insn = this->m_CalcuPipe.OutPort->data;
@@ -147,9 +150,18 @@ public:
                 insn->Agu_data_ready = true;
                 insn->Agu_data = insn->Operand2;
             }
-            this->m_Rcu->AGUFastDetect(insn);//检测是否产生了有效的地址和数据，如果指令存在异常，则进行回滚操作
+            
+            this->m_Rcu->ROB_AGU_EN_Group[this->m_Rcu->lsq_count]=true;
+            this->m_Rcu->ROB_AGU_ROBTag_Group[this->m_Rcu->lsq_count]=insn->RobTag;
+            
+            this->m_Rcu->AGUFastDetect(this->m_Rcu->lsq_count,insn);//检测是否产生了有效的地址和数据，如果指令存在异常，则进行回滚操作
             this->m_Lsq->WriteBack(insn);//更新lsq中对应条目的地址和数据，方便后面的wb
         }
+        else this->m_Rcu->ROB_AGU_EN_Group[this->m_Rcu->lsq_count]=false;
+
+        //hdl don't need realize this code
+        this->m_Rcu->lsq_count++;
+        if(this->m_Rcu->lsq_count==2)this->m_Rcu->lsq_count=0;
         
         bool Success;
         this->SendStoreReq(Success);

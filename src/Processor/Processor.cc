@@ -350,6 +350,7 @@ Processor::Evaluate(){
         this->m_Rcu->ROB_WB_EN_Group[i]=false;
         this->m_Rcu->ROB_Entry_WEN_GROUP[i]=false;
     }
+     this->m_Rcu->lsq_count=0;
     
 }
 
