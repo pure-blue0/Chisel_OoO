@@ -43,10 +43,10 @@ Dispatch::Evaluate(){
 
     if(this->m_StageInPort->valid){
         
-       
         if(rcu->m_RobState != rob_state_t::Rob_Idle){
             this->m_StageInPort->stall();
         }else{
+                
                 if(!insnPkg[0]->data_valid&&!insnPkg[1]->data_valid){
                     insnPkg.pop_back();
                     insnPkg.pop_back();
@@ -54,6 +54,7 @@ Dispatch::Evaluate(){
                 else if(!insnPkg[1]->data_valid){
                     insnPkg.pop_back();
                 }
+                
                 rcu->TryAllocate(insnPkg,TryAllocSuccessCount[0]);
                 lsq->TryAllocate(insnPkg,TryAllocSuccessCount[1]);
                 this->TryDispatch(insnPkg,TryAllocSuccessCount[2],true);

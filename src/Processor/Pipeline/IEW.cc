@@ -90,11 +90,10 @@ IEW::WriteBack(){
     bool needRedirect = false;
     Redirect_message redirect_message;
     redirect_message.valid=0;
+    int index=0;
     for(auto& writebacker : this->m_WriteBackStageVec){
-        writebacker->Evaluate(RedirectReq,needRedirect);
-        
-        
-        
+        writebacker->Evaluate(index,RedirectReq,needRedirect);
+        index++;
         if(needRedirect){
             this->m_RedirectPort->set(RedirectReq);
             redirect_message.valid=needRedirect;

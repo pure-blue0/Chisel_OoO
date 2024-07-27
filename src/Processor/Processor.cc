@@ -337,6 +337,7 @@ Processor::Advance(){
 
 void
 Processor::Evaluate(){
+    
     for(auto it : this->m_StageTickSeq){
         it.second->Evaluate();
     }
@@ -344,6 +345,12 @@ Processor::Evaluate(){
     this->m_Lsq->Evaulate();
     (static_cast<Decode*>(this->m_StageMap["Decode"].get()))->decodeQueue_flush=false;
     (static_cast<Fetch1*>(this->m_StageMap["Fetch1"].get()))->fetchQueue_flush=false;
+
+    for(int i=0;i<4;i++){
+        this->m_Rcu->ROB_WB_EN_Group[i]=false;
+        this->m_Rcu->ROB_Entry_WEN_GROUP[i]=false;
+    }
+    
 }
 
 void 

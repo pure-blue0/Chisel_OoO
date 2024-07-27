@@ -54,6 +54,14 @@ Rcu::Reset(){
     this->m_IntBusylist.Reset(this->m_RenameRegister);
     /* Reset FreeList */
     this->m_IntFreelist.Reset();
+
+    for(int i=0;i<4;i++){
+        this->ROB_WB_EN_Group[i]=false;
+        this->ROB_WB_ROBTag_Group[i]=0;
+        this->ROB_WB_Data_isExcp_Group[i]=false;
+        this->ROB_WB_Data_isMisPred_Group[i]=false;
+        this->ROB_Entry_WEN_GROUP[i]=false;
+    }
 }
 bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先入队的话，则输出true
 
@@ -172,7 +180,9 @@ bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先�
 // }
  
  
-void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
+void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN_GROUP[4]){
+    uint64_t allocCount=ROB_Entry_WEN_GROUP[0]+ROB_Entry_WEN_GROUP[1]+ROB_Entry_WEN_GROUP[2]+ROB_Entry_WEN_GROUP[3];
+
     for(size_t i = 0; i < allocCount; i++){
         InsnPtr_t insn = insnPkg[i];
         Rob_entry_t newEntry;
@@ -219,8 +229,6 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
 }
 // void
 // Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
-   
-
 //     //连接输入
 //     RcuAllocate->io_allocCount=allocCount;
 //     RcuAllocate->io_EN_Update=this->m_RN_EN_Update;
@@ -237,7 +245,7 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
 //     //模拟时钟上升沿
 //     RcuAllocate->clock=0;
 //     RcuAllocate->eval();
-     
+//    
 //     //连接输出
 //     if(allocCount>0){
 //         insnPkg[0]->PhyRs1=RcuAllocate->io_insn1_PhyRs1;
@@ -251,8 +259,7 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
 //         insnPkg[1]->PhyRd=RcuAllocate->io_insn2_PhyRd;
 //         insnPkg[1]->LPhyRd=RcuAllocate->io_insn2_LPhyRd;
 //     }
-    
-
+//
 //     if(RcuAllocate->io_WEN1_IntBusylist){
 //         this->m_IntBusylist[insnPkg[0]->PhyRd].allocated = true;
 //         this->m_IntBusylist[insnPkg[0]->PhyRd].done      = false;
@@ -269,7 +276,6 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
 //         this->m_IntFreelist.pop_front();
 //         this->m_IntFreelist.pop_front();
 //     }
-
 //     // for(size_t i = 0; i < allocCount; i++){
 //     //     InsnPtr_t insn = insnPkg[i];
 //     //     insn->PhyRs1 = this->m_IntRenameTable[insn->IsaRs1];
@@ -283,7 +289,6 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
 //     //         this->m_IntRenameTable[insn->IsaRd]        = insn->PhyRd;//保存rd对应的reg id
 //     //     }
 //     // }
-
 //     // if(allocCount==2){//处理指令2与指令1之间可能存在的依赖
 //     //         InsnPtr_t& insn1 = insnPkg[0];
 //     //         InsnPtr_t& Insn2 = insnPkg[1];
@@ -340,15 +345,11 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
 //     //         insnPkg[1]->PhyRs1,insnPkg[1]->PhyRs2,insnPkg[1]->PhyRd,insnPkg[1]->LPhyRd);
 //     //         exit(1);
 //     //     }
-//     // }
-    
+//     // }    
 //     RcuAllocate->clock=1;
 //     RcuAllocate->eval();
-
-//     this->m_RN_EN_Update=0;//wait next updata
-    
-//     this->CreateRobEntry(insnPkg,allocCount);//发送创建rob请求
-    
+//     this->m_RN_EN_Update=0;//wait next updata  
+//     this->CreateRobEntry(insnPkg,allocCount);//发送创建rob请求   
 // }
 
 void
@@ -366,18 +367,43 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
             this->m_IntRenameTable[insn->IsaRd]        = insn->PhyRd;//保存rd对应的reg id
         }
     }
-    if(allocCount==2){//处理指令2与指令1之间可能存在的依赖
-            InsnPtr_t& insn1 = insnPkg[0];
-            InsnPtr_t& Insn2 = insnPkg[1];
-            if(insn1->IsaRd != 0){
-                if(insn1->IsaRd == Insn2->IsaRs1)Insn2->PhyRs1 = insn1->PhyRd;
-                if(insn1->IsaRd == Insn2->IsaRs2)Insn2->PhyRs2 = insn1->PhyRd;
-                if(insn1->IsaRd == Insn2->IsaRd) Insn2->LPhyRd = insn1->PhyRd;
+    // if(allocCount==2){//处理指令2与指令1之间可能存在的依赖
+    //         InsnPtr_t& insn1 = insnPkg[0];
+    //         InsnPtr_t& Insn2 = insnPkg[1];
+    //         if(insn1->IsaRd != 0){
+    //             if(insn1->IsaRd == Insn2->IsaRs1)Insn2->PhyRs1 = insn1->PhyRd;
+    //             if(insn1->IsaRd == Insn2->IsaRs2)Insn2->PhyRs2 = insn1->PhyRd;
+    //             if(insn1->IsaRd == Insn2->IsaRd) Insn2->LPhyRd = insn1->PhyRd;
+    //         }
+    // }
+    for(size_t i = 0 ; i < insnPkg.size(); i++){
+        InsnPtr_t& insn = insnPkg[i];
+        if(insn && insn->IsaRd != 0){
+            for(size_t j = i + 1; j < insnPkg.size(); j++){
+                InsnPtr_t& laterInsn = insnPkg[j];
+                if(laterInsn){
+                    if( insn->IsaRd == laterInsn->IsaRs1){
+                        laterInsn->PhyRs1 = insn->PhyRd;
+                    }
+                    if( insn->IsaRd == laterInsn->IsaRs2){
+                        laterInsn->PhyRs2 = insn->PhyRd;
+                    } 
+                    if( insn->IsaRd == laterInsn->IsaRd){
+                        laterInsn->LPhyRd = insn->PhyRd;
+                    } 
+                }
             }
+        }
     }
-    
-    this->CreateRobEntry(insnPkg,allocCount);//发送创建rob请求
-    
+    this->ROB_Entry_WEN_GROUP[0]=allocCount?true:false;
+    this->ROB_Entry_WEN_GROUP[1]=allocCount>1?true:false;
+    this->ROB_Entry_WEN_GROUP[2]=allocCount>2?true:false;
+    this->ROB_Entry_WEN_GROUP[3]=allocCount>3?true:false;
+   
+    for(int i=0;i<allocCount;i++)
+    {
+        this->rob_insnPkg.emplace_back(insnPkg[i]);
+    }
 }
 
 void Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){ 
@@ -391,6 +417,7 @@ void Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
     // Rcu_TryAllocate->eval();
     // SuccessCount=Rcu_TryAllocate->io_Rcu_success_count;
     // delete Rcu_TryAllocate;//删除创建的对象
+    
     SuccessCount = this->m_Rob.getAvailEntryCount()<this->m_IntFreelist.getAvailEntryCount()?this->m_Rob.getAvailEntryCount():this->m_IntFreelist.getAvailEntryCount();
     SuccessCount =insnPkg.size()<SuccessCount?insnPkg.size():SuccessCount; 
 };
@@ -446,15 +473,18 @@ bool Rcu::ReadyForCommit(uint64_t RobTag){
     }
 }
 
-void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq){
+void Rcu::WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq){
     needRedirect = false;
     if(!this->m_Rob.empty() && (this->isOlder(insn->RobTag,this->m_Rob.getLastest(),this->m_Rob.getHeader()) || insn->RobTag == this->m_Rob.getLastest())){
-        this->m_Rob[insn->RobTag].done = true;
-        this->m_Rob[insn->RobTag].isStable = true;
+
+        this->ROB_WB_EN_Group[index]=true;
+        this->ROB_WB_ROBTag_Group[index]=insn->RobTag;
+        this->ROB_WB_Data_isExcp_Group[index]=insn->Excp.valid;
+        this->ROB_WB_Data_isMisPred_Group[index]=insn->BruMisPred;
         if(!insn->Excp.valid){
             if(insn->Fu == funcType_t::BRU){
                 if(insn->BruMisPred){
-                    this->m_Rob[insn->RobTag].isMisPred = true;  
+                      
                     if(this->m_RobState == rob_state_t::Rob_Idle || 
                         (this->isOlder(insn->RobTag,this->m_RollBackTag,this->m_Rob.getHeader()) ||
                         insn->RobTag == this->m_RollBackTag)
@@ -480,7 +510,7 @@ void Rcu::WriteBack(InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq)
                 this->m_IntBusylist[insn->PhyRd].forwarding = false;
             }
         }else{
-            this->m_Rob[insn->RobTag].isExcp = true;
+            
             if(this->m_RobState == rob_state_t::Rob_Idle || this->isOlder(insn->RobTag,this->m_RollBackTag,this->m_Rob.getHeader()))
             {
                 this->m_RobState = rob_state_t::Rob_Undo;
@@ -573,6 +603,20 @@ Rcu::RollBack(){
 
 void 
 Rcu::Evaulate(){
+    
+    this->CreateRobEntry(this->rob_insnPkg,this->ROB_Entry_WEN_GROUP);
+    this->rob_insnPkg.clear();
+
+    for(int i=0;i<4;i++){
+        if(this->ROB_WB_EN_Group[i]){
+            this->m_Rob[this->ROB_WB_ROBTag_Group[i]].done = true;
+            this->m_Rob[this->ROB_WB_ROBTag_Group[i]].isStable = true;
+            this->m_Rob[this->ROB_WB_ROBTag_Group[i]].isExcp = this->ROB_WB_Data_isExcp_Group[i];
+            this->m_Rob[this->ROB_WB_ROBTag_Group[i]].isMisPred = this->ROB_WB_Data_isMisPred_Group[i];
+        }
+        
+    }
+
     if(this->m_RobState == rob_state_t::Rob_Undo){
         this->RollBack();
     }

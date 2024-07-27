@@ -98,6 +98,20 @@ public:
     bool                        m_RN_EN_Update;
     uint64_t                    m_RN_IsaRd_Update;
     uint64_t                    m_RN_Data_Update;
+    uint64_t    ROB_Entry_count;
+    InsnPkg_t  rob_insnPkg;
+    bool write_in;
+    bool ROB_Entry_WEN_GROUP[4];
+
+    bool ROB_WB_EN_Group[4];
+    bool ROB_WB_Data_isMisPred_Group[4];
+    bool ROB_WB_Data_isExcp_Group[4];
+    uint8_t ROB_WB_ROBTag_Group[4];
+    
+    bool ROB_AGU_EN;
+    bool ROB_AGU_Data_done;
+    bool ROB_AGU_Data_isExcp;
+    uint8_t ROB_AGU_ROBTag;
 
 public:
     Rcu(
@@ -116,7 +130,7 @@ public:
 
     void Rename(InsnPkg_t& insnPkg);
 
-    void CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount);
+    void CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN_GROUP[4]);
 
     bool isOlder(uint64_t tag1, uint64_t tag2,uint64_t header);
 
@@ -128,7 +142,7 @@ public:
 
     bool ReadyForCommit(uint64_t RobTag);
 
-    void WriteBack(InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq);
+    void WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq);
 
     void AGUFastDetect(InsnPtr_t& insn);
 

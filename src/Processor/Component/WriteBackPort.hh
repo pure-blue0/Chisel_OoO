@@ -29,7 +29,7 @@ public:
 
     void Flush();
 
-    void Evaluate(Redirect_t& RedirectReq, bool& needRedirect);
+    void Evaluate(int index, Redirect_t& RedirectReq, bool& needRedirect);
 
     void Advance();
 
