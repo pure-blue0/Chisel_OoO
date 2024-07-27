@@ -5,7 +5,7 @@
 #include "Pipe_data.hh"
 #include "../Component/LoopQueue.hh"
 #include "../../Common/Common.hh"
-#define DecodeQueue_Size 60
+#define DecodeQueue_Size 64
 namespace Emulator
 {
 
@@ -24,7 +24,6 @@ private:
         Addr_t  target;
     };
     
-    const uint16_t                      m_FetchByteWidth;
 
     const uint16_t                      m_iCacheAlignByte;
 
@@ -53,11 +52,11 @@ public:
 
     void SendReq();
 
-    void DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush, uint8_t pop_count,bool WEN1,DecodeInsn_t insn1_WriteIn,bool WEN2,DecodeInsn_t insn2_WriteIn,bool isStalled,uint8_t& r_avail_count);
+    void DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush,uint8_t pop_count,bool WEN1,DecodeInsn_t insn1_WriteIn,bool WEN2,DecodeInsn_t insn2_WriteIn,bool WEN3,DecodeInsn_t insn3_WriteIn,bool WEN4,DecodeInsn_t insn4_WriteIn,bool isStalled,uint8_t& r_avail_count);
 
     void DecodeInsn(DecodeInsn_t& insn);
 
-    void Predecode(Emulator::DynInsn& insnEntry,DecodeInsn_t& insn1,DecodeInsn_t& insn2,Redirect_message& redirect_message,bool& flush_flag);
+    void Predecode(Emulator::DynInsn& insnEntry,DecodeInsn_t& insn1,DecodeInsn_t& insn2,DecodeInsn_t& insn3,DecodeInsn_t& insn4,Redirect_message& redirect_message,bool& flush_flag);
 
     void BranchRedirect(DecodeInsn_t& insn,Redirect_message& redirect_message);
 };

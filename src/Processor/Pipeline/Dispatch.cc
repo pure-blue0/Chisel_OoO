@@ -165,128 +165,128 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
     //         exit(1);
     // }
 }
-void 
-Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
-    //对输入进行拼接，在verilog中，insn1和insn2内得到的数据都是从decode queue中取出来的
-    //而取出来的数据是一个128位的，为了模拟实际的效果，因此在这里对数据进行拼接，来模拟decode queue的数据
-    __int128 insn1=(__int128)insnPkg[0]->Excp.Tval<<96|(__int128)insnPkg[0]->Excp.Cause<<90|(__int128)insnPkg[0]->Excp.valid<<89|
-                   (__int128)(uint32_t)insnPkg[0]->imm<<57|(__int128)insnPkg[0]->SubOp<<53|(__int128)insnPkg[0]->Fu<<50|(__int128)insnPkg[0]->ControlFlowInsn<<49|
-                   (__int128)insnPkg[0]->IsaRd<<44|(__int128)insnPkg[0]->Operand2Ready<<43|(__int128)insnPkg[0]->IsaRs2<<38|(__int128)insnPkg[0]->Operand1Ready<<37|
-                   (__int128)insnPkg[0]->IsaRs1<<32|(__int128)insnPkg[0]->Pc;
-    __int128 insn2=(__int128)insnPkg[1]->Excp.Tval<<96|(__int128)insnPkg[1]->Excp.Cause<<90|(__int128)insnPkg[1]->Excp.valid<<89|
-                   (__int128)(uint32_t)insnPkg[1]->imm<<57|(__int128)insnPkg[1]->SubOp<<53|(__int128)insnPkg[1]->Fu<<50|(__int128)insnPkg[1]->ControlFlowInsn<<49|
-                   (__int128)insnPkg[1]->IsaRd<<44|(__int128)insnPkg[1]->Operand2Ready<<43|(__int128)insnPkg[1]->IsaRs2<<38|(__int128)insnPkg[1]->Operand1Ready<<37|
-                   (__int128)insnPkg[1]->IsaRs1<<32|(__int128)insnPkg[1]->Pc;
-                 
-    VDispatch *Dispatch=new VDispatch;//创建对象
-    //连接输入，由于insn1的位数超过32位，因此这里需要采用数组的方式进行赋值，每个元素是32位
-    //在verilog中，LSQtag--LPhyRd这些数据都是在Rename Dispatch阶段被赋值的，其余的数据是在Decode阶段被赋值并放入Decode Queue的，因此像下面这样赋值
-    Dispatch->io_DispatchCount=DispatchCount;
-    Dispatch->io_insn1[0]=(uint32_t)insn1;
-    Dispatch->io_insn1[1]=(uint32_t)(insn1>>32);
-    Dispatch->io_insn1[2]=(uint32_t)(insn1>>64);
-    Dispatch->io_insn1[3]=(uint32_t)(insn1>>96);
-    Dispatch->io_Insn1_LSQTag_in=insnPkg[0]->LSQTag;
-    Dispatch->io_Insn1_RobTag_in=insnPkg[0]->RobTag;
-    Dispatch->io_insn1_PhyRs1_in=insnPkg[0]->PhyRs1;
-    Dispatch->io_insn1_PhyRs2_in=insnPkg[0]->PhyRs2;
-    Dispatch->io_insn1_PhyRd_in=insnPkg[0]->PhyRd;
-    Dispatch->io_insn1_LPhyRd_in=insnPkg[0]->LPhyRd;
-
-    Dispatch->io_insn2[0]=(uint32_t)insn2;
-    Dispatch->io_insn2[1]=(uint32_t)(insn2>>32);
-    Dispatch->io_insn2[2]=(uint32_t)(insn2>>64);
-    Dispatch->io_insn2[3]=(uint32_t)(insn2>>96);
-    Dispatch->io_Insn2_LSQTag_in=insnPkg[1]->LSQTag;
-    Dispatch->io_Insn2_RobTag_in=insnPkg[1]->RobTag;
-    Dispatch->io_insn2_PhyRs1_in=insnPkg[1]->PhyRs1;
-    Dispatch->io_insn2_PhyRs2_in=insnPkg[1]->PhyRs2;
-    Dispatch->io_insn2_PhyRd_in=insnPkg[1]->PhyRd;
-    Dispatch->io_insn2_LPhyRd_in=insnPkg[1]->LPhyRd;
-    
-    Dispatch->eval();//计算需要分配到哪个队列，并将输入的数据传输到输出
-    //连接输出
-    uint16_t num1=Dispatch->io_Issue_num1;
-    uint16_t num2=Dispatch->io_Issue_num2;
-    //下面的操作是模拟ISSUE Queue接收到数据后的操作，当num！=3，表示有ISSUE Queue匹配到数据
-    //因此需要先对输入的128位数据进行拆解，同时将LSQtag--LPhyRd接收
-    if(num1!=3){
-        __int128 insn1_out=(__int128)Dispatch->io_insn1_Out[3]<<96|(__int128)Dispatch->io_insn1_Out[2]<<64|
-                           (__int128)Dispatch->io_insn1_Out[1]<<32|(__int128)Dispatch->io_insn1_Out[0];
-        insnPkg[0]->Excp.Tval  = insn1_out>>96;
-        insnPkg[0]->Excp.Cause = insn1_out>>90&0X3F;
-        insnPkg[0]->Excp.valid = insn1_out>>89&0X1;
-        insnPkg[0]->imm = insn1_out>>57&0XFFFFFFFF;  
-        insnPkg[0]->SubOp = insn1_out>>53&0XF;  
-        insnPkg[0]->Fu = funcType_t(insn1_out>>50&0X7);  
-        insnPkg[0]->ControlFlowInsn = insn1_out>>49&0X1;  
-        insnPkg[0]->IsaRd = insn1_out>>44&0X1F;  
-        insnPkg[0]->Operand2Ready = insn1_out>>43&0X1;  
-        insnPkg[0]->IsaRs2 = insn1_out>>38&0X1F;  
-        insnPkg[0]->Operand1Ready = insn1_out>>37&0X1; 
-        insnPkg[0]->IsaRs2 = insn1_out>>32&0X1F;   
-        insnPkg[0]->Pc = insn1_out&0XFFFFFFFF; 
-        insnPkg[0]->LSQTag=Dispatch->io_Insn1_LSQTag;
-        insnPkg[0]->RobTag=Dispatch->io_Insn1_RobTag;
-        insnPkg[0]->PhyRs1=Dispatch->io_insn1_PhyRs1;
-        insnPkg[0]->PhyRs2=Dispatch->io_insn1_PhyRs2;
-        insnPkg[0]->PhyRd=Dispatch->io_insn1_PhyRd;
-        insnPkg[0]->LPhyRd=Dispatch->io_insn1_LPhyRd; 
-    }
-    if(num2!=3){
-        __int128 insn2_out=(__int128)Dispatch->io_insn2_Out[3]<<96|(__int128)Dispatch->io_insn2_Out[2]<<64|
-                           (__int128)Dispatch->io_insn2_Out[1]<<32|(__int128)Dispatch->io_insn2_Out[0];
-        insnPkg[1]->Excp.Tval  = insn2_out>>96;
-        insnPkg[1]->Excp.Cause = insn2_out>>90&0X3F;
-        insnPkg[1]->Excp.valid = insn2_out>>89&0X1;
-        insnPkg[1]->imm = insn2_out>>57&0XFFFFFFFF;  
-        insnPkg[1]->SubOp = insn2_out>>53&0XF;  
-        insnPkg[1]->Fu = funcType_t(insn2_out>>50&0X7);  
-        insnPkg[1]->ControlFlowInsn = insn2_out>>49&0X1;  
-        insnPkg[1]->IsaRd = insn2_out>>44&0X1F;  
-        insnPkg[1]->Operand2Ready = insn2_out>>43&0X1;  
-        insnPkg[1]->IsaRs2 = insn2_out>>38&0X1F;  
-        insnPkg[1]->Operand1Ready = insn2_out>>37&0X1; 
-        insnPkg[1]->IsaRs2 = insn2_out>>32&0X1F;   
-        insnPkg[1]->Pc = insn2_out&0XFFFFFFFF; 
-        insnPkg[1]->LSQTag=Dispatch->io_Insn2_LSQTag;
-        insnPkg[1]->RobTag=Dispatch->io_Insn2_RobTag;
-        insnPkg[1]->PhyRs1=Dispatch->io_insn2_PhyRs1;
-        insnPkg[1]->PhyRs2=Dispatch->io_insn2_PhyRs2;
-        insnPkg[1]->PhyRd=Dispatch->io_insn2_PhyRd;
-        insnPkg[1]->LPhyRd=Dispatch->io_insn2_LPhyRd; 
-    }
-    //模拟ISSUE Queue的接收数据
-    if(num1==0) this->m_SchedularVec[0].scheduler->Schedule(insnPkg[0],this->m_SchedularVec[0].scheduler->Allocate());
-    else if(num1==1) this->m_SchedularVec[1].scheduler->Schedule(insnPkg[0],this->m_SchedularVec[1].scheduler->Allocate());
-    else if(num1==2) this->m_SchedularVec[2].scheduler->Schedule(insnPkg[0],this->m_SchedularVec[2].scheduler->Allocate());
-
-    if(num2==0) this->m_SchedularVec[0].scheduler->Schedule(insnPkg[1],this->m_SchedularVec[0].scheduler->Allocate());
-    else if(num2==1) this->m_SchedularVec[1].scheduler->Schedule(insnPkg[1],this->m_SchedularVec[1].scheduler->Allocate());
-    else if(num2==2) this->m_SchedularVec[2].scheduler->Schedule(insnPkg[1],this->m_SchedularVec[2].scheduler->Allocate());
-
-}
 // void 
 // Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
-//     for(size_t i = 0 ; i < DispatchCount; i++){
-//         InsnPtr_t insn = insnPkg[i];
-//         if( !(insn->Excp.valid ||
-//              ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
-//              ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
-//              ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
-//         ){
-//             for(auto scheduler : this->m_SchedularVec){
-//                 if(scheduler.scheduler->m_SupportFunc.count(insn->Fu) )
-//                 {
-                    
-//                     scheduler.scheduler->Schedule(insn,scheduler.scheduler->Allocate());
-//                     break;
-//                 }
-//             } 
-//         }
+//     //对输入进行拼接，在verilog中，insn1和insn2内得到的数据都是从decode queue中取出来的
+//     //而取出来的数据是一个128位的，为了模拟实际的效果，因此在这里对数据进行拼接，来模拟decode queue的数据
+//     __int128 insn1=(__int128)insnPkg[0]->Excp.Tval<<96|(__int128)insnPkg[0]->Excp.Cause<<90|(__int128)insnPkg[0]->Excp.valid<<89|
+//                    (__int128)(uint32_t)insnPkg[0]->imm<<57|(__int128)insnPkg[0]->SubOp<<53|(__int128)insnPkg[0]->Fu<<50|(__int128)insnPkg[0]->ControlFlowInsn<<49|
+//                    (__int128)insnPkg[0]->IsaRd<<44|(__int128)insnPkg[0]->Operand2Ready<<43|(__int128)insnPkg[0]->IsaRs2<<38|(__int128)insnPkg[0]->Operand1Ready<<37|
+//                    (__int128)insnPkg[0]->IsaRs1<<32|(__int128)insnPkg[0]->Pc;
+//     __int128 insn2=(__int128)insnPkg[1]->Excp.Tval<<96|(__int128)insnPkg[1]->Excp.Cause<<90|(__int128)insnPkg[1]->Excp.valid<<89|
+//                    (__int128)(uint32_t)insnPkg[1]->imm<<57|(__int128)insnPkg[1]->SubOp<<53|(__int128)insnPkg[1]->Fu<<50|(__int128)insnPkg[1]->ControlFlowInsn<<49|
+//                    (__int128)insnPkg[1]->IsaRd<<44|(__int128)insnPkg[1]->Operand2Ready<<43|(__int128)insnPkg[1]->IsaRs2<<38|(__int128)insnPkg[1]->Operand1Ready<<37|
+//                    (__int128)insnPkg[1]->IsaRs1<<32|(__int128)insnPkg[1]->Pc;
+                 
+//     VDispatch *Dispatch=new VDispatch;//创建对象
+//     //连接输入，由于insn1的位数超过32位，因此这里需要采用数组的方式进行赋值，每个元素是32位
+//     //在verilog中，LSQtag--LPhyRd这些数据都是在Rename Dispatch阶段被赋值的，其余的数据是在Decode阶段被赋值并放入Decode Queue的，因此像下面这样赋值
+//     Dispatch->io_DispatchCount=DispatchCount;
+//     Dispatch->io_insn1[0]=(uint32_t)insn1;
+//     Dispatch->io_insn1[1]=(uint32_t)(insn1>>32);
+//     Dispatch->io_insn1[2]=(uint32_t)(insn1>>64);
+//     Dispatch->io_insn1[3]=(uint32_t)(insn1>>96);
+//     Dispatch->io_Insn1_LSQTag_in=insnPkg[0]->LSQTag;
+//     Dispatch->io_Insn1_RobTag_in=insnPkg[0]->RobTag;
+//     Dispatch->io_insn1_PhyRs1_in=insnPkg[0]->PhyRs1;
+//     Dispatch->io_insn1_PhyRs2_in=insnPkg[0]->PhyRs2;
+//     Dispatch->io_insn1_PhyRd_in=insnPkg[0]->PhyRd;
+//     Dispatch->io_insn1_LPhyRd_in=insnPkg[0]->LPhyRd;
+
+//     Dispatch->io_insn2[0]=(uint32_t)insn2;
+//     Dispatch->io_insn2[1]=(uint32_t)(insn2>>32);
+//     Dispatch->io_insn2[2]=(uint32_t)(insn2>>64);
+//     Dispatch->io_insn2[3]=(uint32_t)(insn2>>96);
+//     Dispatch->io_Insn2_LSQTag_in=insnPkg[1]->LSQTag;
+//     Dispatch->io_Insn2_RobTag_in=insnPkg[1]->RobTag;
+//     Dispatch->io_insn2_PhyRs1_in=insnPkg[1]->PhyRs1;
+//     Dispatch->io_insn2_PhyRs2_in=insnPkg[1]->PhyRs2;
+//     Dispatch->io_insn2_PhyRd_in=insnPkg[1]->PhyRd;
+//     Dispatch->io_insn2_LPhyRd_in=insnPkg[1]->LPhyRd;
+    
+//     Dispatch->eval();//计算需要分配到哪个队列，并将输入的数据传输到输出
+//     //连接输出
+//     uint16_t num1=Dispatch->io_Issue_num1;
+//     uint16_t num2=Dispatch->io_Issue_num2;
+//     //下面的操作是模拟ISSUE Queue接收到数据后的操作，当num！=3，表示有ISSUE Queue匹配到数据
+//     //因此需要先对输入的128位数据进行拆解，同时将LSQtag--LPhyRd接收
+//     if(num1!=3){
+//         __int128 insn1_out=(__int128)Dispatch->io_insn1_Out[3]<<96|(__int128)Dispatch->io_insn1_Out[2]<<64|
+//                            (__int128)Dispatch->io_insn1_Out[1]<<32|(__int128)Dispatch->io_insn1_Out[0];
+//         insnPkg[0]->Excp.Tval  = insn1_out>>96;
+//         insnPkg[0]->Excp.Cause = insn1_out>>90&0X3F;
+//         insnPkg[0]->Excp.valid = insn1_out>>89&0X1;
+//         insnPkg[0]->imm = insn1_out>>57&0XFFFFFFFF;  
+//         insnPkg[0]->SubOp = insn1_out>>53&0XF;  
+//         insnPkg[0]->Fu = funcType_t(insn1_out>>50&0X7);  
+//         insnPkg[0]->ControlFlowInsn = insn1_out>>49&0X1;  
+//         insnPkg[0]->IsaRd = insn1_out>>44&0X1F;  
+//         insnPkg[0]->Operand2Ready = insn1_out>>43&0X1;  
+//         insnPkg[0]->IsaRs2 = insn1_out>>38&0X1F;  
+//         insnPkg[0]->Operand1Ready = insn1_out>>37&0X1; 
+//         insnPkg[0]->IsaRs2 = insn1_out>>32&0X1F;   
+//         insnPkg[0]->Pc = insn1_out&0XFFFFFFFF; 
+//         insnPkg[0]->LSQTag=Dispatch->io_Insn1_LSQTag;
+//         insnPkg[0]->RobTag=Dispatch->io_Insn1_RobTag;
+//         insnPkg[0]->PhyRs1=Dispatch->io_insn1_PhyRs1;
+//         insnPkg[0]->PhyRs2=Dispatch->io_insn1_PhyRs2;
+//         insnPkg[0]->PhyRd=Dispatch->io_insn1_PhyRd;
+//         insnPkg[0]->LPhyRd=Dispatch->io_insn1_LPhyRd; 
 //     }
+//     if(num2!=3){
+//         __int128 insn2_out=(__int128)Dispatch->io_insn2_Out[3]<<96|(__int128)Dispatch->io_insn2_Out[2]<<64|
+//                            (__int128)Dispatch->io_insn2_Out[1]<<32|(__int128)Dispatch->io_insn2_Out[0];
+//         insnPkg[1]->Excp.Tval  = insn2_out>>96;
+//         insnPkg[1]->Excp.Cause = insn2_out>>90&0X3F;
+//         insnPkg[1]->Excp.valid = insn2_out>>89&0X1;
+//         insnPkg[1]->imm = insn2_out>>57&0XFFFFFFFF;  
+//         insnPkg[1]->SubOp = insn2_out>>53&0XF;  
+//         insnPkg[1]->Fu = funcType_t(insn2_out>>50&0X7);  
+//         insnPkg[1]->ControlFlowInsn = insn2_out>>49&0X1;  
+//         insnPkg[1]->IsaRd = insn2_out>>44&0X1F;  
+//         insnPkg[1]->Operand2Ready = insn2_out>>43&0X1;  
+//         insnPkg[1]->IsaRs2 = insn2_out>>38&0X1F;  
+//         insnPkg[1]->Operand1Ready = insn2_out>>37&0X1; 
+//         insnPkg[1]->IsaRs2 = insn2_out>>32&0X1F;   
+//         insnPkg[1]->Pc = insn2_out&0XFFFFFFFF; 
+//         insnPkg[1]->LSQTag=Dispatch->io_Insn2_LSQTag;
+//         insnPkg[1]->RobTag=Dispatch->io_Insn2_RobTag;
+//         insnPkg[1]->PhyRs1=Dispatch->io_insn2_PhyRs1;
+//         insnPkg[1]->PhyRs2=Dispatch->io_insn2_PhyRs2;
+//         insnPkg[1]->PhyRd=Dispatch->io_insn2_PhyRd;
+//         insnPkg[1]->LPhyRd=Dispatch->io_insn2_LPhyRd; 
+//     }
+//     //模拟ISSUE Queue的接收数据
+//     if(num1==0) this->m_SchedularVec[0].scheduler->Schedule(insnPkg[0],this->m_SchedularVec[0].scheduler->Allocate());
+//     else if(num1==1) this->m_SchedularVec[1].scheduler->Schedule(insnPkg[0],this->m_SchedularVec[1].scheduler->Allocate());
+//     else if(num1==2) this->m_SchedularVec[2].scheduler->Schedule(insnPkg[0],this->m_SchedularVec[2].scheduler->Allocate());
+
+//     if(num2==0) this->m_SchedularVec[0].scheduler->Schedule(insnPkg[1],this->m_SchedularVec[0].scheduler->Allocate());
+//     else if(num2==1) this->m_SchedularVec[1].scheduler->Schedule(insnPkg[1],this->m_SchedularVec[1].scheduler->Allocate());
+//     else if(num2==2) this->m_SchedularVec[2].scheduler->Schedule(insnPkg[1],this->m_SchedularVec[2].scheduler->Allocate());
 
 // }
+void 
+Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
+    for(size_t i = 0 ; i < DispatchCount; i++){
+        InsnPtr_t insn = insnPkg[i];
+        if( !(insn->Excp.valid ||
+             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
+             ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
+             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
+        ){
+            for(auto scheduler : this->m_SchedularVec){
+                if(scheduler.scheduler->m_SupportFunc.count(insn->Fu) &&!scheduler.scheduler->Busy())
+                {
+                    
+                    scheduler.scheduler->Schedule(insn,scheduler.scheduler->Allocate());
+                    break;
+                }
+            } 
+        }
+    }
+
+}
 
 //     // for(size_t i = 0 ; i < DispatchCount; i++){
 //     //     InsnPtr_t insn = insnPkg[i];

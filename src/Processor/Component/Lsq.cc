@@ -273,7 +273,7 @@ Lsq::TryIssueLoad(MemReq_t& memReq,bool& Success){
     Success = false;
     if(!this->m_LoadQueue.empty()){//需要加载的地址都放在了loadqueue里
         uint16_t ldqPtr = this->m_LoadQueue.getHeader();
-        //for(size_t i = 0 ; i < this->m_LoadQueue.getUsage(); i++){
+        for(size_t i = 0 ; i < this->m_LoadQueue.getUsage(); i++){
             auto& ldqEntry = this->m_LoadQueue[ldqPtr];
             if(ldqEntry.state == loadState_t::load_WaitSend && !ldqEntry.killed){//在dispatch stage就已经改变了load state
                 if(ldqEntry.addressReady )
@@ -287,10 +287,10 @@ Lsq::TryIssueLoad(MemReq_t& memReq,bool& Success){
                     DPRINTF(LoadReq,"RobPtr[{}],Pc[{:#x}] -> Send Load Request : Address[{:#x}]",
                         ldqEntry.insnPtr->RobTag,ldqEntry.insnPtr->Pc,ldqEntry.address);
                 }
-                //break;
+                break;
             }
             ldqPtr = this->m_LoadQueue.getNextPtr(ldqPtr);
-        //}
+        }
     }
 }
 

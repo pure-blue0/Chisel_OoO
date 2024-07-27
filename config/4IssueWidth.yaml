@@ -1,0 +1,212 @@
+Simulator : {
+  DRAM : {
+    MemoryMap : {Base : 0x80000000 , Length : 0x10000000}
+  },
+  Processors : [
+    {
+      # Processor Architecture Config
+      XLEN          : 32,
+      SupportISA    : [I,M,C,A],
+      SupportMode   : [M],
+      Speculation   : false,
+      ForwardResult : true,
+      MemoryModel   : SC,
+      #------- Micro-Architecure -------#
+      iCache : {
+        iCacheLatency     : 1,
+        iCacheAlignByte   : 16,
+      },
+      dCache : {
+        dCacheLatency     : 1,
+        dCacheAlignByte   : 8,
+      },
+      Rcu : {
+        RenameRegister : true,
+        AllocWidth     : 4,
+        DeallocWidth   : 4,
+        ReorderBuffer  : {
+          EntryCount   : 24
+        },
+        PhysicalRegisterFile : {
+          Int : {
+            RegCount    : 96
+          },
+        },
+        RecoveryPolicy  : {
+          RollBack      : true,
+          SnapshotCount : 0
+        },
+      },
+      Lsq : {
+        LoadQueue : {
+          EntryCount   : 32,
+        },
+        StoreQueue : {
+          EntryCount   : 16,
+        },
+      },
+      Resources : {
+        RegFileReadPort  : [
+          {
+            Latency         : 1
+          },
+          {
+            Latency         : 1
+          },
+          {
+            Latency         : 1
+          },
+          {
+            Latency         : 1
+          },
+        ],
+        WriteBackPort : [
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4]
+          },
+          {
+            Latency           : 1,
+            WakeUpSchedualers : [1,2,3,4]
+          },
+        ],
+        FunctionUnitPool : [
+            {Name : CSR0 , FuncType : CSR, Latency : 1, Pipelined : false , WriteBackPort : [0] },
+
+            {Name : LSU0 , FuncType : LSU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
+            {Name : BRU0 , FuncType : BRU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
+            {Name : ALU0 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
+            {Name : ALU1 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
+            {Name : MUL0 , FuncType : MUL, Latency : 3, Pipelined : true  , WriteBackPort : [0,1] },
+            {Name : DIV0 , FuncType : DIV, Latency : 7, Pipelined : false , WriteBackPort : [0,1] },
+
+            {Name : LSU1 , FuncType : LSU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
+            {Name : BRU1 , FuncType : BRU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
+            {Name : ALU2 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
+            {Name : ALU3 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
+            {Name : MUL1 , FuncType : MUL, Latency : 3, Pipelined : true  , WriteBackPort : [2,3] },
+            {Name : DIV1 , FuncType : DIV, Latency : 7, Pipelined : false , WriteBackPort : [2,3] },
+        ],
+        Schedulers : [
+            {
+              Name             : CSRBuffer,
+              EntryCount       : 2,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Order,
+              WakeUpPolicy     : Commit,
+              RFReadPort       : [0],
+              FunctionUnitPool : [0],
+              SubScheduler     : []
+            },
+            {
+              Name             : UnifiedDispatchQueue0,
+              EntryCount       : 8,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Order ,
+              WakeUpPolicy     : OperandReady,
+              RFReadPort       : [0],
+              FunctionUnitPool : [1],
+              SubScheduler     : []
+            },
+            {
+              Name             : UnifiedDispatchQueue1,
+              EntryCount       : 8,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Order ,
+              WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [1],
+              FunctionUnitPool : [2,3,4,5,6],
+              SubScheduler     : []
+            },
+            {
+              Name             : UnifiedDispatchQueue2,
+              EntryCount       : 8,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Order ,
+              WakeUpPolicy     : OperandReady,
+              RFReadPort       : [2],
+              FunctionUnitPool : [7],
+              SubScheduler     : []
+            },
+            {
+              Name             : UnifiedDispatchQueue3,
+              EntryCount       : 8,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
+              IssuePolicy      : In-Order ,
+              WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
+              RFReadPort       : [3],
+              FunctionUnitPool : [8,9,10,11,12],
+              SubScheduler     : []
+            },
+        ],
+      },
+      Stages : {
+        Fetch1 : {
+          Latency   : 1,
+          NextStage : Decode,
+          MaxProcessInsnCount : 4,
+          MustTakenAllInsn    : true,
+          RedirectLatency     : 1,
+          StageInfo : {
+            iCacheLatency     : 2,
+            iCacheAlignByte   : 16,
+            FetchByteWidth    : 16,
+            InflightQueueSize : 16,
+            BPU               : []
+          }
+        },
+        Decode : {
+          Latency   : 1,
+          NextStage : Dispatch,
+          MaxProcessInsnCount : 8,
+          MustTakenAllInsn    : true,
+          RedirectLatency     : 1,
+          StageInfo : {
+            DecodeQueueSize : 64
+          }
+        },
+        Dispatch : {
+          Latency   : 1,
+          NextStage : IEW,
+          MaxProcessInsnCount : 4,
+          MustTakenAllInsn    : false,
+          RedirectLatency     : -1,
+          StageInfo : {
+            Schedulers : [0,1,2,3,4]
+          }
+        },
+        IEW : {
+          Latency   : 1,
+          NextStage : None,
+          MaxProcessInsnCount : -1,
+          MustTakenAllInsn    : false,
+          RedirectLatency     : 1,
+          StageInfo : {
+          }
+        },
+        Commit : {
+          Latency   : 1,
+          NextStage : Commit,
+          MaxProcessInsnCount : 4,
+          MustTakenAllInsn    : true,
+          RedirectLatency     : 1,
+          StageInfo : {
+          }
+        }
+      }
+    }
+  ]
+}

@@ -11,8 +11,7 @@ Decode::Decode(
     const   uint64_t    DecodeQueueSize      
 ):  BaseStage(processor,"Decode"),
     m_DecodeQueue("DecodeQueue",DecodeQueueSize),
-    m_FetchByteWidth(8),
-    m_iCacheAlignByte(8),
+    m_iCacheAlignByte(16),
     m_PredSync(4)
 {}
 
@@ -28,6 +27,8 @@ Decode::Evaluate(){
     bool reset_n=true;
     DecodeInsn_t insn1          = this->m_Processor->CreateDecodeInsn();
     DecodeInsn_t insn2          = this->m_Processor->CreateDecodeInsn();
+    DecodeInsn_t insn3          = this->m_Processor->CreateDecodeInsn();
+    DecodeInsn_t insn4          = this->m_Processor->CreateDecodeInsn();
     //-----------------------------------------------------------------//
     bool Predcode_EN=false;
     if(this->m_StageInPort->valid){
@@ -39,10 +40,12 @@ Decode::Evaluate(){
         }
     }
      //-----------------------------------------------------------------//
-    if(Predcode_EN)this->Predecode(*this->m_StageInPort->data[0].get(),insn1,insn2,redirect_message,flush_flag); 
+    if(Predcode_EN)this->Predecode(*this->m_StageInPort->data[0].get(),insn1,insn2,insn3,insn4,redirect_message,flush_flag); 
     else{
         insn1->data_valid=false;
         insn2->data_valid=false;
+        insn3->data_valid=false;
+        insn4->data_valid=false;
     }
     this->m_Processor->getFetch1Ptr()->Decode_Redirect_Reg->InPort->set(redirect_message);
     if(flush_flag){
@@ -52,8 +55,10 @@ Decode::Evaluate(){
     //-----------------------------------------------------------------//
     this->DecodeInsn(insn1);
     this->DecodeInsn(insn2);
+    this->DecodeInsn(insn3);
+    this->DecodeInsn(insn4);
     //-----------------------------------------------------------------//
-    this->DecodeQueue_Evaluate(reset_n,this->decodeQueue_flush,this->m_StageAckInPort->data.takenInsnCount,insn1->data_valid,insn1,insn2->data_valid,insn2,this->m_StageOutPort->isStalled(),avail_count);
+    this->DecodeQueue_Evaluate(reset_n,this->decodeQueue_flush,this->m_StageAckInPort->data.takenInsnCount,insn1->data_valid,insn1,insn2->data_valid,insn2,insn3->data_valid,insn3,insn4->data_valid,insn4,this->m_StageOutPort->isStalled(),avail_count);
 }
 
 
@@ -74,73 +79,59 @@ Decode::ReleaseAction(){
 }
 
 
-void Decode::DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush,uint8_t pop_count,bool WEN1,DecodeInsn_t insn1_WriteIn,bool WEN2,DecodeInsn_t insn2_WriteIn,bool isStalled,uint8_t& r_avail_count){
+void Decode::DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush,uint8_t pop_count,bool WEN1,DecodeInsn_t insn1_WriteIn,bool WEN2,DecodeInsn_t insn2_WriteIn,bool WEN3,DecodeInsn_t insn3_WriteIn,bool WEN4,DecodeInsn_t insn4_WriteIn,bool isStalled,uint8_t& r_avail_count){
     static DecodeQueue_entry DecodeQueue[DecodeQueue_Size];
     static uint8_t header_ptr,tail_ptr;
     static uint8_t usage_count;
     static uint8_t avail_count;
 
-    bool empty,one_entry_flag;
+    bool empty,one_entry_flag,two_entry_flag,three_entry_flag;
     InsnPkg_t insnPkg;
     InsnPtr_t insn1          = this->m_Processor->CreateInsn();
     InsnPtr_t insn2          = this->m_Processor->CreateInsn();
-
+    InsnPtr_t insn3          = this->m_Processor->CreateInsn();
+    InsnPtr_t insn4          = this->m_Processor->CreateInsn();
     
-    uint8_t send_header_ptr,next_send_header_ptr;
+    uint8_t send_header_ptr,next_send_header_ptr,third_send_header_ptr,forth_send_header_ptr;
 
 
-    if(pop_count==2){
-        
-        if(header_ptr==(DecodeQueue_Size-1)){
-            send_header_ptr=1;
-            next_send_header_ptr=2;
-        }
-        else if(header_ptr==58){
-            send_header_ptr=0;
-            next_send_header_ptr=1;
-        }
-        else {
-            send_header_ptr=header_ptr+2;
-            if(send_header_ptr==(DecodeQueue_Size-1)){
-                next_send_header_ptr=0;
-            }
-            else next_send_header_ptr=send_header_ptr+1;
-        }
+    if(pop_count==4){
+        send_header_ptr=(header_ptr+4)%DecodeQueue_Size;
+        next_send_header_ptr=(header_ptr+5)%DecodeQueue_Size;
+        third_send_header_ptr=(header_ptr+6)%DecodeQueue_Size;
+        forth_send_header_ptr=(header_ptr+7)%DecodeQueue_Size;
+    }
+    else if(pop_count==3){
+        send_header_ptr=(header_ptr+3)%DecodeQueue_Size;
+        next_send_header_ptr=(header_ptr+4)%DecodeQueue_Size;
+        third_send_header_ptr=(header_ptr+5)%DecodeQueue_Size;
+        forth_send_header_ptr=(header_ptr+6)%DecodeQueue_Size;
+    }
+    else if(pop_count==2){
+        send_header_ptr=(header_ptr+2)%DecodeQueue_Size;
+        next_send_header_ptr=(header_ptr+3)%DecodeQueue_Size;
+        third_send_header_ptr=(header_ptr+4)%DecodeQueue_Size;
+        forth_send_header_ptr=(header_ptr+5)%DecodeQueue_Size;
     }
     else if(pop_count==1){
-        
-        if(header_ptr==(DecodeQueue_Size-1)){
-            send_header_ptr=0;
-            next_send_header_ptr=1;
-        }
-        else {
-            send_header_ptr=header_ptr+1;
-            if(send_header_ptr==(DecodeQueue_Size-1)){
-                next_send_header_ptr=0;
-            }
-            else next_send_header_ptr=send_header_ptr+1;
-        }
+        send_header_ptr=(header_ptr+1)%DecodeQueue_Size;
+        next_send_header_ptr=(header_ptr+2)%DecodeQueue_Size;
+        third_send_header_ptr=(header_ptr+3)%DecodeQueue_Size;
+        forth_send_header_ptr=(header_ptr+4)%DecodeQueue_Size;
     }
     else {
-        send_header_ptr=header_ptr;
-        if(send_header_ptr==(DecodeQueue_Size-1)){
-                next_send_header_ptr=0;
-        }
-        else next_send_header_ptr=send_header_ptr+1;
+        send_header_ptr=(header_ptr)%DecodeQueue_Size;
+        next_send_header_ptr=(header_ptr+1)%DecodeQueue_Size;
+        third_send_header_ptr=(header_ptr+2)%DecodeQueue_Size;
+        forth_send_header_ptr=(header_ptr+3)%DecodeQueue_Size;
     }
-    
-    if((usage_count-pop_count)==0) {
-        empty=true;
-        one_entry_flag=false;
-    }
-    else if((usage_count-pop_count)==1) {
-        empty=false;
-        one_entry_flag=true;
-    }
-    else{
-        empty=false;
-        one_entry_flag=false;
-    }
+
+    empty=(usage_count==pop_count)?true:false;
+    one_entry_flag=(usage_count-pop_count==1)?true:false;
+    two_entry_flag=(usage_count-pop_count==2)?true:false;
+    three_entry_flag=(usage_count-pop_count==3)?true:false;
+
+
     
     if(!reset_n||decodeQueue_flush){
         for(int i=0;i<DecodeQueue_Size;i++){
@@ -194,10 +185,56 @@ void Decode::DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush,uint8_t po
             else{
                 insn2->data_valid =false;
             }
+
+            if(!two_entry_flag){
+                insn3->data_valid = DecodeQueue[third_send_header_ptr].data_valid;
+                insn3->Pc = DecodeQueue[third_send_header_ptr].Pc;
+                insn3->Fu = DecodeQueue[third_send_header_ptr].Fu;
+                insn3->SubOp = DecodeQueue[third_send_header_ptr].SubOp;
+                insn3->UncompressedInsn = DecodeQueue[third_send_header_ptr].UncompressedInsn;
+                insn3->ControlFlowInsn = DecodeQueue[third_send_header_ptr].ControlFlowInsn;
+                insn3->IsaRs1 = DecodeQueue[third_send_header_ptr].IsaRs1;
+                insn3->IsaRs2 = DecodeQueue[third_send_header_ptr].IsaRs2;
+                insn3->IsaRd = DecodeQueue[third_send_header_ptr].IsaRd;
+                insn3->Operand1Ready = DecodeQueue[third_send_header_ptr].Operand1Ready;
+                insn3->Operand2Ready = DecodeQueue[third_send_header_ptr].Operand2Ready;
+                insn3->Operand1 = DecodeQueue[third_send_header_ptr].Operand1;
+                insn3->Operand2 = DecodeQueue[third_send_header_ptr].Operand2;
+                insn3->imm = DecodeQueue[third_send_header_ptr].imm;
+                insn3->Excp = DecodeQueue[third_send_header_ptr].Excp;
+                insn3->Pred = DecodeQueue[third_send_header_ptr].Pred;
+            }
+            else{
+                insn3->data_valid =false;
+            }
+
+            if(!three_entry_flag){
+                insn4->data_valid = DecodeQueue[forth_send_header_ptr].data_valid;
+                insn4->Pc = DecodeQueue[forth_send_header_ptr].Pc;
+                insn4->Fu = DecodeQueue[forth_send_header_ptr].Fu;
+                insn4->SubOp = DecodeQueue[forth_send_header_ptr].SubOp;
+                insn4->UncompressedInsn = DecodeQueue[forth_send_header_ptr].UncompressedInsn;
+                insn4->ControlFlowInsn = DecodeQueue[forth_send_header_ptr].ControlFlowInsn;
+                insn4->IsaRs1 = DecodeQueue[forth_send_header_ptr].IsaRs1;
+                insn4->IsaRs2 = DecodeQueue[forth_send_header_ptr].IsaRs2;
+                insn4->IsaRd = DecodeQueue[forth_send_header_ptr].IsaRd;
+                insn4->Operand1Ready = DecodeQueue[forth_send_header_ptr].Operand1Ready;
+                insn4->Operand2Ready = DecodeQueue[forth_send_header_ptr].Operand2Ready;
+                insn4->Operand1 = DecodeQueue[forth_send_header_ptr].Operand1;
+                insn4->Operand2 = DecodeQueue[forth_send_header_ptr].Operand2;
+                insn4->imm = DecodeQueue[forth_send_header_ptr].imm;
+                insn4->Excp = DecodeQueue[forth_send_header_ptr].Excp;
+                insn4->Pred = DecodeQueue[forth_send_header_ptr].Pred;
+            }
+            else{
+                insn4->data_valid =false;
+            }
         }
         else{
             insn1->data_valid=false;
             insn2->data_valid=false;
+            insn3->data_valid=false;
+            insn4->data_valid=false;
         }
         for(size_t i = 0; i < pop_count ; i++){
             header_ptr++;
@@ -213,6 +250,19 @@ void Decode::DecodeQueue_Evaluate(bool reset_n,bool decodeQueue_flush,uint8_t po
         }
         if(WEN2){
             DecodeQueue[tail_ptr]=*insn2_WriteIn.get();
+            tail_ptr++;
+            if(tail_ptr==DecodeQueue_Size){tail_ptr=0;}
+            usage_count++;
+            
+        }
+        if(WEN3){
+            DecodeQueue[tail_ptr]=*insn3_WriteIn.get();
+            tail_ptr++;
+            if(tail_ptr==DecodeQueue_Size){tail_ptr=0;}
+            usage_count++;
+        }
+        if(WEN4){
+            DecodeQueue[tail_ptr]=*insn4_WriteIn.get();
             tail_ptr++;
             if(tail_ptr==DecodeQueue_Size){tail_ptr=0;}
             usage_count++;
@@ -234,34 +284,45 @@ Decode::DecodeInsn(DecodeInsn_t& insn){
 }
 
 void 
-Decode::Predecode(Emulator::DynInsn& insnEntry,DecodeInsn_t& insn1,DecodeInsn_t& insn2,Redirect_message& redirect_message,bool& flush_flag){
+Decode::Predecode(Emulator::DynInsn& insnEntry,DecodeInsn_t& insn1,DecodeInsn_t& insn2,DecodeInsn_t& insn3,DecodeInsn_t& insn4,Redirect_message& redirect_message,bool& flush_flag){
     redirect_message.valid=0;
     redirect_message.target=0;
-    Redirect_message redirect_message1,redirect_message2;
+    Redirect_message redirect_message1,redirect_message2,redirect_message3,redirect_message4;
     uint64_t offset  = insnEntry.Address & (this->m_iCacheAlignByte-1); //看当前的地址是否对齐
     char* dataPtr = insnEntry.InsnByte.data() + offset;  
-    //insn1->send_valid        = false;
-    insn1->data_valid        = true;
+
     insn1->Pc                = insnEntry.Address;
     insn1->Excp              = insnEntry.Excp;
     insn1->UncompressedInsn  = *(uint32_t*)dataPtr;
     this->BranchRedirect(insn1,redirect_message1);
+
+ 
+    insn2->Pc                = (insnEntry.Address+4);
+    insn2->Excp              = insnEntry.Excp;
+    insn2->UncompressedInsn  = *(uint32_t*)(dataPtr+4);
+    this->BranchRedirect(insn2,redirect_message2);
+
+
+    insn3->Pc                = (insnEntry.Address+8);
+    insn3->Excp              = insnEntry.Excp;
+    insn3->UncompressedInsn  = *(uint32_t*)(dataPtr+8);
+    this->BranchRedirect(insn3,redirect_message3);
+
+
+    insn4->Pc                = (insnEntry.Address+12);
+    insn4->Excp              = insnEntry.Excp;
+    insn4->UncompressedInsn  = *(uint32_t*)(dataPtr+12);
+    this->BranchRedirect(insn4,redirect_message4);
     
-    if(!offset&&!redirect_message1.valid){
-       // insn2->send_valid        = false;
-        insn2->data_valid        = true;
-        insn2->Pc                = insnEntry.Address+4;
-        insn2->Excp              = insnEntry.Excp;
-        insn2->UncompressedInsn    = *(uint32_t*)(dataPtr+4);
-        
-        this->BranchRedirect(insn2,redirect_message2);
-        
-    }
-    else{
-        insn2->data_valid        = false;
-    }
-    flush_flag=redirect_message1.valid|redirect_message2.valid;
-    if(redirect_message2.valid)redirect_message=redirect_message2;
+    insn1->data_valid=true;
+    insn2->data_valid=((offset==8)||(offset==4)||((offset==0)))&&!redirect_message1.valid;
+    insn3->data_valid=((offset==4)||((offset==0)))&&!redirect_message1.valid&&!redirect_message2.valid;
+    insn4->data_valid=(!offset)&&!redirect_message1.valid&&!redirect_message2.valid&&!redirect_message3.valid;
+    
+    flush_flag=redirect_message1.valid|redirect_message2.valid|redirect_message3.valid|redirect_message4.valid;
+    if(redirect_message4.valid)redirect_message=redirect_message4;
+    else if(redirect_message3.valid)redirect_message=redirect_message3;
+    else if(redirect_message2.valid)redirect_message=redirect_message2;
     else if(redirect_message1.valid)redirect_message=redirect_message1;
 }
 

@@ -93,12 +93,12 @@ IEW::WriteBack(){
     for(auto& writebacker : this->m_WriteBackStageVec){
         writebacker->Evaluate(RedirectReq,needRedirect);
         
-        redirect_message.valid=needRedirect;
-        redirect_message.target=RedirectReq.target;
+        
         
         if(needRedirect){
             this->m_RedirectPort->set(RedirectReq);
-            
+            redirect_message.valid=needRedirect;
+            redirect_message.target=RedirectReq.target;
         }
     }
     this->m_Processor->getFetch1Ptr()->IEW_Redirect_Reg->InPort->set(redirect_message);
