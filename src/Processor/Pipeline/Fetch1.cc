@@ -1,6 +1,11 @@
 #include "Fetch1.hh"
 #include "../Processor.hh"
 #include "../../Simulator.hh"
+
+// #include <verilated.h>
+// #include "./obj_dir/VInflightQueue.h"
+// #include "./obj_dir/VGenAddress.h"
+// #include "./obj_dir/VSendFetchReq.h"
 namespace Emulator
 {
 
@@ -113,6 +118,72 @@ void Fetch1::InflightQueue_Evaluate(bool reset_n,bool fetchQueue_flush,bool Send
     r_tail_ptr=tail_ptr;
     if(usage_count==FetchQueue_Size)full=true;
     else full=false;
+
+
+    //Inputs
+    // InflightQueue->io_reset_n = reset_n;
+    // InflightQueue->io_fetch_flush_flag = fetchQueue_flush;
+    // InflightQueue->io_SendSuccess = SendSuccess;
+    // InflightQueue->io_EntryData_Address = EntryData.Address;
+    // InflightQueue->io_EntryData_InsnByte = (uint64_t)EntryData.InsnByte.data();
+    // InflightQueue->io_EntryData_Excp_Valid = EntryData.Excp.valid;
+    // InflightQueue->io_EntryData_Excp_Cause = EntryData.Excp.Cause;
+    // InflightQueue->io_EntryData_Excp_Tval = EntryData.Excp.Tval;
+    // InflightQueue->io_EntryData_Busy = EntryData.Busy;
+    // InflightQueue->io_EntryData_Killed = EntryData.Killed;
+    // InflightQueue->io_mem_valid = mem_valid;
+    // InflightQueue->io_mem_TransId = mem.Id.TransId;
+    // InflightQueue->io_mem_Excp_valid = mem.Excp.valid;
+    // InflightQueue->io_mem_Excp_Cause = mem.Excp.Cause;
+    // InflightQueue->io_mem_Excp_Tval = mem.Excp.Tval;
+    // InflightQueue->io_mem_insndata = mem_valid?*(u_int64_t*)mem.Data:0;
+    // InflightQueue->clock = 0;
+    // InflightQueue->eval();
+ 
+    // //outputs
+    // InsnPkg_t insnPkg;
+    // auto insn_test = this->m_Processor->CreateInsn();
+    // insn_test->data_valid = InflightQueue->io_data_valid;
+    // insn_test->Address = InflightQueue->io_Address;
+    // std::vector<char> InsnByte_temp(8);
+    // if(mem_valid) {
+    //     memcpy(InsnByte_temp.data(),&(InflightQueue->io_data),sizeof(InflightQueue->io_data));
+    //     insn_test->InsnByte = InsnByte_temp;
+    // }
+    // insn_test->Excp.valid = InflightQueue->io_Excp_Valid;
+    // insn_test->Excp.Cause = InflightQueue->io_Excp_Cause;
+    // insn_test->Excp.Tval = InflightQueue->io_Excp_Tval;
+
+
+    // InflightQueue->clock = 1;
+    // InflightQueue->eval();
+
+//     // r_tail_ptr = InflightQueue->io_tail_ptr;
+//     // full = InflightQueue->io_full;
+//     // insnPkg.emplace_back(insn_test);
+//     // this->m_StageOutPort->set(insnPkg);  
+
+
+    // bool insn_error = ((insn->data_valid != insn_test->data_valid) 
+    //             || ((insn->data_valid && insn_test->data_valid)
+    //             && ((insn->Address != insn_test->Address)
+    //             || (*(uint64_t*)insn->InsnByte.data() != *(uint64_t*)insn_test->InsnByte.data())
+    //             || (insn->Excp.valid != insn_test->Excp.valid)
+    //             || (insn->Excp.Cause != insn_test->Excp.Cause)
+    //             || (insn->Excp.Tval != insn_test->Excp.Tval)
+    //             || (r_tail_ptr != InflightQueue->io_tail_ptr)
+    //             || (full != InflightQueue->io_full))));
+    
+    // if(insn_error && error_cnt < 100) {
+    //     DPRINTF(temptest, "Error Detected: data_valid:{:#x} Address:{:#x} InsnByte:{:#x} Excp.valid:{:#x} Excp.Cause:{:#x} Excp.Tval:{:#x} tail_ptr:{:#x} header_ptr:{:#x} full:{:#x}",
+    //         insn_test->data_valid, insn_test->Address, insn_test->InsnByte.size() == 0?0:*(uint64_t*)insn_test->InsnByte.data(), insn_test->Excp.valid, insn_test->Excp.Cause, insn_test->Excp.Tval, InflightQueue->io_tail_ptr, InflightQueue->io_header_ptr, InflightQueue->io_full);
+    //     DPRINTF(temptest, "Expected Values: data_valid:{:#x} Address:{:#x} InsnByte:{:#x} Excp.valid:{:#x} Excp.Cause:{:#x} Excp.Tval:{:#x} tail_ptr:{:#x} header_ptr:{:#x} full:{:#x}",
+    //         insn->data_valid, insn->Address, insn->InsnByte.size() == 0?0:*(uint64_t*)insn->InsnByte.data(), insn->Excp.valid, insn->Excp.Cause, insn->Excp.Tval, r_tail_ptr,header_ptr, full);
+    //     DPRINTF(temptest, "--------------");
+    //     error_cnt += 1;
+    // }
+
+
 }
 void
 Fetch1::SendFetchReq(bool full,uint8_t InflightQueue_tail,bool& SendSuccess,MemReq_t& fetchReq,InflighQueueEntry_t& NewEntry){
@@ -140,6 +211,29 @@ Fetch1::SendFetchReq(bool full,uint8_t InflightQueue_tail,bool& SendSuccess,MemR
             }
         }
     }
+
+    // VSendFetchReq *SendFetchReq = new VSendFetchReq;
+    // //Inputs
+    // SendFetchReq->io_PcRegister = this->m_PcRegister.OutPort->data ;
+    // SendFetchReq->io_Inflightqueue_full = this->m_InflightQueue.full();
+    // SendFetchReq->io_Inflightqueue_tail = InflightQueue_tail;
+    // SendFetchReq->io_m_state = this->m_State;
+    // SendFetchReq->io_isStalled = this->m_StageOutPort->isStalled();
+    // SendFetchReq->io_PcRegister_valid = this->m_PcRegister.OutPort->valid ;
+    // SendFetchReq->eval();
+    // //outputs
+    // SendSuccess = SendFetchReq->io_SendSuccess;
+    // NewEntry.Killed = SendFetchReq->io_Entry_killed;
+    // NewEntry.Busy = SendFetchReq->io_Entry_Busy;
+    // NewEntry.Address = SendFetchReq->io_Entry_Address;
+    // NewEntry.Excp.valid = SendFetchReq->io_Entry_Excp_valid;
+    // NewEntry.Excp.Cause = SendFetchReq->io_Entry_Excp_Cause;
+    // NewEntry.Excp.Tval = SendFetchReq->io_Entry_Excp_Tval;
+    // fetchReq.Address = SendFetchReq->io_FetchReq_Address;
+    // fetchReq.Length = SendFetchReq->io_FetchReq_Length;
+    // fetchReq.Opcode = Emulator::MemOp_t(SendFetchReq->io_FetchReq_Opcode);
+    // fetchReq.Id.TransId = SendFetchReq->io_FetchReq_TransId;
+
 }
 
 void 
@@ -190,6 +284,33 @@ void Fetch1::GenNextFetchAddress(bool SendSuccess){
     else if(this->m_PcRegister.OutPort->valid){
         this->m_PcRegister.InPort->set(this->m_PcRegister.OutPort->data);
     }
+
+    // VGenAddress *GenAddress = new VGenAddress;
+    // GenAddress->io_SendSuccess = SendSuccess;
+    // GenAddress->io_pcregister_out = this->m_PcRegister.OutPort->data;
+    // GenAddress->io_decode_redirect_target = this->Decode_Redirect_Reg->OutPort->data.target;
+    // GenAddress->io_IEW_redirect_target = this->IEW_Redirect_Reg->OutPort->data.target;
+    // GenAddress->io_commit_redirect_target = this->Commit_Redirect_Reg->OutPort->data.target;
+    // GenAddress->io_PCRegOut_valid = this->m_PcRegister.OutPort->valid;
+    // GenAddress->io_decode_redirect_valid = this->Decode_Redirect_Reg->OutPort->data.valid;
+    // GenAddress->io_IEW_redirect_valid = this->IEW_Redirect_Reg->OutPort->data.valid;
+    // GenAddress->io_commit_redirect_valid = this->Commit_Redirect_Reg->OutPort->data.valid;
+    // //outputs
+    // GenAddress->eval();
+    // if((this->Commit_Redirect_Reg->OutPort->data.valid || this->IEW_Redirect_Reg->OutPort->data.valid \
+    // || this->Decode_Redirect_Reg->OutPort->data.valid || SendSuccess || this->m_PcRegister.OutPort->valid)){
+    //     this->m_PcRegister.InPort->set(GenAddress->io_pcregister_in);
+    //      //a = GenAddress->io_PcRegisterIn;
+    // }
+    //bool pc_register_error = 1;//= (this->m_PcRegister.InPort->data != GenAddress->io_PcRegisterIn);
+    
+    // if (pc_register_error && error_cnt < 100) {
+    //     DPRINTF(temptest, "PC Register Error Detected: Current InPort Value: {:#x}", this->m_PcRegister.InPort->data);
+    //     DPRINTF(temptest, "Expected InPort Value: {:#x}", a);
+    //     DPRINTF(temptest, "--------------");
+    //     error_cnt += 1;
+    // }
+
 }
 
 
