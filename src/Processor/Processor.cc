@@ -32,7 +32,7 @@ Processor::Processor(const YAML::Node& ProcessorConfig, BaseDRAM* DramPtr ,const
     const YAML::Node& iCacheConfig = ProcessorConfig["iCache"];
     this->m_iCacheLatency          = iCacheConfig["iCacheLatency"].as<std::uint64_t>();
     this->m_iCacheAlignByte        = iCacheConfig["iCacheAlignByte"].as<std::uint64_t>();
-
+    
     /* dCache */
     const YAML::Node& dCacheConfig = ProcessorConfig["dCache"];
     this->m_dCacheLatency          = dCacheConfig["dCacheLatency"].as<std::uint64_t>();

@@ -9,6 +9,7 @@
 #include <deque>
 #include <set>
 
+
 namespace Emulator
 {
 
@@ -94,12 +95,17 @@ public:
     virtual bool Busy() {
         return this->IssueQueueFull() || this->m_AllocatedCount == 0;
     };
+    virtual uint8_t Get_IssueQueue_Avail_num(){
+        
+        return this->GetAvailibleEntryCount()<this->m_AllocatedCount?this->GetAvailibleEntryCount():this->m_AllocatedCount;
+        
+    }
 
     virtual bool IssueQueueFull()  = 0;
 
     virtual bool Empty() = 0;
 
-    virtual uint64_t GetAvailibleEntryCount()  = 0;
+    virtual uint64_t GetAvailibleEntryCount() =0;
 
     virtual uint64_t Allocate(){
         DASSERT((this->m_AllocatedCount>0),"No Availible Port");
@@ -136,7 +142,7 @@ public:
                 InsnPtr_t   insn;
                 bool        Success;
                 this->IssueSelect(index,insn,Success);
-               // if(insn->Pc==0x80002cc4)DPRINTF(temptest,"RobTag[{}],Pc[{:#x}] {:#x}-> 555555555",insn->RobTag,insn->Pc,Success);
+
                 if(Success){
                     this->Deallocate(index);
                     DPRINTF(Issue,"RobTag[{}],Pc[{:#x}] -> Leaving Queue",insn->RobTag,insn->Pc);

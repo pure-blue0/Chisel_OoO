@@ -94,7 +94,6 @@ bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先�
 //         CreateRobEntry->io_Rob_NextTail= this->m_Rob.Allocate();
 //     }
 //     CreateRobEntry->io_allocCount=allocCount;
-
 //     CreateRobEntry->io_insn1_Function_type=insnPkg[0]->Fu;
 //     CreateRobEntry->io_insn1_Sub_OP=insnPkg[0]->SubOp;
 //     CreateRobEntry->io_insn1_excp_vaild=insnPkg[0]->Excp.valid;
@@ -106,7 +105,7 @@ bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先�
 //     CreateRobEntry->io_insn1_PhyRd=insnPkg[0]->PhyRd;
 //     CreateRobEntry->io_insn1_LPhyRd=insnPkg[0]->LPhyRd;
 //     CreateRobEntry->io_insn1_ControlFlowInsn=insnPkg[0]->ControlFlowInsn;
-    
+//    
 //     CreateRobEntry->io_insn2_Function_type=insnPkg[1]->Fu;
 //     CreateRobEntry->io_insn2_Sub_OP=insnPkg[1]->SubOp;
 //     CreateRobEntry->io_insn2_excp_vaild=insnPkg[1]->Excp.valid;
@@ -118,15 +117,14 @@ bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先�
 //     CreateRobEntry->io_insn2_PhyRd=insnPkg[1]->PhyRd;
 //     CreateRobEntry->io_insn2_LPhyRd=insnPkg[1]->LPhyRd;
 //     CreateRobEntry->io_insn2_ControlFlowInsn=insnPkg[1]->ControlFlowInsn;
-    
+//    
 //     CreateRobEntry->io_m_RobState=this->m_RobState;
 //     CreateRobEntry->io_m_RollBackTag=this->m_RollBackTag;
 //     CreateRobEntry->io_m_ExcpCause=this->m_ExcpCause;
-//     CreateRobEntry->io_m_ExcpTval=this->m_ExcpTval;
-    
+//     CreateRobEntry->io_m_ExcpTval=this->m_ExcpTval;    
 //     //连接输出
 //     CreateRobEntry->eval();
-
+//
 //     Rob_entry_t newEntry1;
 //     newEntry1.valid=CreateRobEntry->io_insn1_Entry_valid;
 //     newEntry1.done=CreateRobEntry->io_insn1_Entry_done;
@@ -140,7 +138,7 @@ bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先�
 //     newEntry1.phyRd=CreateRobEntry->io_insn1_Entry_phyRd;
 //     newEntry1.LphyRd=CreateRobEntry->io_insn1_Entry_LphyRd;
 //     if(allocCount>0)insnPkg[0]->RobTag=CreateRobEntry->io_insn1_RobTag;
-    
+//    
 //     Rob_entry_t newEntry2;
 //     newEntry2.valid=CreateRobEntry->io_insn2_Entry_valid;
 //     newEntry2.done=CreateRobEntry->io_insn2_Entry_done;
@@ -174,8 +172,7 @@ bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先�
 //             this->m_Rob[CreateRobEntry->io_insn2_RobTag].isaRd,this->m_Rob[CreateRobEntry->io_insn2_RobTag].isExcp,this->m_Rob[CreateRobEntry->io_insn2_RobTag].isMisPred,
 //             this->m_Rob[CreateRobEntry->io_insn2_RobTag].isStable,this->m_Rob[CreateRobEntry->io_insn2_RobTag].LphyRd,this->m_Rob[CreateRobEntry->io_insn2_RobTag].LSQtag,
 //             this->m_Rob[CreateRobEntry->io_insn2_RobTag].pc,this->m_Rob[CreateRobEntry->io_insn2_RobTag].phyRd,this->m_Rob[CreateRobEntry->io_insn2_RobTag].valid);
-//      }
- 
+//      } 
 //     delete CreateRobEntry;
 // }
  
@@ -376,25 +373,21 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
     //             if(insn1->IsaRd == Insn2->IsaRd) Insn2->LPhyRd = insn1->PhyRd;
     //         }
     // }
-    for(size_t i = 0 ; i < insnPkg.size(); i++){
+
+     for(size_t i = 0 ; i < insnPkg.size(); i++){
         InsnPtr_t& insn = insnPkg[i];
-        if(insn && insn->IsaRd != 0){
+        if(insn&& insn->IsaRd != 0){
             for(size_t j = i + 1; j < insnPkg.size(); j++){
                 InsnPtr_t& laterInsn = insnPkg[j];
                 if(laterInsn){
-                    if( insn->IsaRd == laterInsn->IsaRs1){
-                        laterInsn->PhyRs1 = insn->PhyRd;
-                    }
-                    if( insn->IsaRd == laterInsn->IsaRs2){
-                        laterInsn->PhyRs2 = insn->PhyRd;
-                    } 
-                    if( insn->IsaRd == laterInsn->IsaRd){
-                        laterInsn->LPhyRd = insn->PhyRd;
-                    } 
+                    if(insn->IsaRd == laterInsn->IsaRs1)laterInsn->PhyRs1 = insn->PhyRd;          
+                    if(insn->IsaRd == laterInsn->IsaRs2)laterInsn->PhyRs2 = insn->PhyRd;
+                    if(insn->IsaRd == laterInsn->IsaRd)laterInsn->LPhyRd = insn->PhyRd;
                 }
             }
         }
     }
+
     this->ROB_Entry_WEN_GROUP[0]=allocCount?true:false;
     this->ROB_Entry_WEN_GROUP[1]=allocCount>1?true:false;
     this->ROB_Entry_WEN_GROUP[2]=allocCount>2?true:false;
@@ -433,8 +426,7 @@ void Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
 //     ReadyForCommit->io_m_RollBackTag=this->m_RollBackTag;
 //     ReadyForCommit->io_Rob_Usage=this->m_Rob.getUsage();
 //     ReadyForCommit->io_Header_isStable=this->m_Rob[this->m_Rob.getHeader()].isStable;
-//     ReadyForCommit->io_Header_Function_type=this->m_Rob[this->m_Rob.getHeader()].Fu;
-    
+//     ReadyForCommit->io_Header_Function_type=this->m_Rob[this->m_Rob.getHeader()].Fu;    
 //     //连接输出
 //     ReadyForCommit->eval();
 //     return ReadyForCommit->io_Ready;

@@ -179,12 +179,12 @@ src/CMakeFiles/model.dir/all: thirdParty/yaml-cpp/CMakeFiles/yaml-cpp.dir/all
 src/CMakeFiles/model.dir/all: thirdParty/spdlog/CMakeFiles/spdlog.dir/all
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/model.dir/build.make src/CMakeFiles/model.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/model.dir/build.make src/CMakeFiles/model.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jmye/Desktop/MICRO/modelAchieve/build_debug/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39 "Built target model"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jmye/Desktop/MICRO/modelAchieve/build_debug/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31 "Built target model"
 .PHONY : src/CMakeFiles/model.dir/all
 
 # Build rule for subdir invocation for target.
 src/CMakeFiles/model.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jmye/Desktop/MICRO/modelAchieve/build_debug/CMakeFiles 77
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jmye/Desktop/MICRO/modelAchieve/build_debug/CMakeFiles 69
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/model.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/jmye/Desktop/MICRO/modelAchieve/build_debug/CMakeFiles 0
 .PHONY : src/CMakeFiles/model.dir/rule
@@ -933,7 +933,7 @@ thirdParty/yaml-cpp/CMakeFiles/ContinuousSubmit.dir/clean:
 thirdParty/yaml-cpp/CMakeFiles/yaml-cpp.dir/all:
 	$(MAKE) $(MAKESILENT) -f thirdParty/yaml-cpp/CMakeFiles/yaml-cpp.dir/build.make thirdParty/yaml-cpp/CMakeFiles/yaml-cpp.dir/depend
 	$(MAKE) $(MAKESILENT) -f thirdParty/yaml-cpp/CMakeFiles/yaml-cpp.dir/build.make thirdParty/yaml-cpp/CMakeFiles/yaml-cpp.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jmye/Desktop/MICRO/modelAchieve/build_debug/CMakeFiles --progress-num=48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77 "Built target yaml-cpp"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jmye/Desktop/MICRO/modelAchieve/build_debug/CMakeFiles --progress-num=40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69 "Built target yaml-cpp"
 .PHONY : thirdParty/yaml-cpp/CMakeFiles/yaml-cpp.dir/all
 
 # Build rule for subdir invocation for target.
@@ -959,7 +959,7 @@ thirdParty/yaml-cpp/CMakeFiles/yaml-cpp.dir/clean:
 thirdParty/spdlog/CMakeFiles/spdlog.dir/all:
 	$(MAKE) $(MAKESILENT) -f thirdParty/spdlog/CMakeFiles/spdlog.dir/build.make thirdParty/spdlog/CMakeFiles/spdlog.dir/depend
 	$(MAKE) $(MAKESILENT) -f thirdParty/spdlog/CMakeFiles/spdlog.dir/build.make thirdParty/spdlog/CMakeFiles/spdlog.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jmye/Desktop/MICRO/modelAchieve/build_debug/CMakeFiles --progress-num=40,41,42,43,44,45,46,47 "Built target spdlog"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jmye/Desktop/MICRO/modelAchieve/build_debug/CMakeFiles --progress-num=32,33,34,35,36,37,38,39 "Built target spdlog"
 .PHONY : thirdParty/spdlog/CMakeFiles/spdlog.dir/all
 
 # Build rule for subdir invocation for target.
