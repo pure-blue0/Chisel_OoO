@@ -105,7 +105,7 @@ Simulator : {
             },
             {
               Name             : UnifiedDispatchQueue0,
-              EntryCount       : 8,
+              EntryCount       : 4,
               EnqueWidth       : 1,
               DequeWidth       : 1,
               IssuePolicy      : In-Order ,
@@ -116,7 +116,7 @@ Simulator : {
             },
             {
               Name             : UnifiedDispatchQueue1,
-              EntryCount       : 8,
+              EntryCount       : 4,
               EnqueWidth       : 1,
               DequeWidth       : 1,
               IssuePolicy      : In-Order ,
@@ -140,11 +140,11 @@ Simulator : {
               Name             : UnifiedDispatchQueue3,
               EntryCount       : 8,
               EnqueWidth       : 1,
-              DequeWidth       : 1,
+              DequeWidth       : 2,
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
               RFReadPort       : [3],
-              FunctionUnitPool : [6,7],
+              FunctionUnitPool : [6,7,8],
               SubScheduler     : []
             },
         ],

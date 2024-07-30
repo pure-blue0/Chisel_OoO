@@ -2,7 +2,7 @@
 #include "../Processor.hh"
 #include <math.h>
 //#include "./obj_dir/VTryAllocate.h"
-#include "./obj_dir/VDispatch.h"
+//#include "./obj_dir/VDispatch.h"
 namespace Emulator
 {
     
@@ -50,6 +50,7 @@ Dispatch::Evaluate(){
             lsq->TryAllocate(insnPkg,TryAllocSuccessCount[1]);
             this->TryDispatch(insnPkg,TryAllocSuccessCount[2],true);
             Ack.takenInsnCount = *std::min_element(TryAllocSuccessCount,TryAllocSuccessCount+3);
+            
             lsq->Allocate(insnPkg,Ack.takenInsnCount);
             rcu->Allocate(insnPkg,Ack.takenInsnCount);
             this->DispatchInsn(insnPkg,Ack.takenInsnCount);    
@@ -106,6 +107,7 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
     // //连接输出
     // TryAllocate->eval();
     // uint64_t a=TryAllocate->io_issue_success_count;
+
     uint8_t avail_count=insnPkg[0]->data_valid+insnPkg[1]->data_valid+insnPkg[2]->data_valid+insnPkg[3]->data_valid;
     // Flush Status
     for(auto& scheduler : this->m_SchedularVec){//获取每个调度器的可用，EnqueWidth：表示的是一个周期内最大的允许指令入队的数量
@@ -126,8 +128,8 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
             bool Success=false;
             for(auto& schedular : this->m_SchedularVec){//遍历调度器列表
                 //找到一个支持当前指令功能类型（Fu），并且该调度器有可用的端口
-                //if(schedular.scheduler->m_SupportFunc.count(insn->Fu)&& !schedular.scheduler->Busy() && schedular.AvailPort)//加上busy判断，更好的性能
-                if(schedular.scheduler->m_SupportFunc.count(insn->Fu) && schedular.AvailPort)
+                if(schedular.scheduler->m_SupportFunc.count(insn->Fu)&& !schedular.scheduler->Busy() && schedular.AvailPort)//加上busy判断，更好的性能
+                //if(schedular.scheduler->m_SupportFunc.count(insn->Fu) && schedular.AvailPort)
                 {
                     SuccessCount++;
                     schedular.AvailPort--;//可用端口数-1
@@ -256,45 +258,123 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
 // }
 void 
 Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
-    for(size_t i = 0 ; i < DispatchCount; i++){
-        InsnPtr_t insn = insnPkg[i];
+    bool insn_match[4]={false,false,false,false};//-4-
+    uint8_t insn_match_num[4]={0XF,0XF,0XF,0XF};
+    uint8_t same_Fu[4]={0,0,0,0};
+    DPRINTF(temptest,"FUNCT {:}| {:} {:} {:} {:}",DispatchCount,insnPkg[0]->Fu,insnPkg[1]->Fu,insnPkg[2]->Fu,insnPkg[3]->Fu);
+
+    uint8_t avail_count[this->m_SchedularVec.size()];
+    if(DispatchCount>0){
+        InsnPtr_t insn = insnPkg[0];
         if( !(insn->Excp.valid ||
              ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
              ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
              ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
         ){
             for(auto scheduler : this->m_SchedularVec){
-                if(scheduler.scheduler->m_SupportFunc.count(insn->Fu) &&!scheduler.scheduler->Busy())
+                
+                if(!insn_match[0]&&scheduler.scheduler->m_SupportFunc.count(insn->Fu) &&scheduler.scheduler->Get_IssueQueue_Avail_num())
                 {
-                    
-                    scheduler.scheduler->Schedule(insn,scheduler.scheduler->Allocate());
-                    break;
+                    insn_match[0]=true;
+                    insn_match_num[0]=scheduler.scheduler->m_SchedularId;
                 }
             } 
         }
     }
+    if(DispatchCount>1){
+        InsnPtr_t insn = insnPkg[1];
+        if( !(insn->Excp.valid ||
+             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
+             ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
+             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
+        ){
+            for(auto scheduler : this->m_SchedularVec){
+                if(!insn_match[1]&&scheduler.scheduler->m_SupportFunc.count(insn->Fu))
+                {
+                    if(scheduler.scheduler->Get_IssueQueue_Avail_num()>(scheduler.scheduler->m_SchedularId==insn_match_num[0])?
+                        scheduler.scheduler->Get_IssueQueue_Avail_num()-(scheduler.scheduler->m_SchedularId==insn_match_num[0]):0)
+                    {
+                        insn_match[1]=true;
+                        insn_match_num[1]=scheduler.scheduler->m_SchedularId;
+                    } 
+                }
+            } 
+        }
+    }
+    if(DispatchCount>2){
+        InsnPtr_t insn = insnPkg[2];
+        if( !(insn->Excp.valid ||
+             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
+             ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
+             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
+        ){
+            for(auto scheduler : this->m_SchedularVec){
+                if(!insn_match[2]&&scheduler.scheduler->m_SupportFunc.count(insn->Fu))
+                {
+                    if(scheduler.scheduler->Get_IssueQueue_Avail_num()>((scheduler.scheduler->m_SchedularId==insn_match_num[0])+(scheduler.scheduler->m_SchedularId==insn_match_num[1]))?
+                       scheduler.scheduler->Get_IssueQueue_Avail_num()-(scheduler.scheduler->m_SchedularId==insn_match_num[1])-(scheduler.scheduler->m_SchedularId==insn_match_num[0]):0)
+                    {  
+                        insn_match[2]=true;
+                        insn_match_num[2]=scheduler.scheduler->m_SchedularId;
+                    }        
+                }
+            } 
+        }
+    }
+    if(DispatchCount>3){
+        InsnPtr_t insn = insnPkg[3];
+        if( !(insn->Excp.valid ||
+             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
+             ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
+             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
+        ){
+            for(auto scheduler : this->m_SchedularVec){
+                if(!insn_match[3]&&scheduler.scheduler->m_SupportFunc.count(insn->Fu))
+                {
+                    if(scheduler.scheduler->Get_IssueQueue_Avail_num()>((scheduler.scheduler->m_SchedularId==insn_match_num[0])+(scheduler.scheduler->m_SchedularId==insn_match_num[1])+(scheduler.scheduler->m_SchedularId==insn_match_num[2]))?
+                       scheduler.scheduler->Get_IssueQueue_Avail_num()-((scheduler.scheduler->m_SchedularId==insn_match_num[0])+(scheduler.scheduler->m_SchedularId==insn_match_num[1])+(scheduler.scheduler->m_SchedularId==insn_match_num[2])):0)
+                   {
+                        insn_match[3]=true;
+                        insn_match_num[3]=scheduler.scheduler->m_SchedularId;
+                    }    
+                }
+            } 
+        }
+    }
+    for(int i=0;i<4;i++){
+        if(insn_match_num[i]!=0xf)this->m_SchedularVec[insn_match_num[i]].scheduler->Schedule(insnPkg[i],this->m_SchedularVec[insn_match_num[i]].scheduler->Allocate());
+    }
+    
 
+    // for(int k=0;k<this->m_SchedularVec.size();k++){
+    //     avail_count[k]=this->m_SchedularVec[k].scheduler->Get_IssueQueue_Avail_num();
+    //     DPRINTF(temptest,"num {:} {:}",k,this->m_SchedularVec[k].scheduler->Get_IssueQueue_Avail_num());
+    // }
+    // for(size_t i = 0 ; i < DispatchCount; i++){
+    //     InsnPtr_t insn = insnPkg[i];
+    //     if( !(insn->Excp.valid ||
+    //          ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
+    //          ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
+    //          ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
+    //     ){
+    //         int t=0;
+    //         for(auto scheduler : this->m_SchedularVec){
+                
+    //             if(!insn_match[i]&&scheduler.scheduler->m_SupportFunc.count(insn->Fu) &&!scheduler.scheduler->Busy())
+    //             {
+    //                 insn_match[i]=true;
+    //                 insn_match[i]=scheduler.scheduler->m_SchedularId;
+    //                 scheduler.scheduler->Schedule(insn,scheduler.scheduler->Allocate());
+    //             }
+    //         } 
+    //        // DPRINTF(temptest,"size {:}",this->m_SchedularVec.size());
+    //     }
+    // }
+
+    
+    
+               
 }
-
-//     // for(size_t i = 0 ; i < DispatchCount; i++){
-//     //     InsnPtr_t insn = insnPkg[i];
-//     //     if(  insn->Excp.valid ||
-//     //          ((insn->Fu == funcType_t::CSR) && (insn->SubOp == CSR_FENCE)) ||
-//     //          ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
-//     //          ((insn->Fu == funcType_t::CSR) && (insn->SubOp == CSR_MRET))
-//     //     ){
-//     //         ;//insn->State = InsnState_t::State_Commit;//直接提交
-//     //     }else{
-//     //         //insn->State = InsnState_t::State_Issue;
-//     //         for(auto scheduler : this->m_SchedularVec){
-//     //             if(scheduler.scheduler->m_SupportFunc.count(insn->Fu) )
-//     //             {                   
-//     //                 scheduler.scheduler->Schedule(insn,scheduler.scheduler->Allocate());
-//     //                 break;
-//     //             }
-//     //         } 
-//     //     }
-//     // }
 
 std::shared_ptr<BaseStage> Create_Dispatch_Instance(
         Processor*                       processor         ,

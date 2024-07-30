@@ -322,10 +322,10 @@ Decode::Predecode(Emulator::DynInsn& insnEntry,DecodeInsn_t& insn1,DecodeInsn_t&
     insn4->data_valid=(!offset)&&!redirect_message1.valid&&!redirect_message2.valid&&!redirect_message3.valid;
     
     flush_flag=redirect_message1.valid|redirect_message2.valid|redirect_message3.valid|redirect_message4.valid;
-    if(redirect_message4.valid)redirect_message=redirect_message4;
-    else if(redirect_message3.valid)redirect_message=redirect_message3;
+    if(redirect_message1.valid)redirect_message=redirect_message1;
     else if(redirect_message2.valid)redirect_message=redirect_message2;
-    else if(redirect_message1.valid)redirect_message=redirect_message1;
+    else if(redirect_message3.valid)redirect_message=redirect_message3;
+    else if(redirect_message4.valid)redirect_message=redirect_message4;
 }
 
 void
