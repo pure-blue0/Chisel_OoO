@@ -196,7 +196,13 @@ public:
             auto& ldqEntry = this->m_Lsq->m_LoadQueue[memResp.Id.TransId];
             if(!ldqEntry.killed){
                 ldqEntry.state = loadState_t::load_Executed;
-                auto& insn     = ldqEntry.insnPtr;
+                
+                InsnPtr_t& insn     = ldqEntry.insnPtr;
+                insn->BruMisPred=false;
+                insn->Fu=ldqEntry.Fu;
+                insn->RobTag=ldqEntry.RobTag;
+                insn->IsaRd=ldqEntry.IsaRd;
+                insn->PhyRd=ldqEntry.PhyRd;
                 insn->Excp = memResp.Excp;
                 if(!memResp.Excp.valid){
                     uint64_t offset = ldqEntry.address & (this->m_Lsq->m_dCacheAlignByte - 1);

@@ -28,6 +28,7 @@ Rcu::Rcu(
     m_AllocWidth(AllocWidth),
     m_DeallocWidth(DeallocWidth)
 {
+    this->ROB_Count=RobEntryCount;
    // RcuAllocate=new VRcuAllocate;//创建对象
 }
 
@@ -351,8 +352,9 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN_GROUP[4]){
 
 void
 Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
+    uint64_t m_Rob_Tail=this->m_Rob.getTail();
     for(size_t i = 0; i < allocCount; i++){
-        InsnPtr_t insn = insnPkg[i];
+        InsnPtr_t& insn = insnPkg[i];
         insn->PhyRs1 = this->m_IntRenameTable[insn->IsaRs1];
         insn->PhyRs2 = this->m_IntRenameTable[insn->IsaRs2];
         insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
@@ -363,6 +365,7 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
             this->m_IntBusylist[insn->PhyRd].forwarding = false;
             this->m_IntRenameTable[insn->IsaRd]        = insn->PhyRd;//保存rd对应的reg id
         }
+        insn->RobTag=(m_Rob_Tail+i)%this->ROB_Count;
     }
     // if(allocCount==2){//处理指令2与指令1之间可能存在的依赖
     //         InsnPtr_t& insn1 = insnPkg[0];
@@ -374,7 +377,7 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
     //         }
     // }
 
-     for(size_t i = 0 ; i < insnPkg.size(); i++){
+    for(size_t i = 0 ; i < insnPkg.size(); i++){
         InsnPtr_t& insn = insnPkg[i];
         if(insn&& insn->IsaRd != 0){
             for(size_t j = i + 1; j < insnPkg.size(); j++){
@@ -608,11 +611,8 @@ Rcu::Evaulate(){
             this->m_Rob[this->ROB_WB_ROBTag_Group[i]].isExcp = this->ROB_WB_Data_isExcp_Group[i];
             this->m_Rob[this->ROB_WB_ROBTag_Group[i]].isMisPred = this->ROB_WB_Data_isMisPred_Group[i];
         }
-        
     }
     for(int i=0;i<2;i++){
-
-        
         if(this->ROB_AGU_EN_Group[i]){
         this->m_Rob[this->ROB_AGU_ROBTag_Group[i]].isStable=true;
            this->m_Rob[this->ROB_AGU_ROBTag_Group[i]].done=this->ROB_AGU_Data_done_Group[i];

@@ -350,8 +350,14 @@ Processor::Evaluate(){
         this->m_Rcu->ROB_WB_EN_Group[i]=false;
         this->m_Rcu->ROB_Entry_WEN_GROUP[i]=false;
     }
-     this->m_Rcu->lsq_count=0;
-    
+    for(int i=0;i<4;i++){
+        this->m_Lsq->Load_WEN_Group[i]=false;
+        this->m_Lsq->Store_WEN_Group[i]=false;
+        this->m_Lsq->LSQ_Style_Group[i]=0;
+    }
+    this->m_Rcu->lsq_count=0;
+    this->m_Lsq->KillLoadEntry_Tag=false;
+    this->m_Lsq->KillStoreEntry_Tag=false;
 }
 
 void 
@@ -394,6 +400,7 @@ Processor::Reset(Addr_t boot_address){
     }
     static_cast<Fetch1*>(m_StageMap["Fetch1"].get())->InitBootPc(boot_address);
     this->m_Rcu->Reset();
+    this->m_Lsq->Reset();
     this->m_ExecContext->Reset(this->m_tid,boot_address);
 
 }

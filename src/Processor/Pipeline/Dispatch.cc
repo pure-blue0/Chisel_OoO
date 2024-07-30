@@ -51,8 +51,9 @@ Dispatch::Evaluate(){
             this->TryDispatch(insnPkg,TryAllocSuccessCount[2],true);
             Ack.takenInsnCount = *std::min_element(TryAllocSuccessCount,TryAllocSuccessCount+3);
             
-            lsq->Allocate(insnPkg,Ack.takenInsnCount);
             rcu->Allocate(insnPkg,Ack.takenInsnCount);
+            lsq->Allocate(insnPkg,Ack.takenInsnCount);
+            
             this->DispatchInsn(insnPkg,Ack.takenInsnCount);    
             #ifdef TRACE_ON
             std::stringstream insnInfo;
@@ -260,9 +261,6 @@ void
 Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
     bool insn_match[4]={false,false,false,false};//-4-
     uint8_t insn_match_num[4]={0XF,0XF,0XF,0XF};
-    uint8_t same_Fu[4]={0,0,0,0};
-    DPRINTF(temptest,"FUNCT {:}| {:} {:} {:} {:}",DispatchCount,insnPkg[0]->Fu,insnPkg[1]->Fu,insnPkg[2]->Fu,insnPkg[3]->Fu);
-
     uint8_t avail_count[this->m_SchedularVec.size()];
     if(DispatchCount>0){
         InsnPtr_t insn = insnPkg[0];
@@ -343,37 +341,7 @@ Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
     }
     for(int i=0;i<4;i++){
         if(insn_match_num[i]!=0xf)this->m_SchedularVec[insn_match_num[i]].scheduler->Schedule(insnPkg[i],this->m_SchedularVec[insn_match_num[i]].scheduler->Allocate());
-    }
-    
-
-    // for(int k=0;k<this->m_SchedularVec.size();k++){
-    //     avail_count[k]=this->m_SchedularVec[k].scheduler->Get_IssueQueue_Avail_num();
-    //     DPRINTF(temptest,"num {:} {:}",k,this->m_SchedularVec[k].scheduler->Get_IssueQueue_Avail_num());
-    // }
-    // for(size_t i = 0 ; i < DispatchCount; i++){
-    //     InsnPtr_t insn = insnPkg[i];
-    //     if( !(insn->Excp.valid ||
-    //          ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
-    //          ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
-    //          ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
-    //     ){
-    //         int t=0;
-    //         for(auto scheduler : this->m_SchedularVec){
-                
-    //             if(!insn_match[i]&&scheduler.scheduler->m_SupportFunc.count(insn->Fu) &&!scheduler.scheduler->Busy())
-    //             {
-    //                 insn_match[i]=true;
-    //                 insn_match[i]=scheduler.scheduler->m_SchedularId;
-    //                 scheduler.scheduler->Schedule(insn,scheduler.scheduler->Allocate());
-    //             }
-    //         } 
-    //        // DPRINTF(temptest,"size {:}",this->m_SchedularVec.size());
-    //     }
-    // }
-
-    
-    
-               
+    }         
 }
 
 std::shared_ptr<BaseStage> Create_Dispatch_Instance(

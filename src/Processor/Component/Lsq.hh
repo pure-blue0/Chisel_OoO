@@ -28,6 +28,11 @@ struct LDQ_entry_t
     Addr_t                   address;
     
     InsnPtr_t                insnPtr;
+
+    uint64_t     RobTag;
+    funcType_t   Fu;
+    IsaRegId_t   IsaRd;
+    PhyRegId_t   PhyRd;
 };
 
 enum storeState_t{
@@ -66,9 +71,22 @@ public:
     LoopQueue<STQ_entry_t>      m_StoreQueue;
 
     LoopQueue<LDQ_entry_t>      m_LoadQueue;
+    uint64_t m_LoadQueue_count;
+    uint64_t m_StoreQueue_count;
 
 public:
-    int a;
+    bool KillLoadEntry_flag;
+    uint16_t KillLoadEntry_Tag;
+    bool KillStoreEntry_flag;
+    uint16_t KillStoreEntry_Tag;
+
+    bool Load_WEN_Group[4];
+    bool Store_WEN_Group[4];
+    LDQ_entry_t load_entry[4];
+    STQ_entry_t store_entry[4];
+
+    uint8_t     LSQ_Style_Group[4];
+    InsnPtr_t   send_lsq_insnPtr[4]; 
     Lsq(
         Processor*          processor,
         const uint16_t      dCacheAlignByte,

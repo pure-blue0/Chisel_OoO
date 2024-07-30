@@ -113,6 +113,7 @@ public:
     bool ROB_AGU_Data_done_Group[2];
     bool ROB_AGU_Data_isExcp_Group[2];
     uint8_t ROB_AGU_ROBTag_Group[2];
+    uint64_t ROB_Count;
 
 public:
     Rcu(
