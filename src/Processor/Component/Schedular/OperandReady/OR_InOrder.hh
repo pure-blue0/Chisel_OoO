@@ -53,7 +53,7 @@ public:
     void Dispatch(InsnPtr_t& insn, uint64_t& index){
         this->m_issueQueue[index] = insn;
     };
-
+ 
     void IssueSelect(uint64_t& index, InsnPtr_t& insn, bool& Success){
         IssueInfo info;
         Success = false;
