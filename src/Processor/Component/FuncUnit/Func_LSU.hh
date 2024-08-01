@@ -196,8 +196,8 @@ public:
             auto& ldqEntry = this->m_Lsq->m_LoadQueue[memResp.Id.TransId];
             if(!ldqEntry.killed){
                 ldqEntry.state = loadState_t::load_Executed;
-                
-                InsnPtr_t& insn     = ldqEntry.insnPtr;
+               
+                InsnPtr_t insn =std::make_shared<DynInsn>();
                 insn->BruMisPred=false;
                 insn->Fu=ldqEntry.Fu;
                 insn->RobTag=ldqEntry.RobTag;
@@ -206,7 +206,7 @@ public:
                 insn->Excp = memResp.Excp;
                 if(!memResp.Excp.valid){
                     uint64_t offset = ldqEntry.address & (this->m_Lsq->m_dCacheAlignByte - 1);
-                    switch (ldqEntry.insnPtr->SubOp)
+                    switch (ldqEntry.SubOp)
                     {
                     case LDU_LB  :insn->RdResult = *(int8_t*)(memResp.Data + offset);break;
                     case LDU_LH  :insn->RdResult = *(int16_t*)(memResp.Data + offset);break;

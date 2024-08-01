@@ -58,25 +58,23 @@ public:
         Success = false;
         insn = this->m_issueQueue.front();
         info.insn = insn;
-        if(insn){
-            if(( !this->m_Rcu->ReadyForCommit(insn->RobTag)      ||
-                (!this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
-                (!this->m_Rcu->m_IntBusylist[insn->PhyRs2].done)
-            )){
-                return;                
-            }else{
-                for(auto rfport : this->m_RFReadPortVec){
-                    if(!rfport->valid){
-                        for(auto fu : this->m_FuncUnitVec){
-                            if(fu->m_SupportFunc.count(insn->Fu) && !fu->Busy()){
-                                fu->Allocate();
-                                info.desIndex  = fu->m_FuncUnitId;
-                                info.isToFu    = true;
-                                Success        = true;
-                                rfport->set(info);
-                                insn->State = InsnState_t::State_ReadOperand;
-                                return;
-                            }
+        if(( !this->m_Rcu->ReadyForCommit(insn->RobTag)      ||
+            (!this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
+            (!this->m_Rcu->m_IntBusylist[insn->PhyRs2].done)
+        )){
+            return;                
+        }else{
+            for(auto rfport : this->m_RFReadPortVec){
+                if(!rfport->valid){
+                    for(auto fu : this->m_FuncUnitVec){
+                        if(fu->m_SupportFunc.count(insn->Fu) && !fu->Busy()){
+                            fu->Allocate();
+                            info.desIndex  = fu->m_FuncUnitId;
+                            info.isToFu    = true;
+                            Success        = true;
+                            rfport->set(info);
+                            insn->State = InsnState_t::State_ReadOperand;
+                            return;
                         }
                     }
                 }

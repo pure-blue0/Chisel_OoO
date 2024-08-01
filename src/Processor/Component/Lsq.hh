@@ -26,13 +26,12 @@ struct LDQ_entry_t
     /* Load Address CAM */
     bool                     addressReady;
     Addr_t                   address;
-    
-    InsnPtr_t                insnPtr;
 
     uint64_t     RobTag;
     funcType_t   Fu;
     IsaRegId_t   IsaRd;
     PhyRegId_t   PhyRd;
+    uint8_t      SubOp;
 };
 
 enum storeState_t{
@@ -48,8 +47,16 @@ struct STQ_entry_t
     Addr_t                   address;
     bool                     dataReady;
     xReg_t                   data;
-    uint8_t                  SubOp;
-    InsnPtr_t                insnPtr;           
+    uint8_t                  SubOp;         
+};
+
+struct LSQ_entry_t
+{
+    uint64_t     RobTag;
+    funcType_t   Fu;
+    IsaRegId_t   IsaRd;
+    PhyRegId_t   PhyRd;
+    uint8_t      SubOp;
 };
 
 
@@ -82,8 +89,8 @@ public:
 
     bool Load_WEN_Group[4];
     bool Store_WEN_Group[4];
-    LDQ_entry_t load_entry[4];
-    STQ_entry_t store_entry[4];
+
+    LSQ_entry_t lsq_data[4];
 
     uint8_t     LSQ_Style_Group[4];
     InsnPtr_t   send_lsq_insnPtr[4]; 

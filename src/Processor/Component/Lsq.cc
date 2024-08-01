@@ -259,22 +259,21 @@ Lsq::Allocate(InsnPkg_t& insnPkg,uint64_t allocCount){
         auto& insn = insnPkg[i];
         if(insn->Fu == funcType_t::LDU){
             this->LSQ_Style_Group[i]=1;
-            this->load_entry[i].RobTag=insnPkg[i]->RobTag;
-            this->load_entry[i].IsaRd=insnPkg[i]->IsaRd;
-            this->load_entry[i].PhyRd=insnPkg[i]->PhyRd;
-            this->load_entry[i].Fu=insnPkg[i]->Fu;
+            
         }else if (insn->Fu == funcType_t::STU){
             this->LSQ_Style_Group[i]=2;
-            this->store_entry[i].SubOp=insnPkg[i]->SubOp;
+            
         }
         else{
             this->LSQ_Style_Group[i]=0;
         }
+        this->lsq_data[i].RobTag=insnPkg[i]->RobTag;
+        this->lsq_data[i].IsaRd=insnPkg[i]->IsaRd;
+        this->lsq_data[i].PhyRd=insnPkg[i]->PhyRd;
+        this->lsq_data[i].Fu=insnPkg[i]->Fu;
+        this->lsq_data[i].SubOp=insnPkg[i]->SubOp;
     }  
 
-    for(int i=0;i<4;i++){
-        this->send_lsq_insnPtr[i]=insnPkg[i];
-    }
 }
 
 void 
@@ -359,24 +358,33 @@ Lsq::Evaulate(){
     
     for(int i=0;i<4;i++){
         if(this->LSQ_Style_Group[i]==1){
-            this->load_entry[i].state = loadState_t::load_WaitSend;
-            this->load_entry[i].commited = false;
-            this->load_entry[i].killed = false;
-            this->load_entry[i].insnPtr=this->send_lsq_insnPtr[i];
-            this->load_entry[i].addressReady = false;
-            this->load_entry[i].address      = 0;
-            this->m_LoadQueue[this->m_LoadQueue.Allocate()] = this->load_entry[i];//将数据存入load queue的尾部 
+            LDQ_entry_t load_entry;
+    
+            load_entry.state = loadState_t::load_WaitSend;
+            load_entry.commited = false;
+            load_entry.killed = false;
+            load_entry.addressReady = false;
+            load_entry.address      = 0;
+
+            load_entry.RobTag=this->lsq_data[i].RobTag;
+            load_entry.IsaRd=this->lsq_data[i].IsaRd;
+            load_entry.PhyRd=this->lsq_data[i].PhyRd;
+            load_entry.Fu=this->lsq_data[i].Fu;
+            load_entry.SubOp=this->lsq_data[i].SubOp;
+
+            this->m_LoadQueue[this->m_LoadQueue.Allocate()] = load_entry;//将数据存入load queue的尾部 
         }
         if(this->LSQ_Style_Group[i]==2){
-            this->store_entry[i].state = storeState_t::store_WaitSend;
-        
-            this->store_entry[i].commited = false;
-            this->store_entry[i].addressReady = false;
-            this->store_entry[i].address = 0;
-            this->store_entry[i].killed = false;
-            this->store_entry[i].dataReady = false;;
-            this->store_entry[i].data = 0 ;
-            this->m_StoreQueue[this->m_StoreQueue.Allocate()] = this->store_entry[i];//将数据存入load queue的尾部
+            STQ_entry_t store_entry;
+            store_entry.state = storeState_t::store_WaitSend;
+            store_entry.commited = false;
+            store_entry.addressReady = false;
+            store_entry.address = 0;
+            store_entry.killed = false;
+            store_entry.dataReady = false;;
+            store_entry.data = 0 ;
+            store_entry.SubOp=this->lsq_data[i].SubOp;
+            this->m_StoreQueue[this->m_StoreQueue.Allocate()] = store_entry;//将数据存入load queue的尾部
         }
     }
     if(!this->m_StoreQueue.empty()){

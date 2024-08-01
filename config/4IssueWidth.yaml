@@ -133,18 +133,18 @@ Simulator : {
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady,
               RFReadPort       : [2],
-              FunctionUnitPool : [5],
+              FunctionUnitPool : [5,6],
               SubScheduler     : []
             },
             {
               Name             : UnifiedDispatchQueue3,
               EntryCount       : 8,
-              EnqueWidth       : 1,
+              EnqueWidth       : 2,
               DequeWidth       : 2,
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
               RFReadPort       : [3],
-              FunctionUnitPool : [6,7,8],
+              FunctionUnitPool : [7,8],
               SubScheduler     : []
             },
         ],
