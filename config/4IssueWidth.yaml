@@ -29,7 +29,7 @@ Simulator : {
         },
         PhysicalRegisterFile : {
           Int : {
-            RegCount    : 96
+            RegCount    : 64
           },
         },
         RecoveryPolicy  : {
@@ -39,7 +39,7 @@ Simulator : {
       },
       Lsq : {
         LoadQueue : {
-          EntryCount   : 32,
+          EntryCount   : 16,
         },
         StoreQueue : {
           EntryCount   : 16,
@@ -47,6 +47,9 @@ Simulator : {
       },
       Resources : {
         RegFileReadPort  : [
+          {
+            Latency         : 1
+          },
           {
             Latency         : 1
           },
@@ -139,8 +142,8 @@ Simulator : {
             {
               Name             : UnifiedDispatchQueue3,
               EntryCount       : 8,
-              EnqueWidth       : 2,
-              DequeWidth       : 2,
+              EnqueWidth       : 1,
+              DequeWidth       : 1,
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
               RFReadPort       : [3],

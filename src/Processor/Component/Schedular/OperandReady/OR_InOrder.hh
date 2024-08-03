@@ -53,34 +53,91 @@ public:
     void Dispatch(InsnPtr_t& insn, uint64_t& index){
         this->m_issueQueue[index] = insn;
     };
- 
-    void IssueSelect(uint64_t& index, InsnPtr_t& insn, bool& Success){
+
+    // void IssueSelect(uint64_t& index, InsnPtr_t& insn, bool& Success){
+    //     IssueInfo info;
+    //     Success = false;
+    //     insn = this->m_issueQueue.front();//数据都在这里面，连接的时候输入信号从这里面取
+
+  
+    //     info.insn = insn;
+    //     if(((!this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
+    //         (!this->m_Rcu->m_IntBusylist[insn->PhyRs2].done)
+    //     )){//判断busylist中对应的物理寄存器是否储存了完成的数据
+    //         return;                
+    //     }else{
+    //         for(auto rfport : this->m_RFReadPortVec){
+    //             if(!rfport->valid){
+    //                 for(auto fu : this->m_FuncUnitVec){
+    //                     if(fu->m_SupportFunc.count(insn->Fu) && !fu->Busy()){
+    //                         fu->Allocate();  //将function unit设为忙
+    //                         info.desIndex  = fu->m_FuncUnitId;//执行单元的ID
+    //                         info.isToFu    = true;//交叉验证中，需要把success的结果也连到这个变量上，然后最后通过rfport发送数据
+    //                         Success        = true;
+    //                         rfport->set(info);//向rfport端口发送数据
+    //                         insn->State = InsnState_t::State_ReadOperand;
+    //                         return;    
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // };
+
+    void IssueSelect(uint64_t& index, InsnPtr_t& insn1, bool& Success){
         IssueInfo info;
         Success = false;
-        insn = this->m_issueQueue.front();//数据都在这里面，连接的时候输入信号从这里面取
+       // insn = this->m_issueQueue.front();//数据都在这里面，连接的时候输入信号从这里面取
+        InsnPtr_t insn =std::make_shared<DynInsn>();
+        insn->Operand1Ready=this->m_issueQueue.front()->Operand1Ready;
+        insn->Operand2Ready=this->m_issueQueue.front()->Operand2Ready;
+        insn->Operand1=this->m_issueQueue.front()->Operand1;
+        insn->Operand2=this->m_issueQueue.front()->Operand2;
+        insn->SubOp=this->m_issueQueue.front()->SubOp;
+        insn->Fu=this->m_issueQueue.front()->Fu;
+        insn->Pc=this->m_issueQueue.front()->Pc;
+        insn->RobTag=this->m_issueQueue.front()->RobTag;
+        insn->LSQTag=this->m_issueQueue.front()->LSQTag;
+        insn->Pred.Taken=this->m_issueQueue.front()->Pred.Taken;
+        insn->Pred.Target=this->m_issueQueue.front()->Pred.Target;
+        insn->RobTag=this->m_issueQueue.front()->RobTag;
+        insn->imm=this->m_issueQueue.front()->imm;
+        insn->IsaRd=this->m_issueQueue.front()->IsaRd;
+        insn->PhyRs1=this->m_issueQueue.front()->PhyRs1;
+        insn->PhyRs2=this->m_issueQueue.front()->PhyRs2;
+        insn->PhyRd=this->m_issueQueue.front()->PhyRd;
+        insn->LPhyRd=this->m_issueQueue.front()->LPhyRd;
+        insn->IsaRs1=this->m_issueQueue.front()->IsaRs1;
+        insn->IsaRs2=this->m_issueQueue.front()->IsaRs2;
+        insn->ControlFlowInsn=this->m_issueQueue.front()->ControlFlowInsn;  
+        insn->Excp=this->m_issueQueue.front()->Excp;
         info.insn = insn;
-        int a=0;
+        info.insn->data_valid=false;
+
         if(((!this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
             (!this->m_Rcu->m_IntBusylist[insn->PhyRs2].done)
         )){//判断busylist中对应的物理寄存器是否储存了完成的数据
-            return;                
+            info.insn->data_valid=false;                 
         }else{
-            for(auto rfport : this->m_RFReadPortVec){
-                if(!rfport->valid){
-                    for(auto fu : this->m_FuncUnitVec){
-                        if(fu->m_SupportFunc.count(insn->Fu) && !fu->Busy()){
-                            fu->Allocate();  //将function unit设为忙
-                            info.desIndex  = fu->m_FuncUnitId;//执行单元的ID
-                            info.isToFu    = true;//交叉验证中，需要把success的结果也连到这个变量上，然后最后通过rfport发送数据
-                            Success        = true;
-                            rfport->set(info);//向rfport端口发送数据
-                            insn->State = InsnState_t::State_ReadOperand;
-                            return;    
-                        }
+            if(!this->m_RFReadPortVec[0]->valid){
+                for(auto fu : this->m_FuncUnitVec){
+                    if(!Success&&fu->m_SupportFunc.count(insn->Fu) && !fu->Busy()){
+                        info.insn->data_valid=true;
+                        fu->Allocate();  //将function unit设为忙
+                        info.desIndex  = fu->m_FuncUnitId;//执行单元的ID
+                        info.isToFu    = true;//交叉验证中，需要把success的结果也连到这个变量上，然后最后通过rfport发送数据
+                        Success        = true;
+                        insn->State = InsnState_t::State_ReadOperand;
+                        
                     }
                 }
             }
+            else{
+                info.insn->data_valid=false;
+            }    
         }
+        
+        if(!this->m_RFReadPortVec[0]->valid)this->m_RFReadPortVec[0]->set(info);//向rfport端口发送数据 
     };
 
     void Deallocate(uint64_t& index){

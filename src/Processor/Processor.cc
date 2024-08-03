@@ -354,10 +354,18 @@ Processor::Evaluate(){
         this->m_Lsq->Load_WEN_Group[i]=false;
         this->m_Lsq->Store_WEN_Group[i]=false;
         this->m_Lsq->LSQ_Style_Group[i]=0;
+
+        this->m_Lsq->KillLoadEntry_flag[i]=false;
+        this->m_Lsq->KillStoreEntry_flag[i]=false;
+    }
+    for(int i=0;i<4;i++){
+        this->m_Rcu->RN_Release_EN[i]=false;
     }
     this->m_Rcu->lsq_count=0;
-    this->m_Lsq->KillLoadEntry_Tag=false;
-    this->m_Lsq->KillStoreEntry_Tag=false;
+    
+    
+    this->m_Lsq->LSU_Style_Group[0]=0;
+    this->m_Lsq->LSU_Style_Group[1]=0;
 }
 
 void 
@@ -402,6 +410,7 @@ Processor::Reset(Addr_t boot_address){
     this->m_Rcu->Reset();
     this->m_Lsq->Reset();
     this->m_ExecContext->Reset(this->m_tid,boot_address);
+
 
 }
 

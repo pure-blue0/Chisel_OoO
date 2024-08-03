@@ -110,40 +110,49 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
     // uint64_t a=TryAllocate->io_issue_success_count;
 
     uint8_t avail_count=insnPkg[0]->data_valid+insnPkg[1]->data_valid+insnPkg[2]->data_valid+insnPkg[3]->data_valid;
-    // Flush Status
-    for(auto& scheduler : this->m_SchedularVec){//获取每个调度器的可用，EnqueWidth：表示的是一个周期内最大的允许指令入队的数量
-        scheduler.AvailPort = std::min(scheduler.scheduler->GetAvailibleEntryCount(),scheduler.scheduler->m_EnqueWidth);
-    }//获取每个队列可用entry数
-    SuccessCount = 0;
-    bool stop_flag=0;
-    for(int i=0;i<avail_count&&!stop_flag;i++){
-        InsnPtr_t insn = insnPkg[i];
-        if(insn->Excp.valid){//判断指令是否为异常指令
-            SuccessCount++;
-            stop_flag=1;
-        }
-        if((insn->Fu == funcType_t::ALU && insn->IsaRd == 0)){ // 判断该指令是否为nop指令
-            SuccessCount++;  
+    for(auto& scheduler : this->m_SchedularVec){
+        scheduler.AvailPort = scheduler.scheduler->Get_IssueQueue_Avail_num();
+    }
+    bool stop_flag[4]={false,false,false,false};
+    uint8_t insn_match_num[4]={0XF,0XF,0XF,0XF};
+    bool success_dispatch_flag[4]={false,false,false,false};
+    for(int i=0;i<avail_count;i++){
+        if(stop_flag[i]){
+            stop_flag[i+1]=true;
         }
         else{
-            bool Success=false;
-            for(auto& schedular : this->m_SchedularVec){//遍历调度器列表
-                //找到一个支持当前指令功能类型（Fu），并且该调度器有可用的端口
-                if(schedular.scheduler->m_SupportFunc.count(insn->Fu)&& !schedular.scheduler->Busy() && schedular.AvailPort)//加上busy判断，更好的性能
-                //if(schedular.scheduler->m_SupportFunc.count(insn->Fu) && schedular.AvailPort)
-                {
-                    SuccessCount++;
-                    schedular.AvailPort--;//可用端口数-1
-                    Success=true;
-                    break;
-                }
+            InsnPtr_t insn = insnPkg[i];
+            if(insn->Excp.valid){
+                success_dispatch_flag[i]=true;
+                stop_flag[i+1]=1;
             }
-            //如果指令没有匹配到ISSUE队列或指令是控制流指令，则不再对后续指令进行判断
-            if(!Success || insn->ControlFlowInsn){
-                stop_flag=1;
+            if((insn->Fu == funcType_t::ALU && insn->IsaRd == 0)){ 
+                success_dispatch_flag[i]=true;
+            }
+            else{
+                bool Success=false;
+                for(auto& schedular : this->m_SchedularVec){
+                    if(!Success&&schedular.scheduler->m_SupportFunc.count(insn->Fu))
+                    {
+                        uint8_t Allocate_count=0;
+                        for(int j=0;j<i;j++){
+                            Allocate_count=Allocate_count+(schedular.scheduler->m_SchedularId==insn_match_num[j]);
+                        }
+                        if(schedular.AvailPort>Allocate_count)
+                        {
+                            insn_match_num[i]=schedular.scheduler->m_SchedularId;
+                            success_dispatch_flag[i]=true;   
+                            Success=true;
+                        }
+                    }
+                }
+                if(!success_dispatch_flag[i] || insn->ControlFlowInsn){
+                    stop_flag[i+1]=1;
+                }
             }
         }
     }
+    SuccessCount=success_dispatch_flag[0]+success_dispatch_flag[1]+success_dispatch_flag[2]+success_dispatch_flag[3];
     // if(SuccessCount!=a){
     //     DPRINTF(temptest,"error-------------------------");
     //     DPRINTF(temptest,"V:I1 num {:#x} port {:#x} {:#x} {:#x} valid {:#x} {:#x} fu {:#x} {:#x} rd {:#x} {:#x} C {:#x} out {:#x}",
@@ -257,88 +266,36 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
 //     else if(num2==2) this->m_SchedularVec[2].scheduler->Schedule(insnPkg[1],this->m_SchedularVec[2].scheduler->Allocate());
 //
 // }
-void 
-Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
-    bool insn_match[4]={false,false,false,false};//-4-
+void Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){
+   
     uint8_t insn_match_num[4]={0XF,0XF,0XF,0XF};
     uint8_t avail_count[this->m_SchedularVec.size()];
-    if(DispatchCount>0){
-        InsnPtr_t insn = insnPkg[0];
+    for(int i=0;i<DispatchCount;i++){
+        InsnPtr_t insn = insnPkg[i];
         if( !(insn->Excp.valid ||
              ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
              ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
              ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
         ){
+            bool Success=false;
             for(auto scheduler : this->m_SchedularVec){
                 
-                if(!insn_match[0]&&scheduler.scheduler->m_SupportFunc.count(insn->Fu) &&scheduler.scheduler->Get_IssueQueue_Avail_num())
+                if(!Success&&scheduler.scheduler->m_SupportFunc.count(insn->Fu))
                 {
-                    insn_match[0]=true;
-                    insn_match_num[0]=scheduler.scheduler->m_SchedularId;
-                }
-            } 
-        }
-    }
-    if(DispatchCount>1){
-        InsnPtr_t insn = insnPkg[1];
-        if( !(insn->Excp.valid ||
-             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
-             ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
-             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
-        ){
-            for(auto scheduler : this->m_SchedularVec){
-                if(!insn_match[1]&&scheduler.scheduler->m_SupportFunc.count(insn->Fu))
-                {
-                    if(scheduler.scheduler->Get_IssueQueue_Avail_num()>(scheduler.scheduler->m_SchedularId==insn_match_num[0])?
-                        scheduler.scheduler->Get_IssueQueue_Avail_num()-(scheduler.scheduler->m_SchedularId==insn_match_num[0]):0)
+                    uint8_t Allocate_count=0;
+                    for(int j=0;j<i;j++){
+                        Allocate_count=Allocate_count+(scheduler.scheduler->m_SchedularId==insn_match_num[j]);
+                    }
+                    if(scheduler.scheduler->Get_IssueQueue_Avail_num()>Allocate_count)
                     {
-                        insn_match[1]=true;
-                        insn_match_num[1]=scheduler.scheduler->m_SchedularId;
-                    } 
+                        insn_match_num[i]=scheduler.scheduler->m_SchedularId;
+                        Success=true;
+                    }
                 }
-            } 
+            }  
         }
     }
-    if(DispatchCount>2){
-        InsnPtr_t insn = insnPkg[2];
-        if( !(insn->Excp.valid ||
-             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
-             ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
-             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
-        ){
-            for(auto scheduler : this->m_SchedularVec){
-                if(!insn_match[2]&&scheduler.scheduler->m_SupportFunc.count(insn->Fu))
-                {
-                    if(scheduler.scheduler->Get_IssueQueue_Avail_num()>((scheduler.scheduler->m_SchedularId==insn_match_num[0])+(scheduler.scheduler->m_SchedularId==insn_match_num[1]))?
-                       scheduler.scheduler->Get_IssueQueue_Avail_num()-(scheduler.scheduler->m_SchedularId==insn_match_num[1])-(scheduler.scheduler->m_SchedularId==insn_match_num[0]):0)
-                    {  
-                        insn_match[2]=true;
-                        insn_match_num[2]=scheduler.scheduler->m_SchedularId;
-                    }        
-                }
-            } 
-        }
-    }
-    if(DispatchCount>3){
-        InsnPtr_t insn = insnPkg[3];
-        if( !(insn->Excp.valid ||
-             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 9)) ||
-             ((insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0)) ||
-             ((insn->Fu == funcType_t::CSR) && (insn->SubOp == 7)))//Check whether it is a FENCE/NOP/MRET command
-        ){
-            for(auto scheduler : this->m_SchedularVec){
-                if(!insn_match[3]&&scheduler.scheduler->m_SupportFunc.count(insn->Fu))
-                {
-                    if(scheduler.scheduler->Get_IssueQueue_Avail_num()>((scheduler.scheduler->m_SchedularId==insn_match_num[0])+(scheduler.scheduler->m_SchedularId==insn_match_num[1])+(scheduler.scheduler->m_SchedularId==insn_match_num[2]))?
-                       scheduler.scheduler->Get_IssueQueue_Avail_num()-((scheduler.scheduler->m_SchedularId==insn_match_num[0])+(scheduler.scheduler->m_SchedularId==insn_match_num[1])+(scheduler.scheduler->m_SchedularId==insn_match_num[2])):0)
-                   {
-                        insn_match[3]=true;
-                        insn_match_num[3]=scheduler.scheduler->m_SchedularId;
-                    }    
-                }
-            } 
-        }
-    }
+
     for(int i=0;i<4;i++){
         if(insn_match_num[i]!=0xf)this->m_SchedularVec[insn_match_num[i]].scheduler->Schedule(insnPkg[i],this->m_SchedularVec[insn_match_num[i]].scheduler->Allocate());
     }         

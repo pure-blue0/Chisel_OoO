@@ -57,6 +57,7 @@ public:
         IssueInfo info;
         Success = false;
         insn = this->m_issueQueue.front();
+        insn->data_valid=true;
         info.insn = insn;
         if(( !this->m_Rcu->ReadyForCommit(insn->RobTag)      ||
             (!this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
@@ -70,7 +71,6 @@ public:
                         if(fu->m_SupportFunc.count(insn->Fu) && !fu->Busy()){
                             fu->Allocate();
                             info.desIndex  = fu->m_FuncUnitId;
-                            info.isToFu    = true;
                             Success        = true;
                             rfport->set(info);
                             insn->State = InsnState_t::State_ReadOperand;

@@ -82,15 +82,20 @@ public:
     uint64_t m_StoreQueue_count;
 
 public:
-    bool KillLoadEntry_flag;
-    uint16_t KillLoadEntry_Tag;
-    bool KillStoreEntry_flag;
-    uint16_t KillStoreEntry_Tag;
+    bool KillLoadEntry_flag[4];
+    uint16_t KillLoadEntry_Tag[4];
+    bool KillStoreEntry_flag[4];
+    uint16_t KillStoreEntry_Tag[4];
 
     bool Load_WEN_Group[4];
     bool Store_WEN_Group[4];
 
     LSQ_entry_t lsq_data[4];
+
+    uint8_t LSU_Style_Group[2];
+    Addr_t LSU_Agu_addr[2];
+    xReg_t LSU_Agu_data[2];
+    uint64_t LSU_LSQTag[2];
 
     uint8_t     LSQ_Style_Group[4];
     InsnPtr_t   send_lsq_insnPtr[4]; 

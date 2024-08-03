@@ -44,9 +44,9 @@ Rcu::Reset(){
     this->m_RollBackTag = 0;
     this->m_ExcpCause=0;
     this->m_ExcpTval=0;
-    this->m_RN_EN_Update=0;
-    this->m_RN_IsaRd_Update=0;
-    this->m_RN_Data_Update=0;
+    for(int i=0;i<4;i++){
+        this->RN_Release_EN[i]=false;
+    }
     /* Reset Regfile */
     this->m_IntRegfile.Reset();
     /* Reset RenameTable */
@@ -352,6 +352,7 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN_GROUP[4]){
 
 void
 Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
+    
     uint64_t m_Rob_Tail=this->m_Rob.getTail();
     for(size_t i = 0; i < allocCount; i++){
         InsnPtr_t& insn = insnPkg[i];
@@ -367,6 +368,10 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
         }
         insn->RobTag=(m_Rob_Tail+i)%this->ROB_Count;
     }
+    for(int i=0;i<4;i++)
+    {
+        if(this->RN_Release_EN[i])this->m_IntRenameTable[this->RN_Release_IsaRd[i]]=this->RN_Release_Data[i];
+    }
     // if(allocCount==2){//处理指令2与指令1之间可能存在的依赖
     //         InsnPtr_t& insn1 = insnPkg[0];
     //         InsnPtr_t& Insn2 = insnPkg[1];
@@ -377,10 +382,10 @@ Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
     //         }
     // }
 
-    for(size_t i = 0 ; i < insnPkg.size(); i++){
+    for(size_t i = 0 ; i < allocCount; i++){
         InsnPtr_t& insn = insnPkg[i];
         if(insn&& insn->IsaRd != 0){
-            for(size_t j = i + 1; j < insnPkg.size(); j++){
+            for(size_t j = i + 1; j < allocCount; j++){
                 InsnPtr_t& laterInsn = insnPkg[j];
                 if(laterInsn){
                     if(insn->IsaRd == laterInsn->IsaRs1)laterInsn->PhyRs1 = insn->PhyRd;          
@@ -522,7 +527,6 @@ void Rcu::AGUFastDetect(uint8_t index,InsnPtr_t& insn){
    
     DPRINTF(WriteBack,"RobTag[{}],Pc[{:#x}] -> Scan AGU result, Exception [{}]",
                     insn->RobTag,insn->Pc,insn->Excp.valid);
-    bool a;
     if(insn->Fu == funcType_t::STU && insn->Agu_addr_ready && insn->Agu_data_ready)
     {
                 this->ROB_AGU_Data_done_Group[index]= true;
@@ -550,10 +554,8 @@ Rcu::ReleaseResource(uint16_t robTag){
         this->m_IntBusylist[entry.phyRd].done       = false;
         this->m_IntBusylist[entry.phyRd].allocated  = false;
 
-        this->m_IntRenameTable[entry.isaRd] = entry.LphyRd;
-        this->m_RN_EN_Update=1;
-        this->m_RN_IsaRd_Update=entry.isaRd;
-        this->m_RN_Data_Update=entry.LphyRd;
+        
+
 
         DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}], Free phyRegister : Rd[{}], PRd[{}], LPRd[{}]",
             robTag,
@@ -563,38 +565,63 @@ Rcu::ReleaseResource(uint16_t robTag){
             entry.LphyRd
         );
     }
-    if(entry.Fu == funcType_t::LDU){
-        this->m_Processor->getLsqPtr()->KillLoadEntry(entry.LSQtag);
-    }else if(entry.Fu == funcType_t::STU){
-        this->m_Processor->getLsqPtr()->KillStoreEntry(entry.LSQtag);
-    }
+ 
 }
 
 void 
 Rcu::RollBack(){
+    bool Rob_Release_EN[4]={false,false,false,false},Resource_Release_EN[4]={false,false,false,false};
+    uint64_t Resource_Release_Tag[4];
     uint16_t RobPtr = this->m_Rob.getLastest();//获取ROB尾指针
+    int num=0;
     for(size_t i = 0 ; i < this->m_AllocWidth && 
         this->isOlder(this->m_RollBackTag,RobPtr,this->m_Rob.getHeader()) || 
         RobPtr == this->m_RollBackTag;i++)//如果当前的robptr比回滚标记更旧，或者robptr恰好等于回滚标记，那么就需要进行回滚处理。
     {
+        num++;
+        DPRINTF(temptest,"num {:} {:}",num,this->m_AllocWidth);
         Rob_entry_t entry = this->m_Rob[RobPtr];
         if(entry.valid){
             if(RobPtr == this->m_RollBackTag){//如果当前robptr恰好就是要回滚的那个
                 this->m_RobState = rob_state_t::Rob_WaitForResume;//设置状态为等待恢复
                 if(entry.isExcp){//如果存在异常，则释放资源（物理寄存器，lsq，更新renametable）
-                    this->ReleaseResource(RobPtr);
+                    
+                    Resource_Release_EN[i]=true;
+                    Resource_Release_Tag[i]=RobPtr;
                 }
                 DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}] -> RollBack Finish, Wait For Resume",RobPtr,entry.pc);
                 break;
             }
            else{
              entry.valid = false;//将条目设置为无效，表示没有在使用了
-             this->ReleaseResource(RobPtr);
+             
+             Resource_Release_EN[i]=true;
+             Resource_Release_Tag[i]=RobPtr;
            }
             DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}]",RobPtr,entry.pc);
         }
         this->m_Rob.RollBack();//更新rob尾指针
         RobPtr = this->m_Rob.getLastest();
+    }
+    for(int i=0;i<4;i++){
+        if(Rob_Release_EN[i]){
+            this->ReleaseResource(Resource_Release_Tag[i]);
+            if(this->m_Rob[Resource_Release_Tag[i]].Fu == funcType_t::LDU){
+                this->m_Processor->getLsqPtr()->KillLoadEntry_flag[i]=true;
+                this->m_Processor->getLsqPtr()->KillLoadEntry_Tag[i]=(this->m_Rob[Resource_Release_Tag[i]].LSQtag);
+            }else if(this->m_Rob[Resource_Release_Tag[i]].Fu == funcType_t::STU){
+                this->m_Processor->getLsqPtr()->KillStoreEntry_flag[i]=true;
+                this->m_Processor->getLsqPtr()->KillStoreEntry_Tag[i]=(this->m_Rob[Resource_Release_Tag[i]].LSQtag);
+            }
+            if(this->m_Rob[Resource_Release_Tag[i]].phyRd != 0){
+                this->RN_Release_EN[i]=true;
+                this->RN_Release_IsaRd[i]=this->m_Rob[Resource_Release_Tag[i]].isaRd;
+                this->RN_Release_Data[i]=this->m_Rob[Resource_Release_Tag[i]].LphyRd;
+            }
+            else{
+                this->RN_Release_EN[i]=false;
+            }
+        }
     }
 }
 

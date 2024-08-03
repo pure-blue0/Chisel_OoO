@@ -96,9 +96,10 @@ public:
     LoopQueue<Snapshot_t>       m_Snapshot;
     uint8_t lsq_count;
 
-    bool                        m_RN_EN_Update;
-    uint64_t                    m_RN_IsaRd_Update;
-    uint64_t                    m_RN_Data_Update;
+    bool                        RN_Release_EN[4];
+    uint64_t                    RN_Release_IsaRd[4];
+    uint64_t                    RN_Release_Data[4];
+
     uint64_t    ROB_Entry_count;
     InsnPkg_t  rob_insnPkg;
     bool write_in;

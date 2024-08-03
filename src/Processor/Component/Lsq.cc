@@ -26,9 +26,10 @@ void
 Lsq::Reset(){
     this->m_LoadQueue.Reset();
     this->m_StoreQueue.Reset();
-    this->KillLoadEntry_flag=false;
-    this->KillStoreEntry_flag=false;
+    
     for(int i;i<4;i++){
+        this->KillLoadEntry_flag[i]=false;
+        this->KillStoreEntry_flag[i]=false;
         this->Load_WEN_Group[i]=false;
         this->Store_WEN_Group[i]=false;
         this->LSQ_Style_Group[i]=0;
@@ -51,20 +52,64 @@ Lsq::WriteBack(InsnPtr_t& insn){
 
 void 
 Lsq::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
-    SuccessCount = 0;
-    uint16_t AllocLdqCount = 0;
-    uint16_t AllocStqCount = 0;
+    uint8_t LoadQueue_unuse_count=this->m_LoadQueue.getAvailEntryCount();
+    uint8_t StoreQueue_unuse_count=this->m_StoreQueue.getAvailEntryCount();
     uint8_t avail_count=insnPkg[0]->data_valid+insnPkg[1]->data_valid+insnPkg[2]->data_valid+insnPkg[3]->data_valid;
-    for(auto& insn : insnPkg){//根据insn的function type统计输入的两条指令立有多少条是load指令，有多少条是store指令
-        if(insn->Fu == funcType_t::LDU)      AllocLdqCount++;
-        else if(insn->Fu == funcType_t::STU) AllocStqCount++;    
+    uint8_t match_num[4]={0,0,0,0};
+    bool success_dispatch_flag[4]={false,false,false,false},stop_flag[4]={false,false,false,false};
+    for(int i=0;i<avail_count;i++){
+        InsnPtr_t insn = insnPkg[i];
+        if(stop_flag[i]){
+            stop_flag[i+1]=true;
+        }
+        else{
+            if(insn->Fu == funcType_t::LDU){
+                uint8_t Load_Allocate_count=0;
+                for(int j=0;j<i;j++){
+                    Load_Allocate_count=Load_Allocate_count+(match_num[j]==1);
+                }
+                if(LoadQueue_unuse_count > Load_Allocate_count){
+                    success_dispatch_flag[i]=true;
+                    match_num[i]=1;
+                }else{
+                    stop_flag[i+1]=true;
+                }
+            }else if(insn->Fu == funcType_t::STU){
+                uint8_t Store_Allocate_count=0;
+                for(int j=0;j<i;j++){
+                    Store_Allocate_count=Store_Allocate_count+(match_num[j]==2);
+                }
+                if(StoreQueue_unuse_count > Store_Allocate_count){
+                    success_dispatch_flag[i]=true;
+                    match_num[i]=2;
+                }else{
+                    stop_flag[i+1]=true;
+                }
+            }
+            else success_dispatch_flag[i]=true;
+        }
+        
     }
+    
+    SuccessCount=success_dispatch_flag[0]+success_dispatch_flag[1]+success_dispatch_flag[2]+success_dispatch_flag[3];
 
-    if(this->m_LoadQueue.getAvailEntryCount()<AllocLdqCount)
-        SuccessCount=this->m_LoadQueue.getAvailEntryCount();
-    else if(this->m_StoreQueue.getAvailEntryCount()<AllocStqCount)
-        SuccessCount=this->m_StoreQueue.getAvailEntryCount();
-    else SuccessCount = avail_count;
+    // SuccessCount = 0;
+    // uint16_t AllocLdqCount = 0;
+    // uint16_t AllocStqCount = 0;
+    // uint8_t avail_count=insnPkg[0]->data_valid+insnPkg[1]->data_valid+insnPkg[2]->data_valid+insnPkg[3]->data_valid;
+    // for(auto& insn : insnPkg){//根据insn的function type统计输入的两条指令立有多少条是load指令，有多少条是store指令
+    //     if(insn->Fu == funcType_t::LDU)      AllocLdqCount++;
+    //     else if(insn->Fu == funcType_t::STU) AllocStqCount++;    
+    // }
+    // uint8_t stop_flag[4];
+
+    // uint8_t AllocLdqCount[4],AllocStqCount[4];
+
+    // if(this->m_LoadQueue.getAvailEntryCount()<AllocLdqCount)
+    //     SuccessCount=this->m_LoadQueue.getAvailEntryCount();
+    // else if(this->m_StoreQueue.getAvailEntryCount()<AllocStqCount)
+    //     SuccessCount=this->m_StoreQueue.getAvailEntryCount();
+    // else SuccessCount = avail_count;
 }
 // void Lsq::Allocate(InsnPkg_t& insnPkg,uint64_t allocCount){
 //     VLsq_Allocate *Lsq_Allocate=new VLsq_Allocate;//创建对象
@@ -244,25 +289,24 @@ Lsq::Allocate(InsnPkg_t& insnPkg,uint64_t allocCount){
     uint64_t m_LoadQueue_tail=this->m_LoadQueue.getTail();
     uint64_t m_StoreQueue_tail=this->m_StoreQueue.getTail();
     
-    insnPkg[0]->LSQTag=insnPkg[0]->Fu==funcType_t::LDU?m_LoadQueue_tail:(
-                    insnPkg[0]->Fu==funcType_t::STU?m_StoreQueue_tail:0);
-
-    insnPkg[1]->LSQTag=insnPkg[1]->Fu==funcType_t::LDU?(m_LoadQueue_tail+(insnPkg[0]->Fu==funcType_t::LDU))%this->m_LoadQueue_count:(
-                    insnPkg[1]->Fu==funcType_t::STU?(m_StoreQueue_tail+(insnPkg[0]->Fu==funcType_t::STU))%this->m_StoreQueue_count:0);
-
-    insnPkg[2]->LSQTag=insnPkg[2]->Fu==funcType_t::LDU?(m_LoadQueue_tail+(insnPkg[0]->Fu==funcType_t::LDU)+(insnPkg[1]->Fu==funcType_t::LDU))%this->m_LoadQueue_count:(
-                    insnPkg[2]->Fu==funcType_t::STU?(m_StoreQueue_tail+(insnPkg[0]->Fu==funcType_t::STU)+(insnPkg[1]->Fu==funcType_t::STU))%this->m_StoreQueue_count:0);
-
-    insnPkg[3]->LSQTag=insnPkg[3]->Fu==funcType_t::LDU?(m_LoadQueue_tail+(insnPkg[0]->Fu==funcType_t::LDU)+(insnPkg[1]->Fu==funcType_t::LDU)+(insnPkg[2]->Fu==funcType_t::LDU))%this->m_LoadQueue_count:(
-                    insnPkg[3]->Fu==funcType_t::STU?(m_StoreQueue_tail+(insnPkg[0]->Fu==funcType_t::STU)+(insnPkg[1]->Fu==funcType_t::STU)+(insnPkg[2]->Fu==funcType_t::STU))%this->m_StoreQueue_count:0);
     for(size_t i = 0 ; i < allocCount; i++){
         auto& insn = insnPkg[i];
+
         if(insn->Fu == funcType_t::LDU){
             this->LSQ_Style_Group[i]=1;
-            
+            uint8_t AllocatedIn_load_count=0;
+            for(int j=0;j<i;j++){
+                AllocatedIn_load_count=AllocatedIn_load_count+(insnPkg[j]->Fu==funcType_t::LDU);
+            }
+            insnPkg[i]->LSQTag=(m_LoadQueue_tail+AllocatedIn_load_count)%this->m_LoadQueue_count;
         }else if (insn->Fu == funcType_t::STU){
             this->LSQ_Style_Group[i]=2;
-            
+
+            uint8_t AllocatedIn_store_count=0;
+            for(int j=0;j<i;j++){
+                AllocatedIn_store_count=AllocatedIn_store_count+(insnPkg[j]->Fu==funcType_t::STU);
+            }
+            insnPkg[i]->LSQTag=(m_StoreQueue_tail+AllocatedIn_store_count)%this->m_StoreQueue_count;
         }
         else{
             this->LSQ_Style_Group[i]=0;
@@ -273,7 +317,6 @@ Lsq::Allocate(InsnPkg_t& insnPkg,uint64_t allocCount){
         this->lsq_data[i].Fu=insnPkg[i]->Fu;
         this->lsq_data[i].SubOp=insnPkg[i]->SubOp;
     }  
-
 }
 
 void 
@@ -355,6 +398,17 @@ Lsq::CommitStoreEntry(uint16_t StqTag){
 
 void
 Lsq::Evaulate(){
+    for(int i=0;i<2;i++){
+        if(this->LSU_Style_Group[i] == 1){
+            this->m_LoadQueue[this->LSU_LSQTag[i]].addressReady = true;
+            this->m_LoadQueue[this->LSU_LSQTag[i]].address  = this->LSU_Agu_addr[i];
+        }else if(this->LSU_Style_Group[i] == 2)
+        {
+            this->m_StoreQueue[this->LSU_LSQTag[i]].addressReady = true;
+            this->m_StoreQueue[this->LSU_LSQTag[i]].address  = this->LSU_Agu_addr[i];
+            this->m_StoreQueue[this->LSU_LSQTag[i]].data  = this->LSU_Agu_data[i];
+        }
+    }
     
     for(int i=0;i<4;i++){
         if(this->LSQ_Style_Group[i]==1){
@@ -386,6 +440,10 @@ Lsq::Evaulate(){
             store_entry.SubOp=this->lsq_data[i].SubOp;
             this->m_StoreQueue[this->m_StoreQueue.Allocate()] = store_entry;//将数据存入load queue的尾部
         }
+    }
+    for(int i=0;i<4;i++){
+        if(this->KillLoadEntry_flag[i])this->m_LoadQueue[this->KillLoadEntry_Tag[i]].killed = true;
+        if(this->KillStoreEntry_flag[i])this->m_StoreQueue[this->KillStoreEntry_Tag[i]].killed = true;
     }
     if(!this->m_StoreQueue.empty()){
         auto& STqEntry = this->m_StoreQueue[this->m_StoreQueue.getHeader()];
