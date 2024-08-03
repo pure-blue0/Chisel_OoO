@@ -3,6 +3,7 @@
 #include <math.h>
 //#include "./obj_dir/VTryAllocate.h"
 //#include "./obj_dir/VDispatch.h"
+//#include "./obj_dir/VDispatch.h"
 namespace Emulator
 {
     
@@ -108,6 +109,7 @@ Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckCont
     // //连接输出
     // TryAllocate->eval();
     // uint64_t a=TryAllocate->io_issue_success_count;
+
 
     uint8_t avail_count=insnPkg[0]->data_valid+insnPkg[1]->data_valid+insnPkg[2]->data_valid+insnPkg[3]->data_valid;
     for(auto& scheduler : this->m_SchedularVec){
