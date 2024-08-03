@@ -76,6 +76,12 @@ Commit::CommitInsnPkg(){
             
         }
     }
+    else{
+        for(int i=0;i<4;i++){
+                rcu->FE_Commit_EN[i]=false;
+        }
+        
+    }
     this->m_Processor->getFetch1Ptr()->Commit_Redirect_Reg->InPort->set(redirect_message);
 }
 

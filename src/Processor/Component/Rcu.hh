@@ -95,10 +95,14 @@ public:
     /* SnapShot */
     LoopQueue<Snapshot_t>       m_Snapshot;
     uint8_t lsq_count;
-
+    uint8_t pop_num;
     bool                        RN_Release_EN[4];
     uint64_t                    RN_Release_IsaRd[4];
+    uint64_t                    FE_Release_phyRd[4];
     uint64_t                    RN_Release_Data[4];
+
+    bool                        FE_Commit_EN[4];
+    uint64_t                    FE_Commit_LphyRd[4];
 
     uint64_t    ROB_Entry_count;
     InsnPkg_t  rob_insnPkg;
@@ -116,6 +120,8 @@ public:
     uint8_t ROB_AGU_ROBTag_Group[2];
     uint64_t ROB_Count;
 
+    bool BusyList_Update_EN[4];
+    PhyRegId_t BusyList_Update_PhyRd[4];
 public:
     Rcu(
         Processor*          processor,
@@ -159,6 +165,7 @@ public:
 
     void CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect);
 
+    void Freelist_Evaluate();
 };
 
 } // namespace Emulator

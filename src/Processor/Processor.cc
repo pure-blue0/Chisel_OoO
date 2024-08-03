@@ -361,8 +361,9 @@ Processor::Evaluate(){
     for(int i=0;i<4;i++){
         this->m_Rcu->RN_Release_EN[i]=false;
     }
+  
     this->m_Rcu->lsq_count=0;
-    
+    this->m_Rcu->pop_num=0;
     
     this->m_Lsq->LSU_Style_Group[0]=0;
     this->m_Lsq->LSU_Style_Group[1]=0;
