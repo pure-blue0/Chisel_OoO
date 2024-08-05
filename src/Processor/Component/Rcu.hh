@@ -95,7 +95,7 @@ public:
     /* SnapShot */
     LoopQueue<Snapshot_t>       m_Snapshot;
     uint8_t lsq_count;
-    uint8_t pop_num;
+    uint8_t freelist_pop_num;
     bool                        RN_Release_EN[4];
     uint64_t                    RN_Release_IsaRd[4];
     uint64_t                    FE_Release_phyRd[4];
@@ -107,7 +107,7 @@ public:
     uint64_t    ROB_Entry_count;
     InsnPkg_t  rob_insnPkg;
     bool write_in;
-    bool ROB_Entry_WEN_GROUP[4];
+    bool ROB_Entry_WEN[4];
 
     bool ROB_WB_EN_Group[4];
     bool ROB_WB_Data_isMisPred_Group[4];
@@ -139,13 +139,13 @@ public:
 
     void Rename(InsnPkg_t& insnPkg);
 
-    void CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN_GROUP[4]);
+    void CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN[4]);
 
     bool isOlder(uint64_t tag1, uint64_t tag2,uint64_t header);
 
     void TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount);
 
-    void Allocate(InsnPkg_t& insnPkg,uint64_t allocCount);
+    void Allocate(bool reset_n,InsnPkg_t& insnPkg,uint64_t allocCount);
 
     void ResovleDependancy(InsnPkg_t& insnPkg);
 

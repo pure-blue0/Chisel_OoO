@@ -44,7 +44,7 @@ Rcu::Reset(){
     this->m_RollBackTag = 0;
     this->m_ExcpCause=0;
     this->m_ExcpTval=0;
-    this->pop_num=0;
+    this->freelist_pop_num=0;
     for(int i=0;i<4;i++){
         this->RN_Release_EN[i]=false;
         this->FE_Commit_EN[i]=false;
@@ -63,7 +63,7 @@ Rcu::Reset(){
         this->ROB_WB_ROBTag_Group[i]=0;
         this->ROB_WB_Data_isExcp_Group[i]=false;
         this->ROB_WB_Data_isMisPred_Group[i]=false;
-        this->ROB_Entry_WEN_GROUP[i]=false;
+        this->ROB_Entry_WEN[i]=false;
     }
 }
 bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先入队的话，则输出true
@@ -84,8 +84,8 @@ bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先�
         return  older;
 }
 
-void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN_GROUP[4]){
-    uint64_t allocCount=ROB_Entry_WEN_GROUP[0]+ROB_Entry_WEN_GROUP[1]+ROB_Entry_WEN_GROUP[2]+ROB_Entry_WEN_GROUP[3];
+void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN[4]){
+    uint64_t allocCount=ROB_Entry_WEN[0]+ROB_Entry_WEN[1]+ROB_Entry_WEN[2]+ROB_Entry_WEN[3];
     for(size_t i = 0; i < allocCount; i++){
         InsnPtr_t insn = insnPkg[i];
         Rob_entry_t newEntry;
@@ -131,69 +131,74 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN_GROUP[4]){
     }   
 }
 
-void Rcu::Allocate(InsnPkg_t& insnPkg, uint64_t allocCount){
+void Rcu::Allocate(bool reset_n,InsnPkg_t& insnPkg, uint64_t allocCount){
     PhyRegId_t freelist_phyID[4]={this->m_IntFreelist.front(),this->m_IntFreelist.next_front(),
-                                this->m_IntFreelist.third_front(),this->m_IntFreelist.forth_front()};
+                                  this->m_IntFreelist.third_front(),this->m_IntFreelist.forth_front()};
     uint8_t freelist_usecount_temp=0;
     for(int i=0;i<4;i++){this->BusyList_Update_EN[i]=false;}
     uint64_t m_Rob_Tail=this->m_Rob.getTail();
-    //-----------------------------------------------------------------
-
+    //----------------------------Composition----------------------------------
     for(size_t i = 0; i < allocCount; i++){
         InsnPtr_t& insn = insnPkg[i];
-        insn->PhyRs1 = this->m_IntRenameTable[insn->IsaRs1];
-        insn->PhyRs2 = this->m_IntRenameTable[insn->IsaRs2];
-        insn->LPhyRd = this->m_IntRenameTable[insn->IsaRd];
         if(insn->IsaRd != 0){
             insn->PhyRd = freelist_phyID[freelist_usecount_temp];//取出空闲的reg id
             this->BusyList_Update_EN[i]=true;
             this->BusyList_Update_PhyRd[i]=insn->PhyRd;
-            this->m_IntRenameTable[insn->IsaRd] = insn->PhyRd;//保存rd对应的reg id
             freelist_usecount_temp++;
         }
-        insn->RobTag=(m_Rob_Tail+i)%this->ROB_Count;
+        
+    }
+    for(size_t i = 0; i < allocCount; i++){
+        insnPkg[i]->RobTag=(m_Rob_Tail+i)%this->ROB_Count;
     }
     
+    for(int i=0;i<4;i++){
+        insnPkg[i]->PhyRs1 = this->m_IntRenameTable[insnPkg[i]->IsaRs1];
+        insnPkg[i]->PhyRs2 = this->m_IntRenameTable[insnPkg[i]->IsaRs2];
+        insnPkg[i]->LPhyRd = this->m_IntRenameTable[insnPkg[i]->IsaRd];
+        for(int j=0;j<i;j++){
+            if(insnPkg[i]->IsaRs1==insnPkg[j]->IsaRd)insnPkg[i]->PhyRs1=insnPkg[j]->PhyRd;//RAW
+            if(insnPkg[i]->IsaRs2==insnPkg[j]->IsaRd)insnPkg[i]->PhyRs2=insnPkg[j]->PhyRd;//RAW
+            if(insnPkg[i]->IsaRd==insnPkg[j]->IsaRd) insnPkg[i]->LPhyRd=insnPkg[j]->PhyRd;//WAW
+        }
+    }
     
+    this->ROB_Entry_WEN[0]=allocCount?true:false;
+    this->ROB_Entry_WEN[1]=allocCount>1?true:false;
+    this->ROB_Entry_WEN[2]=allocCount>2?true:false;
+    this->ROB_Entry_WEN[3]=allocCount>3?true:false;
 
-    for(size_t i = 0 ; i < allocCount; i++){
-        InsnPtr_t& insn = insnPkg[i];
-        if(insn&& insn->IsaRd != 0){
-            for(size_t j = i + 1; j < allocCount; j++){
-                InsnPtr_t& laterInsn = insnPkg[j];
-                if(laterInsn){
-                    if(insn->IsaRd == laterInsn->IsaRs1)laterInsn->PhyRs1 = insn->PhyRd;          
-                    if(insn->IsaRd == laterInsn->IsaRs2)laterInsn->PhyRs2 = insn->PhyRd;
-                    if(insn->IsaRd == laterInsn->IsaRd)laterInsn->LPhyRd = insn->PhyRd;
-                }
+    this->freelist_pop_num=this->BusyList_Update_EN[0]+this->BusyList_Update_EN[1]+this->BusyList_Update_EN[2]+this->BusyList_Update_EN[3];
+    //----------------------------Sequence----------------------------------
+    if(!reset_n){
+        this->m_IntRenameTable.Reset(this->m_RenameRegister);
+    }
+    else{
+        for(size_t i = 0; i < allocCount; i++){
+        if(insnPkg[i]->IsaRd != 0)this->m_IntRenameTable[insnPkg[i]->IsaRd]=insnPkg[i]->PhyRd;
+        }
+
+        for(int i=0;i<4;i++)
+        {   //Resource release
+            if(this->RN_Release_EN[i]){
+                this->m_IntRenameTable[this->RN_Release_IsaRd[i]]=this->RN_Release_Data[i];
             }
         }
     }
-
-    this->pop_num=this->BusyList_Update_EN[0]+this->BusyList_Update_EN[1]+this->BusyList_Update_EN[2]+this->BusyList_Update_EN[3];
-    for(int i=0;i<4;i++)
-    {   //Resource release
-        if(this->RN_Release_EN[i]){
-            this->m_IntRenameTable[this->RN_Release_IsaRd[i]]=this->RN_Release_Data[i];
-        }
-    }
+    
     //-----------------------------------------------------------------
+
+    for(int i=0;i<allocCount;i++)
+    {
+        this->rob_insnPkg.emplace_back(insnPkg[i]);
+    }
+
     for(int i=0;i<4;i++){
         if(this->BusyList_Update_EN[i]){
             this->m_IntBusylist[this->BusyList_Update_PhyRd[i]].allocated = true;//根据reg id 将busylist中对应的entry进行更新
             this->m_IntBusylist[this->BusyList_Update_PhyRd[i]].done      = false;
             this->m_IntBusylist[this->BusyList_Update_PhyRd[i]].forwarding = false;
         }
-    }
-
-    this->ROB_Entry_WEN_GROUP[0]=allocCount?true:false;
-    this->ROB_Entry_WEN_GROUP[1]=allocCount>1?true:false;
-    this->ROB_Entry_WEN_GROUP[2]=allocCount>2?true:false;
-    this->ROB_Entry_WEN_GROUP[3]=allocCount>3?true:false;
-   
-    for(int i=0;i<allocCount;i++)
-    {
-        this->rob_insnPkg.emplace_back(insnPkg[i]);
     }
 }
 
@@ -387,7 +392,7 @@ void Rcu::RollBack(){
     }
 }
 void Rcu::Freelist_Evaluate(){
-    for(int i=0;i<this->pop_num;i++){
+    for(int i=0;i<this->freelist_pop_num;i++){
         this->m_IntFreelist.pop();
     }
     for(int i=0;i<4;i++)
@@ -403,7 +408,7 @@ void Rcu::Freelist_Evaluate(){
 void 
 Rcu::Evaulate(){
     
-    this->CreateRobEntry(this->rob_insnPkg,this->ROB_Entry_WEN_GROUP);
+    this->CreateRobEntry(this->rob_insnPkg,this->ROB_Entry_WEN);
     this->rob_insnPkg.clear();
 
     for(int i=0;i<4;i++){
@@ -423,8 +428,6 @@ Rcu::Evaulate(){
         this->ROB_AGU_EN_Group[i]=false;
     }
    
-
-
     if(this->m_RobState == rob_state_t::Rob_Undo){
         this->RollBack();
     }
@@ -492,6 +495,49 @@ void Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedi
     }
 
 }
+// //RAW
+// //insn1 
+// insnPkg[0]->PhyRs1 = this->m_IntRenameTable[insnPkg[0]->IsaRs1];
+// insnPkg[0]->PhyRs2 = this->m_IntRenameTable[insnPkg[0]->IsaRs2];
+
+// //insn2
+// if(insnPkg[1]->IsaRs1==insnPkg[0]->IsaRd) insnPkg[1]->PhyRs1=insnPkg[0]->PhyRd;
+// else insnPkg[1]->PhyRs1=this->m_IntRenameTable[insnPkg[1]->IsaRs1];
+// if(insnPkg[1]->IsaRs2==insnPkg[0]->IsaRd) insnPkg[1]->PhyRs2=insnPkg[0]->PhyRd;
+// else insnPkg[1]->PhyRs2=this->m_IntRenameTable[insnPkg[1]->IsaRs2];
+// //insn3
+// if(insnPkg[2]->IsaRs1==insnPkg[1]->IsaRd) insnPkg[2]->PhyRs1=insnPkg[1]->PhyRd;
+// else if(insnPkg[2]->IsaRs1==insnPkg[0]->IsaRd) insnPkg[2]->PhyRs1=insnPkg[0]->PhyRd;
+// else insnPkg[2]->PhyRs1=this->m_IntRenameTable[insnPkg[2]->IsaRs1];
+
+// if(insnPkg[2]->IsaRs2==insnPkg[1]->IsaRd) insnPkg[2]->PhyRs2=insnPkg[1]->PhyRd;
+// else if(insnPkg[2]->IsaRs2==insnPkg[0]->IsaRd) insnPkg[2]->PhyRs2=insnPkg[0]->PhyRd;
+// else insnPkg[2]->PhyRs2=this->m_IntRenameTable[insnPkg[2]->IsaRs2];
+// //insn4
+// if(insnPkg[3]->IsaRs1==insnPkg[2]->IsaRd) insnPkg[3]->PhyRs1=insnPkg[2]->PhyRd;
+// else if(insnPkg[3]->IsaRs1==insnPkg[1]->IsaRd) insnPkg[3]->PhyRs1=insnPkg[1]->PhyRd;
+// else if(insnPkg[3]->IsaRs1==insnPkg[0]->IsaRd) insnPkg[3]->PhyRs1=insnPkg[0]->PhyRd;
+// else insnPkg[3]->PhyRs1=this->m_IntRenameTable[insnPkg[3]->IsaRs1];
+
+// if(insnPkg[3]->IsaRs2==insnPkg[2]->IsaRd) insnPkg[3]->PhyRs2=insnPkg[2]->PhyRd;
+// else if(insnPkg[3]->IsaRs2==insnPkg[1]->IsaRd) insnPkg[3]->PhyRs2=insnPkg[1]->PhyRd;
+// else if(insnPkg[3]->IsaRs2==insnPkg[0]->IsaRd) insnPkg[3]->PhyRs2=insnPkg[0]->PhyRd;
+// else insnPkg[3]->PhyRs2=this->m_IntRenameTable[insnPkg[3]->IsaRs2];
+// //WAW-对ROB
+// //insn1
+// insnPkg[0]->LPhyRd = this->m_IntRenameTable[insnPkg[0]->IsaRd];
+// //insn2
+// if(insnPkg[1]->IsaRd==insnPkg[0]->IsaRd) insnPkg[1]->LPhyRd=insnPkg[0]->PhyRd;
+// else insnPkg[1]->LPhyRd=this->m_IntRenameTable[insnPkg[1]->IsaRd];
+// //insn3
+// if(insnPkg[2]->IsaRd==insnPkg[1]->IsaRd) insnPkg[2]->LPhyRd=insnPkg[1]->PhyRd;
+// else if(insnPkg[2]->IsaRd==insnPkg[0]->IsaRd) insnPkg[2]->LPhyRd=insnPkg[0]->PhyRd;
+// else insnPkg[2]->LPhyRd=this->m_IntRenameTable[insnPkg[2]->IsaRd];
+// //insn4
+// if(insnPkg[3]->IsaRd==insnPkg[2]->IsaRd) insnPkg[3]->LPhyRd=insnPkg[2]->PhyRd;
+// else if(insnPkg[3]->IsaRd==insnPkg[1]->IsaRd) insnPkg[3]->LPhyRd=insnPkg[1]->PhyRd;
+// else if(insnPkg[3]->IsaRd==insnPkg[0]->IsaRd) insnPkg[3]->LPhyRd=insnPkg[0]->PhyRd;
+// else insnPkg[3]->LPhyRd=this->m_IntRenameTable[insnPkg[3]->IsaRd];
 
 // void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, uint64_t allocCount){
 //         VCreateRobEntry *CreateRobEntry;

@@ -348,7 +348,7 @@ Processor::Evaluate(){
 
     for(int i=0;i<4;i++){
         this->m_Rcu->ROB_WB_EN_Group[i]=false;
-        this->m_Rcu->ROB_Entry_WEN_GROUP[i]=false;
+        this->m_Rcu->ROB_Entry_WEN[i]=false;
     }
     for(int i=0;i<4;i++){
         this->m_Lsq->Load_WEN_Group[i]=false;
@@ -363,7 +363,7 @@ Processor::Evaluate(){
     }
   
     this->m_Rcu->lsq_count=0;
-    this->m_Rcu->pop_num=0;
+    this->m_Rcu->freelist_pop_num=0;
     
     this->m_Lsq->LSU_Style_Group[0]=0;
     this->m_Lsq->LSU_Style_Group[1]=0;

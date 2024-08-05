@@ -52,7 +52,7 @@ Dispatch::Evaluate(){
             this->TryDispatch(insnPkg,TryAllocSuccessCount[2],true);
             Ack.takenInsnCount = *std::min_element(TryAllocSuccessCount,TryAllocSuccessCount+3);
             
-            rcu->Allocate(insnPkg,Ack.takenInsnCount);
+            rcu->Allocate(true,insnPkg,Ack.takenInsnCount);
             lsq->Allocate(insnPkg,Ack.takenInsnCount);
             
             this->DispatchInsn(insnPkg,Ack.takenInsnCount);    
