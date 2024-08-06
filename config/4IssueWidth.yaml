@@ -87,12 +87,10 @@ Simulator : {
             {Name : LSU0 , FuncType : LSU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
             {Name : BRU0 , FuncType : BRU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
             {Name : ALU0 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
-            {Name : ALU1 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
 
             {Name : LSU1 , FuncType : LSU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
             {Name : BRU1 , FuncType : BRU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
             {Name : ALU2 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
-            {Name : ALU3 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
         ],
         Schedulers : [
             {
@@ -127,7 +125,7 @@ Simulator : {
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
               RFReadPort       : [1],
-              FunctionUnitPool : [2,3,4],
+              FunctionUnitPool : [2,3],
               SubScheduler     : []
             },
             {
@@ -138,18 +136,18 @@ Simulator : {
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady,
               RFReadPort       : [2],
-              FunctionUnitPool : [5,6],
+              FunctionUnitPool : [4,5],
               SubScheduler     : []
             },
             {
               Name             : UnifiedDispatchQueue3,
               EntryCount       : 8,
               EnqueWidth       : 1,
-              DequeWidth       : 2,
+              DequeWidth       : 1,
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
               RFReadPort       : [3],
-              FunctionUnitPool : [7,8],
+              FunctionUnitPool : [6],
               SubScheduler     : []
             },
         ],

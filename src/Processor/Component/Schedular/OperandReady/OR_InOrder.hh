@@ -84,9 +84,9 @@ public:
     //     }
     // };
 
-    void IssueSelect(uint64_t& index, InsnPtr_t& insn1, bool& Success){
+    void IssueSelect(uint64_t& index, InsnPtr_t& insn1, bool& Success_find){
         IssueInfo info;
-        Success = false;
+        Success_find = false;
        // insn = this->m_issueQueue.front();//数据都在这里面，连接的时候输入信号从这里面取
         InsnPtr_t insn =std::make_shared<DynInsn>();
         insn->Operand1Ready=this->m_issueQueue.front()->Operand1Ready;
@@ -119,25 +119,18 @@ public:
         )){//判断busylist中对应的物理寄存器是否储存了完成的数据
             info.insn->data_valid=false;                 
         }else{
-            if(!this->m_RFReadPortVec[0]->valid){
                 for(auto fu : this->m_FuncUnitVec){
-                    if(!Success&&fu->m_SupportFunc.count(insn->Fu) && !fu->Busy()){
+                    if(!Success_find&&fu->m_SupportFunc.count(insn->Fu)){
                         info.insn->data_valid=true;
-                        fu->Allocate();  //将function unit设为忙
                         info.desIndex  = fu->m_FuncUnitId;//执行单元的ID
                         info.isToFu    = true;//交叉验证中，需要把success的结果也连到这个变量上，然后最后通过rfport发送数据
-                        Success        = true;
-                        insn->State = InsnState_t::State_ReadOperand;
-                        
+                        Success_find        = true;
                     }
                 }
-            }
-            else{
-                info.insn->data_valid=false;
-            }    
+            
         }
+        if(!this->m_RFReadPortVec[0]->valid)    this->m_RFReadPortVec[0]->set(info);//向rfport端口发送数据 
         
-        if(!this->m_RFReadPortVec[0]->valid)this->m_RFReadPortVec[0]->set(info);//向rfport端口发送数据 
     };
 
     void Deallocate(uint64_t& index){

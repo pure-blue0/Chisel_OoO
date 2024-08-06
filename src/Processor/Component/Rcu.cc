@@ -29,6 +29,7 @@ Rcu::Rcu(
     m_DeallocWidth(DeallocWidth)
 {
     this->ROB_Count=RobEntryCount;
+    this->Freelist_size=IntRegCount;
    // RcuAllocate=new VRcuAllocate;//创建对象
 }
 
@@ -57,6 +58,11 @@ Rcu::Reset(){
     this->m_IntBusylist.Reset(this->m_RenameRegister);
     /* Reset FreeList */
     this->m_IntFreelist.Reset();
+    this->FreeList_Header[0]=this->m_IntFreelist.front();
+    this->FreeList_Header[1]=this->m_IntFreelist.next_front();
+    this->FreeList_Header[2]=this->m_IntFreelist.third_front();
+    this->FreeList_Header[3]=this->m_IntFreelist.forth_front();
+    this->FreeList_AvailEntryCount=this->Freelist_size;
 
     for(int i=0;i<4;i++){
         this->ROB_WB_EN_Group[i]=false;
@@ -66,6 +72,7 @@ Rcu::Reset(){
         this->ROB_Entry_WEN[i]=false;
     }
 }
+
 bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先入队的话，则输出true
 
         // VIsOlder *IsOlder;
@@ -89,7 +96,7 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN[4]){
     for(size_t i = 0; i < allocCount; i++){
         InsnPtr_t insn = insnPkg[i];
         Rob_entry_t newEntry;
-        insn->RobTag = this->m_Rob.Allocate();//返回一个可用的rob entry指针
+        
         bool isNop   = (insn->Fu == funcType_t::ALU) && (insn->IsaRd == 0);//nop
         bool isFence = (insn->Fu == funcType_t::CSR) && (insn->SubOp == 9);//fence
         bool isMret  = (insn->Fu == funcType_t::CSR) && (insn->SubOp == 7);//mret
@@ -129,11 +136,12 @@ void Rcu::CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN[4]){
         //     this->m_Rob[this->m_Rob.getLastest()].isStable,this->m_Rob[this->m_Rob.getLastest()].LphyRd,this->m_Rob[this->m_Rob.getLastest()].LSQtag,
         //     this->m_Rob[this->m_Rob.getLastest()].pc,this->m_Rob[this->m_Rob.getLastest()].phyRd,this->m_Rob[this->m_Rob.getLastest()].valid);
     }   
+    //update tail ptr
+    for(size_t i = 0; i < allocCount; i++)this->m_Rob.Allocate();
+
 }
 
 void Rcu::Allocate(bool reset_n,InsnPkg_t& insnPkg, uint64_t allocCount){
-    PhyRegId_t freelist_phyID[4]={this->m_IntFreelist.front(),this->m_IntFreelist.next_front(),
-                                  this->m_IntFreelist.third_front(),this->m_IntFreelist.forth_front()};
     uint8_t freelist_usecount_temp=0;
     for(int i=0;i<4;i++){this->BusyList_Update_EN[i]=false;}
     uint64_t m_Rob_Tail=this->m_Rob.getTail();
@@ -141,17 +149,16 @@ void Rcu::Allocate(bool reset_n,InsnPkg_t& insnPkg, uint64_t allocCount){
     for(size_t i = 0; i < allocCount; i++){
         InsnPtr_t& insn = insnPkg[i];
         if(insn->IsaRd != 0){
-            insn->PhyRd = freelist_phyID[freelist_usecount_temp];//取出空闲的reg id
+            insn->PhyRd = this->FreeList_Header[freelist_usecount_temp];//取出空闲的reg id
             this->BusyList_Update_EN[i]=true;
             this->BusyList_Update_PhyRd[i]=insn->PhyRd;
             freelist_usecount_temp++;
         }
-        
     }
     for(size_t i = 0; i < allocCount; i++){
         insnPkg[i]->RobTag=(m_Rob_Tail+i)%this->ROB_Count;
     }
-    
+
     for(int i=0;i<4;i++){
         insnPkg[i]->PhyRs1 = this->m_IntRenameTable[insnPkg[i]->IsaRs1];
         insnPkg[i]->PhyRs2 = this->m_IntRenameTable[insnPkg[i]->IsaRs2];
@@ -215,7 +222,7 @@ void Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
     // delete Rcu_TryAllocate;//删除创建的对象
     
     uint8_t avail_count=insnPkg[0]->data_valid+insnPkg[1]->data_valid+insnPkg[2]->data_valid+insnPkg[3]->data_valid;
-    SuccessCount = this->m_Rob.getAvailEntryCount()<this->m_IntFreelist.getAvailEntryCount()?this->m_Rob.getAvailEntryCount():this->m_IntFreelist.getAvailEntryCount();
+    SuccessCount = this->m_Rob.getAvailEntryCount()<this->FreeList_AvailEntryCount?this->m_Rob.getAvailEntryCount():this->FreeList_AvailEntryCount;
     SuccessCount =avail_count<SuccessCount?avail_count:SuccessCount; 
 }
 
@@ -248,6 +255,7 @@ bool Rcu::ReadyForCommit(uint64_t RobTag){
             return true;
         }
     }
+    return false;
 }
 
 void Rcu::WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq){
@@ -339,13 +347,10 @@ void Rcu::RollBack(){
     bool Rob_Release_EN[4]={false,false,false,false},Resource_Release_EN[4]={false,false,false,false};
     uint64_t Resource_Release_Tag[4];
     uint16_t RobPtr = this->m_Rob.getLastest();//获取ROB尾指针
-    int num=0;
     for(size_t i = 0 ; i < this->m_AllocWidth && 
         this->isOlder(this->m_RollBackTag,RobPtr,this->m_Rob.getHeader()) || 
         RobPtr == this->m_RollBackTag;i++)//如果当前的robptr比回滚标记更旧，或者robptr恰好等于回滚标记，那么就需要进行回滚处理。
     {
-        num++;
-        DPRINTF(temptest,"num {:} {:}",num,this->m_AllocWidth);
         Rob_entry_t entry = this->m_Rob[RobPtr];
         if(entry.valid){
             if(RobPtr == this->m_RollBackTag){//如果当前robptr恰好就是要回滚的那个
@@ -391,19 +396,32 @@ void Rcu::RollBack(){
         }
     }
 }
-void Rcu::Freelist_Evaluate(){
-    for(int i=0;i<this->freelist_pop_num;i++){
-        this->m_IntFreelist.pop();
+void Rcu::Freelist_Evaluate(bool reset_n){
+    //-------------Sequence-----------------------
+    if(!reset_n){
+        this->m_IntFreelist.Reset();
+        this->FreeList_AvailEntryCount=this->Freelist_size;
     }
-    for(int i=0;i<4;i++)
-    {   
-        if(this->RN_Release_EN[i]){
-            this->m_IntFreelist.push(this->FE_Release_phyRd[i]);
+    else{
+        for(int i=0;i<this->freelist_pop_num;i++){
+            this->m_IntFreelist.pop();
         }
-        if(this->FE_Commit_EN[i]){
-            this->m_IntFreelist.push(this->FE_Commit_LphyRd[i]);
+        for(int i=0;i<4;i++)
+        {   
+            if(this->RN_Release_EN[i]){
+                this->m_IntFreelist.push(this->FE_Release_phyRd[i]);
+            }
+            if(this->FE_Commit_EN[i]){
+                this->m_IntFreelist.push(this->FE_Commit_LphyRd[i]);
+            }
         }
+        this->FreeList_AvailEntryCount=this->m_IntFreelist.getAvailEntryCount();
     }
+    //-------------Composition-----------------------
+    this->FreeList_Header[0]=this->m_IntFreelist.front();
+    this->FreeList_Header[1]=this->m_IntFreelist.next_front();
+    this->FreeList_Header[2]=this->m_IntFreelist.third_front();
+    this->FreeList_Header[3]=this->m_IntFreelist.forth_front();
 }
 void 
 Rcu::Evaulate(){
@@ -434,7 +452,7 @@ Rcu::Evaulate(){
     if(this->m_RobState == rob_state_t::Rob_FlushBackend){
         this->m_RobState = rob_state_t::Rob_Idle;
     }
-    this->Freelist_Evaluate();
+    this->Freelist_Evaluate(true);
 }
 
 
@@ -453,7 +471,6 @@ void Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedi
                 if(robEntry.LphyRd != 0){
                     this->m_Processor->m_ExecContext->WriteIntReg(robEntry.isaRd,this->m_IntRegfile[robEntry.phyRd]);
                     //this->m_IntFreelist.push(robEntry.LphyRd);
-                    DPRINTF(temptest,"enterthere");
                     this->FE_Commit_EN[i]=true;
                     this->FE_Commit_LphyRd[i]=robEntry.LphyRd;
                     this->m_IntBusylist[robEntry.LphyRd].done = false;

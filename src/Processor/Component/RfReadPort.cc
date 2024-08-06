@@ -137,7 +137,6 @@ RfReadPort::Evaluate(){
         
         IssueInfo& t    = this->m_CalcuPipe.OutPort->data;
         InsnPtr_t& insn = t.insn;
-        
         if(t.insn->data_valid){
             if(!insn->Operand1Ready){ 
                 insn->Operand1 =  this->m_Processor->getRcuPtr()->m_IntRegfile[insn->PhyRs1];

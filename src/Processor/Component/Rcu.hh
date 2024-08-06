@@ -96,6 +96,7 @@ public:
     LoopQueue<Snapshot_t>       m_Snapshot;
     uint8_t lsq_count;
     uint8_t freelist_pop_num;
+    uint8_t Freelist_size;
     bool                        RN_Release_EN[4];
     uint64_t                    RN_Release_IsaRd[4];
     uint64_t                    FE_Release_phyRd[4];
@@ -122,6 +123,9 @@ public:
 
     bool BusyList_Update_EN[4];
     PhyRegId_t BusyList_Update_PhyRd[4];
+    PhyRegId_t FreeList_Header[4];
+    uint8_t FreeList_AvailEntryCount;
+    
 public:
     Rcu(
         Processor*          processor,
@@ -165,7 +169,7 @@ public:
 
     void CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect);
 
-    void Freelist_Evaluate();
+    void Freelist_Evaluate(bool reset_n);
 };
 
 } // namespace Emulator

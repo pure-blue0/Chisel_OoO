@@ -140,10 +140,10 @@ public:
             if(!this->Empty()){
                 uint64_t    index;
                 InsnPtr_t   insn;
-                bool        Success;
-                this->IssueSelect(index,insn,Success);
+                bool        Success_find;
+                if(!this->m_FlushLatch.OutPort->valid)this->IssueSelect(index,insn,Success_find);
 
-                if(Success){
+                if(Success_find){
                     this->Deallocate(index);
                     DPRINTF(Issue,"RobTag[{}],Pc[{:#x}] -> Leaving Queue",insn->RobTag,insn->Pc);
                 }else{
