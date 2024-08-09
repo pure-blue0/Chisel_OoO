@@ -201,12 +201,18 @@ public:
     }
 
     void ReceiveRespone(MemResp_t memResp){
+        InsnPtr_t insn =std::make_shared<DynInsn>();
+        uint8_t WB_Num=2;//一个默认的无效端口
+        this->m_Lsq->MEM_load_state_update_EN=false;
+        this->m_Lsq->MEM_store_state_update_EN=false;
+        this->m_Lsq->storeQueue_pop=false;
+        this->m_Lsq->MEM_lsq_state_update_ptr=memResp.Id.TransId;
+
         if(memResp.Opcode == MemOp_t::Load){
-            auto& ldqEntry = this->m_Lsq->m_LoadQueue[memResp.Id.TransId];
+            auto ldqEntry = this->m_Lsq->m_LoadQueue[memResp.Id.TransId];
+            this->m_Lsq->MEM_load_state_update_EN=true;
             if(!ldqEntry.killed){
-                ldqEntry.state = loadState_t::load_Executed;
-               
-                InsnPtr_t insn =std::make_shared<DynInsn>();
+                
                 insn->BruMisPred=false;
                 insn->Fu=ldqEntry.Fu;
                 insn->RobTag=ldqEntry.RobTag;
@@ -227,20 +233,27 @@ public:
                     default:insn->RdResult =0;break;
                     }
                 }
-                for(auto& wbPort : this->m_wbPortVec){
-                    if(!wbPort->valid){
-                        wbPort->set(insn);
-                        insn->State = InsnState_t::State_WriteBack;
-                        break;
-                    }
+                //There are only two wb ports in wbPortVec, and only need to consider csr_module's write back to wb0
+                if(!this->m_wbPortVec[0]->valid){
+                    WB_Num=0;
                 }
-            }else{
-                ldqEntry.state = loadState_t::load_Executed;
+                else{
+                    WB_Num=1;
+
+                }
             }
         }else if(memResp.Opcode == MemOp_t::Store){
-            auto& stqEntry = this->m_Lsq->m_StoreQueue[memResp.Id.TransId];
-            stqEntry.state = storeState_t::store_Executed;
-            this->m_Lsq->m_StoreQueue.Pop();
+            // auto& stqEntry = this->m_Lsq->m_StoreQueue[memResp.Id.TransId];
+            // this->m_Lsq->MEM_store_state_update_EN=true;
+            this->m_Lsq->storeQueue_pop=true;
+        }
+        
+        // -----------------------------------------------
+        if(WB_Num==0){
+            this->m_wbPortVec[0]->set(insn);
+        }
+        else if(WB_Num==1){
+            this->m_wbPortVec[1]->set(insn);
         }
     }
 

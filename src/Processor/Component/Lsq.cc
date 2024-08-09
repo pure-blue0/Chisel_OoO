@@ -462,7 +462,18 @@ Lsq::Evaulate(){
     if(this->load_state_update_EN){
         this->m_LoadQueue[this->load_state_update_ptr].state=loadState_t::load_Inflight;
     }
-    
+    //From  LSU mem
+    if(this->MEM_load_state_update_EN){
+        this->m_LoadQueue[this->MEM_lsq_state_update_ptr].state=loadState_t::load_Executed;
+    }
+//    if(this->MEM_store_state_update_EN){
+//         this->m_StoreQueue[this->MEM_lsq_state_update_ptr].state=storeState_t::store_Executed;       
+//     }
+
+    if(this->storeQueue_pop){
+        this->m_StoreQueue.Pop();
+    }
+        
     if(!this->m_StoreQueue.empty()){
         auto& STqEntry = this->m_StoreQueue[this->m_StoreQueue.getHeader()];
         if(STqEntry.killed && STqEntry.state != storeState_t::store_Inflight){

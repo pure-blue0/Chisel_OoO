@@ -364,9 +364,16 @@ Processor::Evaluate(){
   
     this->m_Rcu->lsq_count=0;
     this->m_Rcu->freelist_pop_num=0;
+
+    this->m_Lsq->LSU_Style=0;
+
     this->m_Lsq->store_state_update_EN=false;
     this->m_Lsq->load_state_update_EN=false;
-    this->m_Lsq->LSU_Style=0;
+    this->m_Lsq->MEM_load_state_update_EN=false;
+    this->m_Lsq->MEM_store_state_update_EN=false;
+
+    this->m_Lsq->storeQueue_pop=false;
+    
 }
 
 void 

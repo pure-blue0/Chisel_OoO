@@ -86,9 +86,17 @@ public:
     uint16_t KillLoadEntry_Tag[4];
     bool KillStoreEntry_flag[4];
     uint16_t KillStoreEntry_Tag[4];
+
     bool store_state_update_EN;
     bool load_state_update_EN;
     uint8_t load_state_update_ptr;
+
+    bool MEM_load_state_update_EN;
+    bool MEM_store_state_update_EN;
+    uint8_t MEM_lsq_state_update_ptr;
+    
+    bool storeQueue_pop;
+
     bool Load_WEN_Group[4];
     bool Store_WEN_Group[4];
 
