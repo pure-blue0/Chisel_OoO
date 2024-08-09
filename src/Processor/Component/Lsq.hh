@@ -8,7 +8,7 @@
 #include "Rcu.hh"
 #include "LoopQueue.hh"
 
-
+#define MAX_Try_issue_num 3 //max 4
 namespace Emulator
 {
 
@@ -86,7 +86,9 @@ public:
     uint16_t KillLoadEntry_Tag[4];
     bool KillStoreEntry_flag[4];
     uint16_t KillStoreEntry_Tag[4];
-
+    bool store_state_update_EN;
+    bool load_state_update_EN;
+    uint8_t load_state_update_ptr;
     bool Load_WEN_Group[4];
     bool Store_WEN_Group[4];
 

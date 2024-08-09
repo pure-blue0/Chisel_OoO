@@ -321,24 +321,31 @@ Lsq::Allocate(InsnPkg_t& insnPkg,uint64_t allocCount){
 
 void 
 Lsq::TryIssueLoad(MemReq_t& memReq,bool& Success){
+    memReq.Length  = this->m_Processor->m_XLEN / 2;//spec中没写，验证时把这一行留着。
+
+    bool stop_flag[4]={false,false,false,false};//根据最大循环次数改变数量，C++里是 n+1，HDL里就是n
     Success = false;
-    if(!this->m_LoadQueue.empty()){//需要加载的地址都放在了loadqueue里
-        uint16_t ldqPtr = this->m_LoadQueue.getHeader();
-        for(size_t i = 0 ; i < this->m_LoadQueue.getUsage(); i++){
-            auto& ldqEntry = this->m_LoadQueue[ldqPtr];
-            if(ldqEntry.state == loadState_t::load_WaitSend && !ldqEntry.killed){//在dispatch stage就已经改变了load state
+    this->load_state_update_EN=false;
+    uint8_t Try_num=this->m_LoadQueue.getUsage()<MAX_Try_issue_num?this->m_LoadQueue.getUsage():MAX_Try_issue_num;
+    
+    uint16_t ldqPtr = this->m_LoadQueue.getHeader();
+    for(size_t i = 0 ; i < Try_num; i++){
+        if(stop_flag[i]){
+            stop_flag[i+1]=true;
+        }
+        else{
+            auto ldqEntry = this->m_LoadQueue[ldqPtr];
+            if(ldqEntry.state == loadState_t::load_WaitSend && !ldqEntry.killed){
                 if(ldqEntry.addressReady )
                 {
                     Success = true;
-                    ldqEntry.state = loadState_t::load_Inflight;
+                    this->load_state_update_EN=true;
+                    this->load_state_update_ptr=ldqPtr;
                     memReq.Opcode  = MemOp_t::Load;
                     memReq.Id.TransId = ldqPtr;
-                    memReq.Address = ldqEntry.address & ~(this->m_dCacheAlignByte - 1);
-                    memReq.Length  = this->m_Processor->m_XLEN / 2;
-                    // DPRINTF(LoadReq,"RobPtr[{}],Pc[{:#x}] -> Send Load Request : Address[{:#x}]",
-                    //     ldqEntry.insnPtr->RobTag,ldqEntry.insnPtr->Pc,ldqEntry.address);
+                    memReq.Address = ldqEntry.address & ~(this->m_dCacheAlignByte - 1);  
                 }
-                break;
+                stop_flag[i+1]=true;//<==>break;
             }
             ldqPtr = this->m_LoadQueue.getNextPtr(ldqPtr);
         }
@@ -347,22 +354,24 @@ Lsq::TryIssueLoad(MemReq_t& memReq,bool& Success){
 
 void 
 Lsq::TryIssueStore(MemReq_t& memReq,bool& Success){
+    memReq.Length       = this->m_Processor->m_XLEN / 2;//spec中没写，验证时把这一行留着。
     Success = false;
+    this->store_state_update_EN=false;
     if(!this->m_StoreQueue.empty()){
         uint16_t stqPtr = this->m_StoreQueue.getHeader();
-        auto& stqEntry = this->m_StoreQueue[stqPtr];
+        auto stqEntry = this->m_StoreQueue[stqPtr];
         if(stqEntry.state == storeState_t::store_WaitSend){
             if(stqEntry.commited){
+                this->store_state_update_EN=true;
                 uint64_t offset     = (stqEntry.address & (this->m_dCacheAlignByte - 1));
+                memReq.Address      = stqEntry.address & ~(this->m_dCacheAlignByte - 1);
                 Success             = true;
-                stqEntry.state      = storeState_t::store_Inflight;
                 memReq.Opcode       = MemOp_t::Store;
                 memReq.Id.TransId   = stqPtr;
-                for(size_t it = offset ; it < 8; it++){//将byte一个个从stqEntry.data中取出来，存入到对应的memreq_data中
+                for(size_t it = offset ; it < 8; it++){
                     memReq.Data[it] = (stqEntry.data >> ((it-offset)<<3)) & 0xff;
                 }
-                memReq.Address      = stqEntry.address & ~(this->m_dCacheAlignByte - 1);
-                memReq.Length       = this->m_Processor->m_XLEN / 2;
+                
                 switch (stqEntry.SubOp)
                 {
                 case STU_SB:memReq.ByteMask = ((2 << (1-1)) - 1) << offset;break;
@@ -371,6 +380,7 @@ Lsq::TryIssueStore(MemReq_t& memReq,bool& Success){
                 case STU_SD:memReq.ByteMask = ((2 << (8-1)) - 1) << offset;break;
                 default:memReq.ByteMask=0;break;
                 }
+        
             }
         }
     }
@@ -445,6 +455,14 @@ Lsq::Evaulate(){
         if(this->KillLoadEntry_flag[i])this->m_LoadQueue[this->KillLoadEntry_Tag[i]].killed = true;
         if(this->KillStoreEntry_flag[i])this->m_StoreQueue[this->KillStoreEntry_Tag[i]].killed = true;
     }
+
+    if(this->store_state_update_EN){
+        this->m_StoreQueue[this->m_StoreQueue.getHeader()].state=storeState_t::store_Inflight;       
+    }
+    if(this->load_state_update_EN){
+        this->m_LoadQueue[this->load_state_update_ptr].state=loadState_t::load_Inflight;
+    }
+    
     if(!this->m_StoreQueue.empty()){
         auto& STqEntry = this->m_StoreQueue[this->m_StoreQueue.getHeader()];
         if(STqEntry.killed && STqEntry.state != storeState_t::store_Inflight){

@@ -5,7 +5,7 @@ Simulator : {
   Processors : [
     {
       # Processor Architecture Config
-      XLEN          : 32,
+      XLEN          : 16,
       SupportISA    : [I,M,C,A],
       SupportMode   : [M],
       Speculation   : false,
