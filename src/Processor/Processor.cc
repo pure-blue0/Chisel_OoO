@@ -365,8 +365,7 @@ Processor::Evaluate(){
     this->m_Rcu->lsq_count=0;
     this->m_Rcu->freelist_pop_num=0;
     
-    this->m_Lsq->LSU_Style_Group[0]=0;
-    this->m_Lsq->LSU_Style_Group[1]=0;
+    this->m_Lsq->LSU_Style=0;
 }
 
 void 

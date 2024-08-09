@@ -95,7 +95,7 @@ public:
             this->m_Allcated = false;
             auto& insn = this->m_CalcuPipe.OutPort->data;
             this->AddrGen(insn);//地址产生与异常判断
-            this->m_Rcu->AGUFastDetect(lsq_count,insn);
+            this->m_Rcu->AGUFastDetect(insn);
             this->m_Lsq->WriteBack(insn);//将取内存的地址等信息写入lsq队列中，并不是wb stage
         }
         this->SendLoadReq();

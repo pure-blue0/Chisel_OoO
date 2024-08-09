@@ -88,7 +88,6 @@ Simulator : {
             {Name : BRU0 , FuncType : BRU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
             {Name : ALU0 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [0,1] },
 
-            {Name : LSU1 , FuncType : LSU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
             {Name : BRU1 , FuncType : BRU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
             {Name : ALU2 , FuncType : ALU, Latency : 1, Pipelined : true  , WriteBackPort : [2,3] },
         ],
@@ -136,7 +135,7 @@ Simulator : {
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady,
               RFReadPort       : [2],
-              FunctionUnitPool : [4,5],
+              FunctionUnitPool : [4],
               SubScheduler     : []
             },
             {
@@ -147,7 +146,7 @@ Simulator : {
               IssuePolicy      : In-Order ,
               WakeUpPolicy     : OperandReady, # None,RfQueue,OperandReady,ResvrStation,Commit
               RFReadPort       : [3],
-              FunctionUnitPool : [6],
+              FunctionUnitPool : [5],
               SubScheduler     : []
             },
         ],

@@ -307,17 +307,17 @@ void Rcu::WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& Re
     }
 }
 
-void Rcu::AGUFastDetect(uint8_t index,InsnPtr_t& insn){
+void Rcu::AGUFastDetect(InsnPtr_t& insn){
    
     DPRINTF(WriteBack,"RobTag[{}],Pc[{:#x}] -> Scan AGU result, Exception [{}]",
                     insn->RobTag,insn->Pc,insn->Excp.valid);
     if(insn->Fu == funcType_t::STU && insn->Agu_addr_ready && insn->Agu_data_ready)
     {
-                this->ROB_AGU_Data_done_Group[index]= true;
+                this->ROB_AGU_Data_done= true;
     }
-    else this->ROB_AGU_Data_done_Group[index] = false;
+    else this->ROB_AGU_Data_done = false;
     if(insn->Excp.valid){
-         this->ROB_AGU_Data_done_Group[index]   = true;
+         this->ROB_AGU_Data_done   = true;
         if(this->m_RobState != rob_state_t::Rob_Idle )
         {
             this->m_RobState = rob_state_t::Rob_Undo;
@@ -326,7 +326,9 @@ void Rcu::AGUFastDetect(uint8_t index,InsnPtr_t& insn){
             this->m_ExcpTval    = insn->Excp.Tval;
         }
     }
-    this->ROB_AGU_Data_isExcp_Group[index]=this->m_Rob[insn->RobTag].isExcp;
+    
+    this->ROB_AGU_ROBTag=insn->RobTag;
+    this->ROB_AGU_Data_isExcp=insn->Excp.valid;
 }
 
 void 
@@ -437,14 +439,14 @@ Rcu::Evaulate(){
             this->m_Rob[this->ROB_WB_ROBTag_Group[i]].isMisPred = this->ROB_WB_Data_isMisPred_Group[i];
         }
     }
-    for(int i=0;i<2;i++){
-        if(this->ROB_AGU_EN_Group[i]){
-        this->m_Rob[this->ROB_AGU_ROBTag_Group[i]].isStable=true;
-           this->m_Rob[this->ROB_AGU_ROBTag_Group[i]].done=this->ROB_AGU_Data_done_Group[i];
-           this->m_Rob[this->ROB_AGU_ROBTag_Group[i]].isExcp=this->ROB_AGU_Data_isExcp_Group[i];
-        }
-        this->ROB_AGU_EN_Group[i]=false;
+    
+    if(this->ROB_AGU_EN){
+    this->m_Rob[this->ROB_AGU_ROBTag].isStable=true;
+        this->m_Rob[this->ROB_AGU_ROBTag].done=this->ROB_AGU_Data_done;
+        this->m_Rob[this->ROB_AGU_ROBTag].isExcp=this->ROB_AGU_Data_isExcp;
     }
+    this->ROB_AGU_EN=false;
+    
    
     if(this->m_RobState == rob_state_t::Rob_Undo){
         this->RollBack();

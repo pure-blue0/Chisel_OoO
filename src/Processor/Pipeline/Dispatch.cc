@@ -92,81 +92,55 @@ Dispatch::Evaluate(){
 // }
 void 
 Dispatch::TryDispatch(InsnPkg_t& insnPkg, uint64_t& SuccessCount, bool CheckControlFlow){
-    // VTryAllocate *TryAllocate;
-    // TryAllocate=new VTryAllocate;//创建对象
-    // //连接输入
-    // TryAllocate->io_insn_num=insnPkg.size();
-    // TryAllocate->io_Scheduler0_AvailPort=this->m_SchedularVec[0].scheduler->GetAvailibleEntryCount();
-    // TryAllocate->io_Scheduler1_AvailPort=this->m_SchedularVec[1].scheduler->GetAvailibleEntryCount();
-    // TryAllocate->io_Scheduler2_AvailPort=this->m_SchedularVec[2].scheduler->GetAvailibleEntryCount();
-    // TryAllocate->io_Insn1_excp_vaild=insnPkg[0]->Excp.valid;
-    // TryAllocate->io_Insn2_excp_vaild=insnPkg[1]->Excp.valid;
-    // TryAllocate->io_insn1_Function_type=insnPkg[0]->Fu;
-    // TryAllocate->io_insn2_Function_type=insnPkg[1]->Fu;
-    // TryAllocate->io_insn1_rd=insnPkg[0]->IsaRd;
-    // TryAllocate->io_insn2_rd=insnPkg[1]->IsaRd;
-    // TryAllocate->io_Insn1_controlflow_vaild=insnPkg[0]->ControlFlowInsn;
-    // //连接输出
-    // TryAllocate->eval();
-    // uint64_t a=TryAllocate->io_issue_success_count;
-
 
     uint8_t avail_count=insnPkg[0]->data_valid+insnPkg[1]->data_valid+insnPkg[2]->data_valid+insnPkg[3]->data_valid;
     for(auto& scheduler : this->m_SchedularVec){
         scheduler.AvailPort = scheduler.scheduler->Get_IssueQueue_Avail_num();
     }
-    bool stop_flag[4]={false,false,false,false};
+    SuccessCount = 0;
+    bool a=0;
+    bool stop_flag[5]={false,false,false,false,false};
     uint8_t insn_match_num[4]={0XF,0XF,0XF,0XF};
     bool success_dispatch_flag[4]={false,false,false,false};
     for(int i=0;i<avail_count;i++){
         if(stop_flag[i]){
             stop_flag[i+1]=true;
         }
-        else{
+        else
+        {
             InsnPtr_t insn = insnPkg[i];
-            if(insn->Excp.valid){
+            if(insn->Excp.valid){//判断指令是否为异常指令
                 success_dispatch_flag[i]=true;
-                stop_flag[i+1]=1;
+                stop_flag[i+1]=true;
             }
-            if((insn->Fu == funcType_t::ALU && insn->IsaRd == 0)){ 
+            if((insn->Fu == funcType_t::ALU && insn->IsaRd == 0)){ // 判断该指令是否为nop指令
                 success_dispatch_flag[i]=true;
             }
             else{
                 bool Success=false;
-                for(auto& schedular : this->m_SchedularVec){
-                    if(!Success&&schedular.scheduler->m_SupportFunc.count(insn->Fu))
-                    {
-                        uint8_t Allocate_count=0;
-                        for(int j=0;j<i;j++){
-                            Allocate_count=Allocate_count+(schedular.scheduler->m_SchedularId==insn_match_num[j]);
-                        }
-                        if(schedular.AvailPort>Allocate_count)
+                    for(auto& schedular : this->m_SchedularVec){
+                        if(!Success&&schedular.scheduler->m_SupportFunc.count(insn->Fu))
                         {
-                            insn_match_num[i]=schedular.scheduler->m_SchedularId;
-                            success_dispatch_flag[i]=true;   
-                            Success=true;
+                            uint8_t Allocate_count=0;
+                            for(int j=0;j<i;j++){
+                                Allocate_count=Allocate_count+(schedular.scheduler->m_SchedularId==insn_match_num[j]);
+                            }
+                            if(schedular.AvailPort>Allocate_count)
+                            {
+                                insn_match_num[i]=schedular.scheduler->m_SchedularId;
+                                success_dispatch_flag[i]=true;   
+                                Success=true;
+                            }
                         }
                     }
-                }
-                if(!success_dispatch_flag[i] || insn->ControlFlowInsn){
-                    stop_flag[i+1]=1;
-                }
+                    if(!success_dispatch_flag[i] || insn->ControlFlowInsn){
+                        stop_flag[i+1]=true;
+                    }
             }
         }
+        
     }
     SuccessCount=success_dispatch_flag[0]+success_dispatch_flag[1]+success_dispatch_flag[2]+success_dispatch_flag[3];
-    // if(SuccessCount!=a){
-    //     DPRINTF(temptest,"error-------------------------");
-    //     DPRINTF(temptest,"V:I1 num {:#x} port {:#x} {:#x} {:#x} valid {:#x} {:#x} fu {:#x} {:#x} rd {:#x} {:#x} C {:#x} out {:#x}",
-    //         TryAllocate->io_insn_num,TryAllocate->io_Scheduler0_AvailPort,TryAllocate->io_Scheduler1_AvailPort,TryAllocate->io_Scheduler2_AvailPort,
-    //         TryAllocate->io_Insn1_excp_vaild,TryAllocate->io_Insn2_excp_vaild,TryAllocate->io_insn1_Function_type,
-    //         TryAllocate->io_insn2_Function_type,TryAllocate->io_insn1_rd,TryAllocate->io_insn2_rd, TryAllocate->io_Insn1_controlflow_vaild,a);
-    //     DPRINTF(temptest,"O:I1 num {:#x} port {:#x} {:#x} {:#x} valid {:#x} {:#x} fu {:#x} {:#x} rd {:#x} {:#x}  out {:#x}",
-    //         insnPkg.size(),this->m_SchedularVec[0].scheduler->GetAvailibleEntryCount(),this->m_SchedularVec[1].scheduler->GetAvailibleEntryCount(),
-    //         this->m_SchedularVec[2].scheduler->GetAvailibleEntryCount(),insnPkg[0]->Excp.valid,insnPkg[1]->Excp.valid,
-    //         insnPkg[0]->Fu,insnPkg[1]->Fu,insnPkg[0]->IsaRd,insnPkg[1]->IsaRd,insnPkg[0]->ControlFlowInsn,SuccessCount);
-    //         exit(1);
-    // }
 }
 // void 
 // Dispatch::DispatchInsn(InsnPkg_t& insnPkg, uint64_t DispatchCount){

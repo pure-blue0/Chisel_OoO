@@ -115,10 +115,10 @@ public:
     bool ROB_WB_Data_isExcp_Group[4];
     uint8_t ROB_WB_ROBTag_Group[4];
     
-    bool ROB_AGU_EN_Group[2];
-    bool ROB_AGU_Data_done_Group[2];
-    bool ROB_AGU_Data_isExcp_Group[2];
-    uint8_t ROB_AGU_ROBTag_Group[2];
+    bool ROB_AGU_EN;
+    bool ROB_AGU_Data_done;
+    bool ROB_AGU_Data_isExcp;
+    uint8_t ROB_AGU_ROBTag;
     uint64_t ROB_Count;
 
     bool BusyList_Update_EN[4];
@@ -157,7 +157,7 @@ public:
 
     void WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq);
 
-    void AGUFastDetect(uint8_t index,InsnPtr_t& insn);
+    void AGUFastDetect(InsnPtr_t& insn);
 
     void Forwarding(InsnPtr_t& insn);
 

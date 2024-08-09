@@ -398,17 +398,17 @@ Lsq::CommitStoreEntry(uint16_t StqTag){
 
 void
 Lsq::Evaulate(){
-    for(int i=0;i<2;i++){
-        if(this->LSU_Style_Group[i] == 1){
-            this->m_LoadQueue[this->LSU_LSQTag[i]].addressReady = true;
-            this->m_LoadQueue[this->LSU_LSQTag[i]].address  = this->LSU_Agu_addr[i];
-        }else if(this->LSU_Style_Group[i] == 2)
-        {
-            this->m_StoreQueue[this->LSU_LSQTag[i]].addressReady = true;
-            this->m_StoreQueue[this->LSU_LSQTag[i]].address  = this->LSU_Agu_addr[i];
-            this->m_StoreQueue[this->LSU_LSQTag[i]].data  = this->LSU_Agu_data[i];
-        }
+    
+    if(this->LSU_Style== 1){
+        this->m_LoadQueue[this->LSU_LSQTag].addressReady = true;
+        this->m_LoadQueue[this->LSU_LSQTag].address  = this->LSU_Agu_addr;
+    }else if(this->LSU_Style== 2)
+    {
+        this->m_StoreQueue[this->LSU_LSQTag].addressReady = true;
+        this->m_StoreQueue[this->LSU_LSQTag].address  = this->LSU_Agu_addr;
+        this->m_StoreQueue[this->LSU_LSQTag].data  = this->LSU_Agu_data;
     }
+    
     
     for(int i=0;i<4;i++){
         if(this->LSQ_Style_Group[i]==1){

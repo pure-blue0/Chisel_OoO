@@ -92,10 +92,10 @@ public:
 
     LSQ_entry_t lsq_data[4];
 
-    uint8_t LSU_Style_Group[2];
-    Addr_t LSU_Agu_addr[2];
-    xReg_t LSU_Agu_data[2];
-    uint64_t LSU_LSQTag[2];
+    uint8_t LSU_Style;
+    Addr_t LSU_Agu_addr;
+    xReg_t LSU_Agu_data;
+    uint64_t LSU_LSQTag;
 
     uint8_t     LSQ_Style_Group[4];
     InsnPtr_t   send_lsq_insnPtr[4]; 

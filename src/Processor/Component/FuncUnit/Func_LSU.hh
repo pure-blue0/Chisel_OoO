@@ -45,8 +45,7 @@ public:
         this->m_CalcuPipe.reset();
         this->m_dCachePort.Reset();
         lsq_count=0;
-        this->m_Lsq->LSU_Style_Group[0]=0;
-        this->m_Lsq->LSU_Style_Group[1]=0;
+        this->m_Lsq->LSU_Style=0;
     };
     // void AddrGen(InsnPtr_t& insn){
     //     VAddrGen *AddrGen=new VAddrGen;//创建对象
@@ -150,31 +149,27 @@ public:
             this->AddrGen(insn);
 
             
-            this->m_Lsq->LSU_LSQTag[this->m_Rcu->lsq_count]=insn->LSQTag;
-            this->m_Lsq->LSU_Agu_addr[this->m_Rcu->lsq_count]=insn->Agu_addr;
+            this->m_Lsq->LSU_LSQTag=insn->LSQTag;
+            this->m_Lsq->LSU_Agu_addr=insn->Agu_addr;
             if(insn->Fu == funcType_t::LDU){
-                this->m_Lsq->LSU_Style_Group[this->m_Rcu->lsq_count]=1;
+                this->m_Lsq->LSU_Style=1;
             }else if(insn->Fu == funcType_t::STU)
             {
                 insn->Agu_data_ready = true;
-                this->m_Lsq->LSU_Style_Group[this->m_Rcu->lsq_count]=2;
-                this->m_Lsq->LSU_Agu_data[this->m_Rcu->lsq_count]=insn->Operand2;
+                this->m_Lsq->LSU_Style=2;
+                this->m_Lsq->LSU_Agu_data=insn->Operand2;
             }
             else{
-                this->m_Lsq->LSU_Style_Group[this->m_Rcu->lsq_count]=0;
+                this->m_Lsq->LSU_Style=0;
             }
             
-            this->m_Rcu->ROB_AGU_EN_Group[this->m_Rcu->lsq_count]=true;
-            this->m_Rcu->ROB_AGU_ROBTag_Group[this->m_Rcu->lsq_count]=insn->RobTag;
-            this->m_Rcu->AGUFastDetect(this->m_Rcu->lsq_count,insn);//检测是否产生了有效的地址和数据，如果指令存在异常，则进行回滚操作          
+            this->m_Rcu->ROB_AGU_EN=true;
+            this->m_Rcu->AGUFastDetect(insn);//检测是否产生了有效的地址和数据，如果指令存在异常，则进行回滚操作          
             //  this->m_Lsq->WriteBack(insn);//更新lsq中对应条目的地址和数据，方便后面的wb
 
         }
-        else this->m_Rcu->ROB_AGU_EN_Group[this->m_Rcu->lsq_count]=false;
+        else this->m_Rcu->ROB_AGU_EN=false;
 
-        //hdl don't need realize this code
-        this->m_Rcu->lsq_count++;
-        if(this->m_Rcu->lsq_count==2)this->m_Rcu->lsq_count=0;
         
         //--------------------------------------------------------------
         bool Success;
