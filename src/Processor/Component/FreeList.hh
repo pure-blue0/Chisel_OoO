@@ -28,7 +28,13 @@ public:
 
     void Reset(){
         for(PhyRegId_t i = 0 ; i < this->m_PhyRegCount ; i++){
-            if(!ZeroReg | (i != 0)){
+            // if(!ZeroReg | (i != 0)){
+            //     this->m_Freelist.push_back(i);
+            // }
+            if(ZeroReg){
+                this->m_Freelist.push_back(i+1);
+            }
+            else{
                 this->m_Freelist.push_back(i);
             }
         }
