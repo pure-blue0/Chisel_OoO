@@ -204,7 +204,6 @@ public:
         InsnPtr_t insn =std::make_shared<DynInsn>();
         uint8_t WB_Num=2;//一个默认的无效端口
         this->m_Lsq->MEM_load_state_update_EN=false;
-        this->m_Lsq->MEM_store_state_update_EN=false;
         this->m_Lsq->storeQueue_pop=false;
         this->m_Lsq->MEM_lsq_state_update_ptr=memResp.Id.TransId;
 
@@ -247,7 +246,7 @@ public:
             // this->m_Lsq->MEM_store_state_update_EN=true;
             this->m_Lsq->storeQueue_pop=true;
         }
-        
+
         // -----------------------------------------------
         if(WB_Num==0){
             this->m_wbPortVec[0]->set(insn);

@@ -76,7 +76,7 @@ public:
                 insn = this->m_issueQueue[index];
                 info.insn = insn;
                 if(insn){
-                    if((!this->m_Rcu->ReadyForCommit(insn->RobTag)                                                ||
+                    if((!this->m_Rcu->ReadyForCommit(insn->RobTag)             ||
                         (!this->m_Rcu->m_IntBusylist[insn->PhyRs1].forwarding) ||
                         (!this->m_Rcu->m_IntBusylist[insn->PhyRs2].forwarding)
                     )){
