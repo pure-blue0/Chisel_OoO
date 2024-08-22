@@ -125,7 +125,10 @@ public:
     PhyRegId_t BusyList_Update_PhyRd[4];
     PhyRegId_t FreeList_Header[4];
     uint8_t FreeList_AvailEntryCount;
-    
+
+    bool BusyList_Forward_Update_EN[4];
+    PhyRegId_t BusyList_Forward_Update_PhyRd[4];
+    xReg_t BusyList_Forward_Update_Rdresult[4];
 public:
     Rcu(
         Processor*          processor,

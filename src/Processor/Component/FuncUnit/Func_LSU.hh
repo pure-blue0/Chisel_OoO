@@ -233,13 +233,8 @@ public:
                     }
                 }
                 //There are only two wb ports in wbPortVec, and only need to consider csr_module's write back to wb0
-                if(!this->m_wbPortVec[0]->valid){
-                    WB_Num=0;
-                }
-                else{
-                    WB_Num=1;
-
-                }
+                if(!this->m_wbPortVec[0]->valid) WB_Num=0;
+                else                             WB_Num=1;
             }
         }else if(memResp.Opcode == MemOp_t::Store){
             // auto& stqEntry = this->m_Lsq->m_StoreQueue[memResp.Id.TransId];
@@ -248,12 +243,8 @@ public:
         }
 
         // -----------------------------------------------
-        if(WB_Num==0){
-            this->m_wbPortVec[0]->set(insn);
-        }
-        else if(WB_Num==1){
-            this->m_wbPortVec[1]->set(insn);
-        }
+        if(WB_Num==0)      this->m_wbPortVec[0]->set(insn);
+        else if(WB_Num==1) this->m_wbPortVec[1]->set(insn);
     }
 
     void Advance(){

@@ -360,6 +360,7 @@ Processor::Evaluate(){
     }
     for(int i=0;i<4;i++){
         this->m_Rcu->RN_Release_EN[i]=false;
+        this->m_Rcu->BusyList_Forward_Update_EN[i]=false;
     }
   
     this->m_Rcu->lsq_count=0;

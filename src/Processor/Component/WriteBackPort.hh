@@ -33,7 +33,7 @@ public:
 
     void Advance();
 
-    void Forwarding();
+    void Forwarding(int index);
 
     void AddForwardingSchedularId(uint16_t SchedularId);
 

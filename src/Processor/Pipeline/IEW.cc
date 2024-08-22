@@ -79,8 +79,11 @@ IEW::Execute(){
 
 void 
 IEW::Forwarding(){
+    int index=0;
     for(auto forwardinger : this->m_WriteBackStageVec){
-        forwardinger->Forwarding();
+        forwardinger->Forwarding(index);
+        index++;
+
     }
 }
 

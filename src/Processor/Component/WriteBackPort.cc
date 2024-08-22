@@ -41,13 +41,17 @@ WriteBackPort::Advance(){
     this->m_CalcuPipe.advance();
 }
 
-void  WriteBackPort::Forwarding(){
+void  WriteBackPort::Forwarding(int index){
+    
     if(this->m_CalcuPipe.InPort->valid){
         InsnPtr_t& insn = this->m_CalcuPipe.InPort->data;
         if(insn->IsaRd != 0){
-            this->m_Processor->getRcuPtr()->m_IntBusylist[insn->PhyRd].forwarding = true;
-            this->m_Processor->getRcuPtr()->m_IntBusylist[insn->PhyRd].done = true;//说明当前指令的rd是被前递了的
-            this->m_Processor->getRcuPtr()->m_IntRegfile[insn->PhyRd] = insn->RdResult;//把rd的数据直接写到对应的rd物理寄存器中，之后的读操作数可以直接从这里面读取
+            this->m_Processor->getRcuPtr()->BusyList_Forward_Update_EN[index]=true;
+            this->m_Processor->getRcuPtr()->BusyList_Forward_Update_PhyRd[index]=insn->PhyRd;
+            this->m_Processor->getRcuPtr()->BusyList_Forward_Update_Rdresult[index]=insn->RdResult;
+            // this->m_Processor->getRcuPtr()->m_IntBusylist[insn->PhyRd].forwarding = true;
+            // this->m_Processor->getRcuPtr()->m_IntBusylist[insn->PhyRd].done = true;//说明当前指令的rd是被前递了的
+            // this->m_Processor->getRcuPtr()->m_IntRegfile[insn->PhyRd] = insn->RdResult;//把rd的数据直接写到对应的rd物理寄存器中，之后的读操作数可以直接从这里面读取
         }
     }
 }

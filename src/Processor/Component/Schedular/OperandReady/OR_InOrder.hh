@@ -113,17 +113,30 @@ public:
         insn->Excp=this->m_issueQueue.front()->Excp;
         info.insn = insn;
         info.insn->data_valid=false;
+        //data forwarding prio:WB[3]>WB[2]>WB[1]>WB[0]>Busylist
+        bool PhyRs1_done;
+        bool PhyRs2_done;
+        if(this->m_Rcu->BusyList_Forward_Update_EN[3]&&(insn->PhyRs1==this->m_Rcu->BusyList_Forward_Update_PhyRd[3]))PhyRs1_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[2]&&(insn->PhyRs1==this->m_Rcu->BusyList_Forward_Update_PhyRd[2]))PhyRs1_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[1]&&(insn->PhyRs1==this->m_Rcu->BusyList_Forward_Update_PhyRd[1]))PhyRs1_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[0]&&(insn->PhyRs1==this->m_Rcu->BusyList_Forward_Update_PhyRd[0]))PhyRs1_done=true;
+        else PhyRs1_done=this->m_Rcu->m_IntBusylist[insn->PhyRs1].done;
 
-        if(((!this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
-            (!this->m_Rcu->m_IntBusylist[insn->PhyRs2].done)
-        )){//判断busylist中对应的物理寄存器是否储存了完成的数据
+        if(this->m_Rcu->BusyList_Forward_Update_EN[3]&&(insn->PhyRs2==this->m_Rcu->BusyList_Forward_Update_PhyRd[3]))PhyRs2_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[2]&&(insn->PhyRs2==this->m_Rcu->BusyList_Forward_Update_PhyRd[2]))PhyRs2_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[1]&&(insn->PhyRs2==this->m_Rcu->BusyList_Forward_Update_PhyRd[1]))PhyRs2_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[0]&&(insn->PhyRs2==this->m_Rcu->BusyList_Forward_Update_PhyRd[0]))PhyRs2_done=true;
+        else PhyRs2_done=this->m_Rcu->m_IntBusylist[insn->PhyRs2].done;
+
+        if(((!PhyRs1_done) ||(!PhyRs2_done)
+        )){
             info.insn->data_valid=false;                 
         }else{
                 for(auto fu : this->m_FuncUnitVec){
                     if(!Success_find&&fu->m_SupportFunc.count(insn->Fu)){
                         info.insn->data_valid=true;
-                        info.desIndex  = fu->m_FuncUnitId;//执行单元的ID
-                        info.isToFu    = true;//交叉验证中，需要把success的结果也连到这个变量上，然后最后通过rfport发送数据
+                        info.desIndex  = fu->m_FuncUnitId;
+                        info.isToFu    = true;
                         Success_find        = true;
                     }
                 }

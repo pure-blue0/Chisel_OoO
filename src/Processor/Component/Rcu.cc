@@ -70,6 +70,9 @@ Rcu::Reset(){
         this->ROB_WB_Data_isExcp_Group[i]=false;
         this->ROB_WB_Data_isMisPred_Group[i]=false;
         this->ROB_Entry_WEN[i]=false;
+        this->BusyList_Forward_Update_EN[i]=false;
+        this->BusyList_Forward_Update_PhyRd[i]=0;
+        this->BusyList_Forward_Update_Rdresult[i]=0;
     }
 }
 
@@ -446,6 +449,14 @@ Rcu::Evaulate(){
         this->m_Rob[this->ROB_AGU_ROBTag].isExcp=this->ROB_AGU_Data_isExcp;
     }
     this->ROB_AGU_EN=false;
+
+    for(int i=0;i<4;i++){
+        if(this->BusyList_Forward_Update_EN[i]){
+            this->m_IntBusylist[this->BusyList_Forward_Update_PhyRd[i]].forwarding = true;
+            this->m_IntBusylist[this->BusyList_Forward_Update_PhyRd[i]].done = true;//说明当前指令的rd是被前递了的
+            this->m_IntRegfile[this->BusyList_Forward_Update_PhyRd[i]] = this->BusyList_Forward_Update_Rdresult[i];//把rd的数据直接写到对应的rd物理寄存器中，之后的读操作数可以直接从这里面读取
+        }
+    }
     
    
     if(this->m_RobState == rob_state_t::Rob_Undo){
