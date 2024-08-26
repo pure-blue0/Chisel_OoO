@@ -73,6 +73,10 @@ Rcu::Reset(){
         this->BusyList_Forward_Update_EN[i]=false;
         this->BusyList_Forward_Update_PhyRd[i]=0;
         this->BusyList_Forward_Update_Rdresult[i]=0;
+
+        this->IntRegfile_WB_EN[i]=false;
+        this->IntRegfile_WB_PhyRd[i]=0;
+        this->IntRegfile_WB_RdResult[i]=0;
     }
 }
 
@@ -263,6 +267,8 @@ bool Rcu::ReadyForCommit(uint64_t RobTag){
 
 void Rcu::WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq){
     needRedirect = false;
+     IntRegfile_WB_EN[index]=false;
+     this->ROB_WB_EN_Group[index]=false;
     if(!this->m_Rob.empty() && (this->isOlder(insn->RobTag,this->m_Rob.getLastest(),this->m_Rob.getHeader()) || insn->RobTag == this->m_Rob.getLastest())){
 
         this->ROB_WB_EN_Group[index]=true;
@@ -282,7 +288,6 @@ void Rcu::WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& Re
                         
                         this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//刷新fetch1，decode，dispatch
                         needRedirect = true;
-                        RedirectReq.StageId = InsnState_t::State_Issue;
                         RedirectReq.target  = insn->BruTarget;
                     }
                 }else{
@@ -293,9 +298,10 @@ void Rcu::WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& Re
                 }
             }
             if(insn->IsaRd != 0){
-                this->m_IntRegfile[insn->PhyRd] = insn->RdResult;
-                this->m_IntBusylist[insn->PhyRd].done = true;
-                this->m_IntBusylist[insn->PhyRd].forwarding = false;
+                this->IntRegfile_WB_EN[index]=true;
+                this->IntRegfile_WB_PhyRd[index]=insn->PhyRd;
+                this->IntRegfile_WB_RdResult[index]=insn->RdResult;
+                
             }
         }else{
             
@@ -457,7 +463,14 @@ Rcu::Evaulate(){
             this->m_IntRegfile[this->BusyList_Forward_Update_PhyRd[i]] = this->BusyList_Forward_Update_Rdresult[i];//把rd的数据直接写到对应的rd物理寄存器中，之后的读操作数可以直接从这里面读取
         }
     }
-    
+
+    for(int i=0;i<4;i++){
+        if(this->IntRegfile_WB_EN[i]){
+            this->m_IntRegfile[this->IntRegfile_WB_PhyRd[i]] = this->IntRegfile_WB_RdResult[i];
+            this->m_IntBusylist[this->IntRegfile_WB_PhyRd[i]].done = true;
+            this->m_IntBusylist[this->IntRegfile_WB_PhyRd[i]].forwarding = false;
+        }      
+    }
    
     if(this->m_RobState == rob_state_t::Rob_Undo){
         this->RollBack();

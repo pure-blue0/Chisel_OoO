@@ -114,6 +114,10 @@ public:
     bool ROB_WB_Data_isMisPred_Group[4];
     bool ROB_WB_Data_isExcp_Group[4];
     uint8_t ROB_WB_ROBTag_Group[4];
+
+    bool IntRegfile_WB_EN[4];
+    PhyRegId_t IntRegfile_WB_PhyRd[4];
+    xReg_t IntRegfile_WB_RdResult[4];
     
     bool ROB_AGU_EN;
     bool ROB_AGU_Data_done;

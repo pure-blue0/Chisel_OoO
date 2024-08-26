@@ -98,7 +98,6 @@ IEW::WriteBack(){
         writebacker->Evaluate(index,RedirectReq,needRedirect);
         index++;
         if(needRedirect){
-            this->m_RedirectPort->set(RedirectReq);
             redirect_message.valid=needRedirect;
             redirect_message.target=RedirectReq.target;
         }
