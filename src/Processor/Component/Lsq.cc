@@ -455,7 +455,10 @@ Lsq::Evaulate(){
         if(this->KillLoadEntry_flag[i])this->m_LoadQueue[this->KillLoadEntry_Tag[i]].killed = true;
         if(this->KillStoreEntry_flag[i])this->m_StoreQueue[this->KillStoreEntry_Tag[i]].killed = true;
     }
-
+    for(int i=0;i<4;i++){
+        if(this->Commit_Style_Group[i]==1)this->m_LoadQueue[this->Commit_LSQTag[i]].commited = true;
+        else if(this->Commit_Style_Group[i]==2)this->m_StoreQueue[this->Commit_LSQTag[i]].commited = true;
+    }
     if(this->store_state_update_EN){
         this->m_StoreQueue[this->m_StoreQueue.getHeader()].state=storeState_t::store_Inflight;       
     }

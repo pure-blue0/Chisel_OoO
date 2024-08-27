@@ -59,9 +59,23 @@ public:
         insn = this->m_issueQueue.front();
         insn->data_valid=true;
         info.insn = insn;
+        bool PhyRs1_done;
+        bool PhyRs2_done;
+        if(this->m_Rcu->BusyList_Forward_Update_EN[3]&&(insn->PhyRs1==this->m_Rcu->BusyList_Forward_Update_PhyRd[3]))PhyRs1_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[2]&&(insn->PhyRs1==this->m_Rcu->BusyList_Forward_Update_PhyRd[2]))PhyRs1_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[1]&&(insn->PhyRs1==this->m_Rcu->BusyList_Forward_Update_PhyRd[1]))PhyRs1_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[0]&&(insn->PhyRs1==this->m_Rcu->BusyList_Forward_Update_PhyRd[0]))PhyRs1_done=true;
+        else PhyRs1_done=this->m_Rcu->m_IntBusylist[insn->PhyRs1].done;
+
+        if(this->m_Rcu->BusyList_Forward_Update_EN[3]&&(insn->PhyRs2==this->m_Rcu->BusyList_Forward_Update_PhyRd[3]))PhyRs2_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[2]&&(insn->PhyRs2==this->m_Rcu->BusyList_Forward_Update_PhyRd[2]))PhyRs2_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[1]&&(insn->PhyRs2==this->m_Rcu->BusyList_Forward_Update_PhyRd[1]))PhyRs2_done=true;
+        else if(this->m_Rcu->BusyList_Forward_Update_EN[0]&&(insn->PhyRs2==this->m_Rcu->BusyList_Forward_Update_PhyRd[0]))PhyRs2_done=true;
+        else PhyRs2_done=this->m_Rcu->m_IntBusylist[insn->PhyRs2].done;
+
         if(( !this->m_Rcu->ReadyForCommit(insn->RobTag)      ||
-            (!this->m_Rcu->m_IntBusylist[insn->PhyRs1].done) ||
-            (!this->m_Rcu->m_IntBusylist[insn->PhyRs2].done)
+            (!PhyRs1_done) ||
+            (!PhyRs2_done)
         )){
             return;                
         }else{

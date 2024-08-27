@@ -132,16 +132,19 @@ public:
         )){
             info.insn->data_valid=false;                 
         }else{
+                if(!this->m_RFReadPortVec[0]->valid)
                 for(auto fu : this->m_FuncUnitVec){
                     if(!Success_find&&fu->m_SupportFunc.count(insn->Fu)){
                         info.insn->data_valid=true;
                         info.desIndex  = fu->m_FuncUnitId;
                         info.isToFu    = true;
-                        Success_find        = true;
+                        Success_find   = true;
                     }
                 }
+                
             
         }
+        
         if(!this->m_RFReadPortVec[0]->valid)    this->m_RFReadPortVec[0]->set(info);//向rfport端口发送数据 
         
     };

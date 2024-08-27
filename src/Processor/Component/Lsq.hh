@@ -109,6 +109,9 @@ public:
 
     uint8_t     LSQ_Style_Group[4];
     InsnPtr_t   send_lsq_insnPtr[4]; 
+
+    uint8_t     Commit_Style_Group[4];
+    uint8_t     Commit_LSQTag[4];
     Lsq(
         Processor*          processor,
         const uint16_t      dCacheAlignByte,

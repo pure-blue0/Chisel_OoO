@@ -102,11 +102,12 @@ public:
     uint64_t                    FE_Release_phyRd[4];
     uint64_t                    RN_Release_Data[4];
 
-    bool                        FE_Commit_EN[4];
-    uint64_t                    FE_Commit_LphyRd[4];
+    bool                        FreeBusyList_Commit_EN[4];
+    uint64_t                    FreeBusyList_Commit_LphyRd[4];
 
     uint64_t    ROB_Entry_count;
     InsnPkg_t  rob_insnPkg;
+    uint8_t ROB_POP_Num;
     bool write_in;
     bool ROB_Entry_WEN[4];
 
@@ -115,7 +116,7 @@ public:
     bool ROB_WB_Data_isExcp_Group[4];
     uint8_t ROB_WB_ROBTag_Group[4];
 
-    bool IntRegfile_WB_EN[4];
+    bool RegandBusylist_WB_EN[4];
     PhyRegId_t IntRegfile_WB_PhyRd[4];
     xReg_t IntRegfile_WB_RdResult[4];
     
@@ -133,6 +134,8 @@ public:
     bool BusyList_Forward_Update_EN[4];
     PhyRegId_t BusyList_Forward_Update_PhyRd[4];
     xReg_t BusyList_Forward_Update_Rdresult[4];
+
+
 public:
     Rcu(
         Processor*          processor,
@@ -174,7 +177,7 @@ public:
 
     void Evaulate();
 
-    void CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect);
+    void CommitInsn(uint8_t commit_insn_num, Redirect_t& redirectReq, bool& needRedirect);
 
     void Freelist_Evaluate(bool reset_n);
 };

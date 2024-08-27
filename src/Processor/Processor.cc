@@ -341,6 +341,7 @@ Processor::Evaluate(){
     for(auto it : this->m_StageTickSeq){
         it.second->Evaluate();
     }
+   
     this->m_Rcu->Evaulate();
     this->m_Lsq->Evaulate();
     (static_cast<Decode*>(this->m_StageMap["Decode"].get()))->decodeQueue_flush=false;
@@ -361,9 +362,9 @@ Processor::Evaluate(){
     for(int i=0;i<4;i++){
         this->m_Rcu->RN_Release_EN[i]=false;
         this->m_Rcu->BusyList_Forward_Update_EN[i]=false;
-        this->m_Rcu->IntRegfile_WB_EN[i]=false;
+        this->m_Rcu->RegandBusylist_WB_EN[i]=false;
     }
-  
+   // this->m_Rcu->ROB_POP_Num=0;
     this->m_Rcu->lsq_count=0;
     this->m_Rcu->freelist_pop_num=0;
 

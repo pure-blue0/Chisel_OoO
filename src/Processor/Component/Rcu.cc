@@ -48,7 +48,6 @@ Rcu::Reset(){
     this->freelist_pop_num=0;
     for(int i=0;i<4;i++){
         this->RN_Release_EN[i]=false;
-        this->FE_Commit_EN[i]=false;
     }
     /* Reset Regfile */
     this->m_IntRegfile.Reset();
@@ -74,10 +73,14 @@ Rcu::Reset(){
         this->BusyList_Forward_Update_PhyRd[i]=0;
         this->BusyList_Forward_Update_Rdresult[i]=0;
 
-        this->IntRegfile_WB_EN[i]=false;
+        this->RegandBusylist_WB_EN[i]=false;
         this->IntRegfile_WB_PhyRd[i]=0;
         this->IntRegfile_WB_RdResult[i]=0;
+
+        this->FreeBusyList_Commit_EN[i]=false;
+        this->FreeBusyList_Commit_LphyRd[i]=0;
     }
+    this->ROB_POP_Num=0;
 }
 
 bool Rcu::isOlder(uint64_t tag1, uint64_t tag2,uint64_t header){//当tag1更先入队的话，则输出true
@@ -234,40 +237,43 @@ void Rcu::TryAllocate(InsnPkg_t& insnPkg, uint64_t& SuccessCount){
 }
 
 bool Rcu::ReadyForCommit(uint64_t RobTag){
-    uint64_t RobPtr = this->m_Rob.getHeader();
-    if(this->m_RobState == rob_state_t::Rob_Idle ||  this->isOlder(RobTag,this->m_RollBackTag,this->m_Rob.getHeader())){
-        if(this->m_Rob.getUsage()==0)return false;
-        else if(this->m_Rob.getUsage()==1){
-            if(RobPtr == RobTag)return true;
-            else return false;
+    uint8_t mid_result1[4]={0,0,0,0};
+    uint64_t RobHeaderPtr[4]={this->m_Rob.getHeader(),this->m_Rob.getNextPtr(this->m_Rob.getHeader()),
+                        this->m_Rob.getNextPtr(this->m_Rob.getNextPtr(this->m_Rob.getHeader())),
+                        this->m_Rob.getNextPtr(this->m_Rob.getNextPtr(this->m_Rob.getNextPtr(this->m_Rob.getHeader())))};
+    for(size_t i = 0; i < 4 ; i++){
+        if(RobHeaderPtr[i] == RobTag){
+                mid_result1[i]=2;
         }
-        else if(this->m_Rob.getUsage()>=2){
-            if(RobPtr == RobTag)return true;
-            else{
-                auto RobEntry = this->m_Rob[RobPtr];
-                if( !RobEntry.isStable && (RobEntry.Fu == funcType_t::LDU || 
-                    RobEntry.Fu == funcType_t::STU || RobEntry.Fu == funcType_t::BRU))
-                {
-                    return false;
-                }
-                else {
-                    RobPtr = this->m_Rob.getNextHeader();//get rob next head ptr
-                    if(RobPtr == RobTag)return true;
-                    else return false;
-                }
+        else{
+            auto RobEntry = this->m_Rob[RobHeaderPtr[i]];
+            if( !RobEntry.isStable && (RobEntry.Fu == funcType_t::LDU || 
+                RobEntry.Fu == funcType_t::STU || RobEntry.Fu == funcType_t::BRU))
+            {
+                mid_result1[i]=1;
             }
+            else mid_result1[i]=0;
         }
-    }else{
-        if(this->m_RobState == rob_state_t::Rob_WaitForResume && this->m_RollBackTag == RobTag){//上一周期的rob中进行了回滚操作
-            return true;
-        }
-    }
-    return false;
+        if(i>=this->m_Rob.getUsage())mid_result1[i]=0;
+    }         
+    bool mid_result2=false;
+    if(!mid_result1[0])mid_result2=mid_result1[0]-1;
+    else if(!mid_result1[1])mid_result2=mid_result1[1]-1;
+    else if(!mid_result1[2])mid_result2=mid_result1[2]-1;
+    else if(!mid_result1[3])mid_result2=mid_result1[3]-1;
+    else mid_result2=0;
+
+    uint8_t ReadyForCommit=false;
+    if(this->m_RobState == rob_state_t::Rob_Idle ||  this->isOlder(RobTag,this->m_RollBackTag,this->m_Rob.getHeader())) ReadyForCommit=bool(mid_result2);
+    else if(this->m_RobState == rob_state_t::Rob_WaitForResume && this->m_RollBackTag == RobTag) ReadyForCommit=true;
+    else ReadyForCommit=false;
+    
+    return ReadyForCommit;
 }
 
 void Rcu::WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& RedirectReq){
     needRedirect = false;
-     IntRegfile_WB_EN[index]=false;
+     RegandBusylist_WB_EN[index]=false;
      this->ROB_WB_EN_Group[index]=false;
     if(!this->m_Rob.empty() && (this->isOlder(insn->RobTag,this->m_Rob.getLastest(),this->m_Rob.getHeader()) || insn->RobTag == this->m_Rob.getLastest())){
 
@@ -298,7 +304,7 @@ void Rcu::WriteBack(int index,InsnPtr_t& insn, bool& needRedirect,Redirect_t& Re
                 }
             }
             if(insn->IsaRd != 0){
-                this->IntRegfile_WB_EN[index]=true;
+                this->RegandBusylist_WB_EN[index]=true;
                 this->IntRegfile_WB_PhyRd[index]=insn->PhyRd;
                 this->IntRegfile_WB_RdResult[index]=insn->RdResult;
                 
@@ -422,8 +428,8 @@ void Rcu::Freelist_Evaluate(bool reset_n){
             if(this->RN_Release_EN[i]){
                 this->m_IntFreelist.push(this->FE_Release_phyRd[i]);
             }
-            if(this->FE_Commit_EN[i]){
-                this->m_IntFreelist.push(this->FE_Commit_LphyRd[i]);
+            if(this->FreeBusyList_Commit_EN[i]){
+                this->m_IntFreelist.push(this->FreeBusyList_Commit_LphyRd[i]);
             }
         }
         this->FreeList_AvailEntryCount=this->m_IntFreelist.getAvailEntryCount();
@@ -434,8 +440,7 @@ void Rcu::Freelist_Evaluate(bool reset_n){
     this->FreeList_Header[2]=this->m_IntFreelist.third_front();
     this->FreeList_Header[3]=this->m_IntFreelist.forth_front();
 }
-void 
-Rcu::Evaulate(){
+void Rcu::Evaulate(){
     
     this->CreateRobEntry(this->rob_insnPkg,this->ROB_Entry_WEN);
     this->rob_insnPkg.clear();
@@ -465,13 +470,24 @@ Rcu::Evaulate(){
     }
 
     for(int i=0;i<4;i++){
-        if(this->IntRegfile_WB_EN[i]){
+        if(this->RegandBusylist_WB_EN[i]){
             this->m_IntRegfile[this->IntRegfile_WB_PhyRd[i]] = this->IntRegfile_WB_RdResult[i];
             this->m_IntBusylist[this->IntRegfile_WB_PhyRd[i]].done = true;
             this->m_IntBusylist[this->IntRegfile_WB_PhyRd[i]].forwarding = false;
         }      
     }
-   
+    for(int i=0;i<4;i++){
+        if(this->FreeBusyList_Commit_EN[i]){
+            this->m_IntBusylist[this->FreeBusyList_Commit_LphyRd[i]].done = false;
+            this->m_IntBusylist[this->FreeBusyList_Commit_LphyRd[i]].forwarding = false;
+            this->m_IntBusylist[this->FreeBusyList_Commit_LphyRd[i]].allocated = false;
+        }
+    }
+   // DPRINTF(temptest,"bbb {:}",this->ROB_POP_Num)   ; 
+    for(int i=0;i<this->ROB_POP_Num;i++){
+        DPRINTF(temptest,"enter ssss");
+    }
+    
     if(this->m_RobState == rob_state_t::Rob_Undo){
         this->RollBack();
     }
@@ -482,62 +498,75 @@ Rcu::Evaulate(){
 }
 
 
-void Rcu::CommitInsn(InsnPkg_t& insnPkg, Redirect_t& redirectReq, bool& needRedirect){
+void Rcu::CommitInsn(uint8_t commit_insn_num, Redirect_t& redirectReq, bool& needRedirect){
+    bool flush_forward=false,flush_backward=false;
+    bool insn_upper[4]={false,false,false,false};
     needRedirect = false;
     for(int i=0;i<4;i++){
-        this->FE_Commit_EN[i]=false;
-        this->FE_Commit_LphyRd[i]=0;
+        this->FreeBusyList_Commit_EN[i]=false;
+        this->FreeBusyList_Commit_LphyRd[i]=0;
+
+        this->m_Processor->getLsqPtr()->Commit_Style_Group[i]=false;
+        this->m_Processor->getLsqPtr()->Commit_LSQTag[i]=0;
     }
-    for(size_t i = 0; i < insnPkg.size(); i++){
-        uint16_t robPtr = this->m_Rob.getHeader();
+
+    uint16_t robPtr = this->m_Rob.getHeader();
+    for(size_t i = 0; i < commit_insn_num; i++){
         auto& robEntry = this->m_Rob[robPtr];
         if(robEntry.valid){
             DASSERT(robEntry.done,"Commit Insn When not Ready!")
             if(!robEntry.isExcp){
                 if(robEntry.LphyRd != 0){
-                    this->m_Processor->m_ExecContext->WriteIntReg(robEntry.isaRd,this->m_IntRegfile[robEntry.phyRd]);
-                    //this->m_IntFreelist.push(robEntry.LphyRd);
-                    this->FE_Commit_EN[i]=true;
-                    this->FE_Commit_LphyRd[i]=robEntry.LphyRd;
-                    this->m_IntBusylist[robEntry.LphyRd].done = false;
-                    this->m_IntBusylist[robEntry.LphyRd].forwarding = false;
-                    this->m_IntBusylist[robEntry.LphyRd].allocated = false;
+                    //this->m_Processor->m_ExecContext->WriteIntReg(robEntry.isaRd,this->m_IntRegfile[robEntry.phyRd]);
+                    this->FreeBusyList_Commit_EN[i]=true;
+                    this->FreeBusyList_Commit_LphyRd[i]=robEntry.LphyRd;
+
                     DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Deallocate Last PRd[{}]",robPtr,robEntry.pc,robEntry.LphyRd);
                 }
                 if(robEntry.Fu == funcType_t::LDU){
-                    DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Commit a Load LSQTag[{}]", 
-                    robPtr,robEntry.pc,robEntry.LSQtag);
-                    this->m_Processor->getLsqPtr()->CommitLoadEntry(robEntry.LSQtag);
-                    
+                    DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Commit a Load LSQTag[{}]",robPtr,robEntry.pc,robEntry.LSQtag);
+                    this->m_Processor->getLsqPtr()->Commit_Style_Group[i]=1;
                 }else if(robEntry.Fu == funcType_t::STU){
-                    DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Commit a Store LSQTag[{}]: Address[{:#x}] Data[{:#x}]",
-                        robPtr,robEntry.pc,robEntry.LSQtag);
-                    this->m_Processor->getLsqPtr()->CommitStoreEntry(robEntry.LSQtag);
+                    DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Commit a Store LSQTag[{}]: Address[{:#x}] Data[{:#x}]",robPtr,robEntry.pc,robEntry.LSQtag);
+                    this->m_Processor->getLsqPtr()->Commit_Style_Group[i]=2;
                 }
+                this->m_Processor->getLsqPtr()->Commit_LSQTag[i]=robEntry.LSQtag;
             }
             //首先检查乱序处理器的状态是否为等待恢复状态，并且当前处理的指令是否为最近的回滚指令。
             //如果条件成立，说明当前正在处理的指令是最近一次发生异常需要回滚的指令。
             if(this->m_RobState == rob_state_t::Rob_WaitForResume && robPtr == this->m_RollBackTag){
                 this->m_RobState = rob_state_t::Rob_FlushBackend;
-                this->m_Processor->FlushForward(InsnState_t::State_Dispatch);//将issue_flush,commit_flush置1
+                flush_forward=true;
                 if(robEntry.isExcp){
                     needRedirect = true;
+                    flush_backward=true;
                     redirectReq.StageId = InsnState_t::State_Commit;
                     this->m_Processor->m_ExecContext->WriteCsr(CSR_MEPC,robEntry.pc);
                     this->m_Processor->m_ExecContext->WriteCsr(CSR_MCAUSE,this->m_ExcpCause);
                     this->m_Processor->m_ExecContext->WriteCsr(CSR_MTVAL,this->m_ExcpTval);
                     this->m_Processor->m_ExecContext->ReadCsr(CSR_MTVEC,redirectReq.target);
-                    this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//将fetch_flush,decode_flushdispatch_flush都置1
                     DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Commit an Exception, Redirect to {:#x}!",robPtr,robEntry.pc,redirectReq.target);
                 }
                 DPRINTF(Commit,"RobTag[{}],Pc[{:#x}] -> Resume Execution!",robPtr,robEntry.pc);
             }
-            this->m_Processor->m_ExecContext->InstretInc();//处理指令计数+1
+            insn_upper[i]=true;
         }
-        this->m_Rob.Pop();   //弹出处理完毕的指令                   
+        robPtr=this->m_Rob.getNextPtr(robPtr);    
     }
+    this->ROB_POP_Num=commit_insn_num;
 
+    uint8_t insn_count=insn_upper[0]+insn_upper[1]+insn_upper[2]+insn_upper[3];
+    
+    //----------------------------------------------------------
+    if(flush_forward)this->m_Processor->FlushForward(InsnState_t::State_Dispatch);//将issue_flush,commit_flush置1
+    if(flush_backward)this->m_Processor->FlushBackWard(InsnState_t::State_Issue);//将fetch_flush,decode_flushdispatch_flush都置1
+    for(int i=0;i<insn_count;i++)this->m_Processor->m_ExecContext->InstretInc();//处理指令计数+1
+    for(int i=0;i<this->ROB_POP_Num;i++){
+
+        this->m_Rob.Pop();   //弹出处理完毕的指令     
+    }
 }
+
 // //RAW
 // //insn1 
 // insnPkg[0]->PhyRs1 = this->m_IntRenameTable[insnPkg[0]->IsaRs1];
