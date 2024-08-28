@@ -241,7 +241,7 @@ bool Rcu::ReadyForCommit(uint64_t RobTag){
     uint64_t RobHeaderPtr[4]={this->m_Rob.getHeader(),this->m_Rob.getNextPtr(this->m_Rob.getHeader()),
                         this->m_Rob.getNextPtr(this->m_Rob.getNextPtr(this->m_Rob.getHeader())),
                         this->m_Rob.getNextPtr(this->m_Rob.getNextPtr(this->m_Rob.getNextPtr(this->m_Rob.getHeader())))};
-    for(size_t i = 0; i < 4 ; i++){
+    for(size_t i = 0; i < this->m_DeallocWidth ; i++){
         if(RobHeaderPtr[i] == RobTag){
                 mid_result1[i]=2;
         }
@@ -363,55 +363,70 @@ Rcu::ReleaseResource(uint16_t robTag){
 void Rcu::RollBack(){
     bool Rob_Release_EN[4]={false,false,false,false},Resource_Release_EN[4]={false,false,false,false};
     uint64_t Resource_Release_Tag[4];
-    uint16_t RobPtr = this->m_Rob.getLastest();//获取ROB尾指针
-    for(size_t i = 0 ; i < this->m_AllocWidth && 
-        this->isOlder(this->m_RollBackTag,RobPtr,this->m_Rob.getHeader()) || 
-        RobPtr == this->m_RollBackTag;i++)//如果当前的robptr比回滚标记更旧，或者robptr恰好等于回滚标记，那么就需要进行回滚处理。
+    uint64_t lastest_ptr[4]={this->m_Rob.getLastest(),this->m_Rob.getLastPtr(this->m_Rob.getLastest()),
+                             this->m_Rob.getLastPtr(this->m_Rob.getLastPtr(this->m_Rob.getLastest())),
+                             this->m_Rob.getLastPtr(this->m_Rob.getLastPtr(this->m_Rob.getLastPtr(this->m_Rob.getLastest())))};
+    bool Rollback_flag[4]={false,false,false,false};
+    bool stop_flag[5]={false,false,false,false,false};
+
+    for(size_t i = 0 ; i < this->m_AllocWidth && (this->isOlder(this->m_RollBackTag,lastest_ptr[i],this->m_Rob.getHeader()) || 
+        lastest_ptr[i] == this->m_RollBackTag);i++)//如果当前的robptr比回滚标记更旧，或者robptr恰好等于回滚标记，那么就需要进行回滚处理。
     {
-        Rob_entry_t entry = this->m_Rob[RobPtr];
-        if(entry.valid){
-            if(RobPtr == this->m_RollBackTag){//如果当前robptr恰好就是要回滚的那个
-                this->m_RobState = rob_state_t::Rob_WaitForResume;//设置状态为等待恢复
-                if(entry.isExcp){//如果存在异常，则释放资源（物理寄存器，lsq，更新renametable）
-                    
-                    Resource_Release_EN[i]=true;
-                    Resource_Release_Tag[i]=RobPtr;
-                }
-                DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}] -> RollBack Finish, Wait For Resume",RobPtr,entry.pc);
-                break;
-            }
-           else{
-             entry.valid = false;//将条目设置为无效，表示没有在使用了
-             
-             Resource_Release_EN[i]=true;
-             Resource_Release_Tag[i]=RobPtr;
-           }
-            DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}]",RobPtr,entry.pc);
+        if(stop_flag[i]){
+            stop_flag[i+1]=true;
         }
-        this->m_Rob.RollBack();//更新rob尾指针
-        RobPtr = this->m_Rob.getLastest();
+        else{
+            Rob_entry_t entry = this->m_Rob[lastest_ptr[i]];
+            if(entry.valid){
+                if(lastest_ptr[i] == this->m_RollBackTag){//如果当前robptr恰好就是要回滚的那个
+                    this->m_RobState = rob_state_t::Rob_WaitForResume;//设置状态为等待恢复
+                    if(entry.isExcp){//如果存在异常，则释放资源（物理寄存器，lsq，更新renametable）
+                        
+                        Resource_Release_EN[i]=true;
+                        Resource_Release_Tag[i]=lastest_ptr[i];
+                    }
+                    DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}] -> RollBack Finish, Wait For Resume",lastest_ptr[i],entry.pc);
+                    stop_flag[0]=true;
+                    
+                }
+            else{
+                entry.valid = false;//将条目设置为无效，表示没有在使用了
+                Resource_Release_EN[i]=true;
+                Resource_Release_Tag[i]=lastest_ptr[i];
+            }
+                DPRINTF(RollBack,"RobTag[{}],Pc[{:#x}]",lastest_ptr[i],entry.pc);
+            }
+            if(!stop_flag[0])Rollback_flag[i]=true;
+        }
+        
     }
+
     for(int i=0;i<4;i++){
         if(Rob_Release_EN[i]){
-            this->ReleaseResource(Resource_Release_Tag[i]);
             if(this->m_Rob[Resource_Release_Tag[i]].Fu == funcType_t::LDU){
-                this->m_Processor->getLsqPtr()->KillLoadEntry_flag[i]=true;
-                this->m_Processor->getLsqPtr()->KillLoadEntry_Tag[i]=(this->m_Rob[Resource_Release_Tag[i]].LSQtag);
+                this->m_Processor->getLsqPtr()->KillLsqEntry_flag[i]=1;
+                
             }else if(this->m_Rob[Resource_Release_Tag[i]].Fu == funcType_t::STU){
-                this->m_Processor->getLsqPtr()->KillStoreEntry_flag[i]=true;
-                this->m_Processor->getLsqPtr()->KillStoreEntry_Tag[i]=(this->m_Rob[Resource_Release_Tag[i]].LSQtag);
+                this->m_Processor->getLsqPtr()->KillLsqEntry_flag[i]=2;
             }
+            else this->m_Processor->getLsqPtr()->KillLsqEntry_flag[i]=0;
+            this->m_Processor->getLsqPtr()->KillLsqEntry_Tag[i]=(this->m_Rob[Resource_Release_Tag[i]].LSQtag);
+            
             if(this->m_Rob[Resource_Release_Tag[i]].phyRd != 0){
                 this->RN_Release_EN[i]=true;
                 this->RN_Release_IsaRd[i]=this->m_Rob[Resource_Release_Tag[i]].isaRd;
                 this->RN_Release_Data[i]=this->m_Rob[Resource_Release_Tag[i]].LphyRd;
-                this->FE_Release_phyRd[i]=this->m_Rob[Resource_Release_Tag[i]].phyRd;
+                this->FreeBusy_Release_phyRd[i]=this->m_Rob[Resource_Release_Tag[i]].phyRd;
             }
             else{
                 this->RN_Release_EN[i]=false;
             }
         }
     }
+    for(int i=0;i<4;i++){
+        if(Rollback_flag[i])this->m_Rob.RollBack();//更新rob尾指针
+    }
+    
 }
 void Rcu::Freelist_Evaluate(bool reset_n){
     //-------------Sequence-----------------------
@@ -426,7 +441,7 @@ void Rcu::Freelist_Evaluate(bool reset_n){
         for(int i=0;i<4;i++)
         {   
             if(this->RN_Release_EN[i]){
-                this->m_IntFreelist.push(this->FE_Release_phyRd[i]);
+                this->m_IntFreelist.push(this->FreeBusy_Release_phyRd[i]);
             }
             if(this->FreeBusyList_Commit_EN[i]){
                 this->m_IntFreelist.push(this->FreeBusyList_Commit_LphyRd[i]);
@@ -444,7 +459,12 @@ void Rcu::Evaulate(){
     
     this->CreateRobEntry(this->rob_insnPkg,this->ROB_Entry_WEN);
     this->rob_insnPkg.clear();
-
+    if(this->m_RobState == rob_state_t::Rob_Undo){
+        this->RollBack();
+    }
+    if(this->m_RobState == rob_state_t::Rob_FlushBackend){
+        this->m_RobState = rob_state_t::Rob_Idle;
+    }
     for(int i=0;i<4;i++){
         if(this->ROB_WB_EN_Group[i]){
             this->m_Rob[this->ROB_WB_ROBTag_Group[i]].done = true;
@@ -483,17 +503,16 @@ void Rcu::Evaulate(){
             this->m_IntBusylist[this->FreeBusyList_Commit_LphyRd[i]].allocated = false;
         }
     }
-   // DPRINTF(temptest,"bbb {:}",this->ROB_POP_Num)   ; 
-    for(int i=0;i<this->ROB_POP_Num;i++){
-        DPRINTF(temptest,"enter ssss");
+    for(int i=0;i<4;i++){
+        if(this->RN_Release_EN[i]){
+            this->m_IntBusylist[this->FreeBusy_Release_phyRd[i]].forwarding = false;
+            this->m_IntBusylist[this->FreeBusy_Release_phyRd[i]].done       = false;
+            this->m_IntBusylist[this->FreeBusy_Release_phyRd[i]].allocated  = false;
+        }            
     }
+
     
-    if(this->m_RobState == rob_state_t::Rob_Undo){
-        this->RollBack();
-    }
-    if(this->m_RobState == rob_state_t::Rob_FlushBackend){
-        this->m_RobState = rob_state_t::Rob_Idle;
-    }
+    
     this->Freelist_Evaluate(true);
 }
 
@@ -505,7 +524,6 @@ void Rcu::CommitInsn(uint8_t commit_insn_num, Redirect_t& redirectReq, bool& nee
     for(int i=0;i<4;i++){
         this->FreeBusyList_Commit_EN[i]=false;
         this->FreeBusyList_Commit_LphyRd[i]=0;
-
         this->m_Processor->getLsqPtr()->Commit_Style_Group[i]=false;
         this->m_Processor->getLsqPtr()->Commit_LSQTag[i]=0;
     }

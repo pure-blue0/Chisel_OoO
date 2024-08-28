@@ -26,10 +26,9 @@ void
 Lsq::Reset(){
     this->m_LoadQueue.Reset();
     this->m_StoreQueue.Reset();
-    
+    this->storeQueue_pop=false;
     for(int i;i<4;i++){
-        this->KillLoadEntry_flag[i]=false;
-        this->KillStoreEntry_flag[i]=false;
+        this->KillLsqEntry_flag[i]=0;
         this->Load_WEN_Group[i]=false;
         this->Store_WEN_Group[i]=false;
         this->LSQ_Style_Group[i]=0;
@@ -452,8 +451,8 @@ Lsq::Evaulate(){
         }
     }
     for(int i=0;i<4;i++){
-        if(this->KillLoadEntry_flag[i])this->m_LoadQueue[this->KillLoadEntry_Tag[i]].killed = true;
-        if(this->KillStoreEntry_flag[i])this->m_StoreQueue[this->KillStoreEntry_Tag[i]].killed = true;
+        if(this->KillLsqEntry_flag[i]==1)this->m_LoadQueue[this->KillLsqEntry_Tag[i]].killed = true;
+        if(this->KillLsqEntry_flag[i]==2)this->m_StoreQueue[this->KillLsqEntry_Tag[i]].killed = true;
     }
     for(int i=0;i<4;i++){
         if(this->Commit_Style_Group[i]==1)this->m_LoadQueue[this->Commit_LSQTag[i]].commited = true;
@@ -473,7 +472,7 @@ Lsq::Evaulate(){
 //         this->m_StoreQueue[this->MEM_lsq_state_update_ptr].state=storeState_t::store_Executed;       
 //     }
 
-    if(this->storeQueue_pop){
+    if(!this->m_StoreQueue.empty()&&this->storeQueue_pop){
         this->m_StoreQueue.Pop();
     }
         

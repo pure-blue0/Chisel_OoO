@@ -99,7 +99,7 @@ public:
     uint8_t Freelist_size;
     bool                        RN_Release_EN[4];
     uint64_t                    RN_Release_IsaRd[4];
-    uint64_t                    FE_Release_phyRd[4];
+    uint64_t                    FreeBusy_Release_phyRd[4];
     uint64_t                    RN_Release_Data[4];
 
     bool                        FreeBusyList_Commit_EN[4];

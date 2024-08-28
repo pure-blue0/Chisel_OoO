@@ -82,10 +82,8 @@ public:
     uint64_t m_StoreQueue_count;
 
 public:
-    bool KillLoadEntry_flag[4];
-    uint16_t KillLoadEntry_Tag[4];
-    bool KillStoreEntry_flag[4];
-    uint16_t KillStoreEntry_Tag[4];
+    uint8_t KillLsqEntry_flag[4];
+    uint16_t KillLsqEntry_Tag[4];
 
     bool store_state_update_EN;
     bool load_state_update_EN;

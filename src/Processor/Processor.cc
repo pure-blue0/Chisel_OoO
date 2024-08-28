@@ -356,8 +356,7 @@ Processor::Evaluate(){
         this->m_Lsq->Store_WEN_Group[i]=false;
         this->m_Lsq->LSQ_Style_Group[i]=0;
 
-        this->m_Lsq->KillLoadEntry_flag[i]=false;
-        this->m_Lsq->KillStoreEntry_flag[i]=false;
+        this->m_Lsq->KillLsqEntry_flag[i]=0;
     }
     for(int i=0;i<4;i++){
         this->m_Rcu->RN_Release_EN[i]=false;
