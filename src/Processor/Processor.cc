@@ -362,6 +362,8 @@ Processor::Evaluate(){
         this->m_Rcu->RN_Release_EN[i]=false;
         this->m_Rcu->BusyList_Forward_Update_EN[i]=false;
         this->m_Rcu->RegandBusylist_WB_EN[i]=false;
+        this->m_Rcu->BusyList_Update_EN[i]=false;
+        
     }
    // this->m_Rcu->ROB_POP_Num=0;
     this->m_Rcu->lsq_count=0;

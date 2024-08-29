@@ -100,7 +100,7 @@ public:
     bool                        RN_Release_EN[4];
     uint64_t                    RN_Release_IsaRd[4];
     uint64_t                    FreeBusy_Release_phyRd[4];
-    uint64_t                    RN_Release_Data[4];
+    uint64_t                    RN_Release_LphyRd[4];
 
     bool                        FreeBusyList_Commit_EN[4];
     uint64_t                    FreeBusyList_Commit_LphyRd[4];
@@ -135,6 +135,7 @@ public:
     PhyRegId_t BusyList_Forward_Update_PhyRd[4];
     xReg_t BusyList_Forward_Update_Rdresult[4];
 
+    uint8_t RollBack_num;
 
 public:
     Rcu(
