@@ -117,7 +117,7 @@ public:
     uint8_t ROB_WB_ROBTag_Group[4];
 
     bool RegandBusylist_WB_EN[4];
-    PhyRegId_t IntRegfile_WB_PhyRd[4];
+    PhyRegId_t Regfile_Busylist_WB_PhyRd[4];
     xReg_t IntRegfile_WB_RdResult[4];
     
     bool ROB_AGU_EN;
@@ -154,7 +154,7 @@ public:
 
     void Rename(InsnPkg_t& insnPkg);
 
-    void CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN[4]);
+    void CreateRobEntry(InsnPkg_t& insnPkg, bool ROB_Entry_WEN[4],uint8_t& allocCount,Rob_entry_t* newEntry);
 
     bool isOlder(uint64_t tag1, uint64_t tag2,uint64_t header);
 
@@ -181,6 +181,8 @@ public:
     void CommitInsn(uint8_t commit_insn_num, Redirect_t& redirectReq, bool& needRedirect);
 
     void Freelist_Evaluate(bool reset_n);
+    void Busylist_Evaluate(bool reset_n);
+    void IntRegfile_Evaluate(bool reset_n); 
 };
 
 } // namespace Emulator

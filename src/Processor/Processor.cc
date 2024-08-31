@@ -343,6 +343,9 @@ Processor::Evaluate(){
     }
    
     this->m_Rcu->Evaulate();
+    this->m_Rcu->Freelist_Evaluate(true);
+    this->m_Rcu->Busylist_Evaluate(true);
+    this->m_Rcu->IntRegfile_Evaluate(true);
     this->m_Lsq->Evaulate();
     (static_cast<Decode*>(this->m_StageMap["Decode"].get()))->decodeQueue_flush=false;
     (static_cast<Fetch1*>(this->m_StageMap["Fetch1"].get()))->fetchQueue_flush=false;

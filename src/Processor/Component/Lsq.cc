@@ -407,37 +407,22 @@ Lsq::CommitStoreEntry(uint16_t StqTag){
 
 void
 Lsq::Evaulate(){
-    
-    if(this->LSU_Style== 1){
-        this->m_LoadQueue[this->LSU_LSQTag].addressReady = true;
-        this->m_LoadQueue[this->LSU_LSQTag].address  = this->LSU_Agu_addr;
-    }else if(this->LSU_Style== 2)
-    {
-        this->m_StoreQueue[this->LSU_LSQTag].addressReady = true;
-        this->m_StoreQueue[this->LSU_LSQTag].address  = this->LSU_Agu_addr;
-        this->m_StoreQueue[this->LSU_LSQTag].data  = this->LSU_Agu_data;
-    }
-    
-    
     for(int i=0;i<4;i++){
         if(this->LSQ_Style_Group[i]==1){
             LDQ_entry_t load_entry;
-    
             load_entry.state = loadState_t::load_WaitSend;
             load_entry.commited = false;
             load_entry.killed = false;
             load_entry.addressReady = false;
             load_entry.address      = 0;
-
             load_entry.RobTag=this->lsq_data[i].RobTag;
             load_entry.IsaRd=this->lsq_data[i].IsaRd;
             load_entry.PhyRd=this->lsq_data[i].PhyRd;
             load_entry.Fu=this->lsq_data[i].Fu;
             load_entry.SubOp=this->lsq_data[i].SubOp;
-
             this->m_LoadQueue[this->m_LoadQueue.Allocate()] = load_entry;//将数据存入load queue的尾部 
         }
-        if(this->LSQ_Style_Group[i]==2){
+        else if(this->LSQ_Style_Group[i]==2){
             STQ_entry_t store_entry;
             store_entry.state = storeState_t::store_WaitSend;
             store_entry.commited = false;
@@ -449,36 +434,42 @@ Lsq::Evaulate(){
             store_entry.SubOp=this->lsq_data[i].SubOp;
             this->m_StoreQueue[this->m_StoreQueue.Allocate()] = store_entry;//将数据存入load queue的尾部
         }
-    }
-    for(int i=0;i<4;i++){
+
         if(this->KillLsqEntry_flag[i]==1)this->m_LoadQueue[this->KillLsqEntry_Tag[i]].killed = true;
-        if(this->KillLsqEntry_flag[i]==2)this->m_StoreQueue[this->KillLsqEntry_Tag[i]].killed = true;
-    }
-    for(int i=0;i<4;i++){
+        else if(this->KillLsqEntry_flag[i]==2)this->m_StoreQueue[this->KillLsqEntry_Tag[i]].killed = true;
+        
         if(this->Commit_Style_Group[i]==1)this->m_LoadQueue[this->Commit_LSQTag[i]].commited = true;
         else if(this->Commit_Style_Group[i]==2)this->m_StoreQueue[this->Commit_LSQTag[i]].commited = true;
     }
-    if(this->store_state_update_EN){
-        this->m_StoreQueue[this->m_StoreQueue.getHeader()].state=storeState_t::store_Inflight;       
+    //from LSU
+    if(this->LSU_Style== 1){
+        this->m_LoadQueue[this->LSU_LSQTag].addressReady = true;
+        this->m_LoadQueue[this->LSU_LSQTag].address  = this->LSU_Agu_addr;
+    }else if(this->LSU_Style== 2)
+    {
+        this->m_StoreQueue[this->LSU_LSQTag].addressReady = true;
+        this->m_StoreQueue[this->LSU_LSQTag].dataReady = true;
+        this->m_StoreQueue[this->LSU_LSQTag].address  = this->LSU_Agu_addr;
+        this->m_StoreQueue[this->LSU_LSQTag].data  = this->LSU_Agu_data;
     }
+    //from TryIssueStore and TryIssueLoad
     if(this->load_state_update_EN){
         this->m_LoadQueue[this->load_state_update_ptr].state=loadState_t::load_Inflight;
+    }
+    if(this->store_state_update_EN){
+        this->m_StoreQueue[this->m_StoreQueue.getHeader()].state=storeState_t::store_Inflight;       
     }
     //From  LSU mem
     if(this->MEM_load_state_update_EN){
         this->m_LoadQueue[this->MEM_lsq_state_update_ptr].state=loadState_t::load_Executed;
     }
-//    if(this->MEM_store_state_update_EN){
-//         this->m_StoreQueue[this->MEM_lsq_state_update_ptr].state=storeState_t::store_Executed;       
-//     }
-
-    if(!this->m_StoreQueue.empty()&&this->storeQueue_pop){
-        this->m_StoreQueue.Pop();
-    }
         
     if(!this->m_StoreQueue.empty()){
         auto& STqEntry = this->m_StoreQueue[this->m_StoreQueue.getHeader()];
-        if(STqEntry.killed && STqEntry.state != storeState_t::store_Inflight){
+        if(this->storeQueue_pop){
+            this->m_StoreQueue.Pop();
+        }
+        else if(STqEntry.killed && STqEntry.state != storeState_t::store_Inflight){
             this->m_StoreQueue.Pop();
         }
     }
